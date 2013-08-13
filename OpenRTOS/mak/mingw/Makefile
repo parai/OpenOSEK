@@ -31,7 +31,7 @@ OBJS =  $(BD)/OpenRTOS/src/task.o	\
 	$(CC) $(CCFLGS) -o $@ $<
 
 .PHONY:all clean generator
-	
+
 all:$(TARGET)
 	echo ">>>>>>>>>>>>>>>>>  BUILD DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
@@ -39,12 +39,13 @@ $(TARGET):generator $(OBJS)
 	$(LD) $(LDFLGS) $(OBJS) -o $(BD)/OpenRTOS/out/$@.exe $(BD)/OpenRTOS/src/main.c
 
 generator:
-	python $(BD)/OpenTOOL/oil/generator.py  $(BD)/OpenRTOS/config/oscfg.oil
-	
+	(python $(BD)/OpenTOOL/startosek.py  --oil $(BD)/OpenRTOS/config/oscfg.oil)
+	echo ">>>>>>>>>> Convert oscfg.oil DONE <<<<<<<<<<<<<<<<<<<<"
+
 #$(LIB-OSEK):$(OBJS)
 #	$(AR) $(ARFLGS) $(BD)/OpenRTOS/out/$@ $(OBJS)
-	
+
 clean:
 	$(RM) $(RMFLGS) $(OBJS) $(OUTPUT)
 	echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
-	
+
