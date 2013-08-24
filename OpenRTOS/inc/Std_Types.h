@@ -63,8 +63,8 @@
 #endif
 
 /* Values for Std_ReturnType */
-#define E_OK            (Std_ReturnType)0
-#define E_NOT_OK        (Std_ReturnType)1  
+#define E_OK            0
+#define E_NOT_OK        1  
 
 
 /* ================================ TYPEs     =============================== */
@@ -84,8 +84,12 @@ typedef signed int          sint16_least;
 typedef signed long         sint32_least; 
 typedef float               float32; 
 typedef double              float64; 
+typedef uint8               Std_ReturnType;
 
 typedef void (*FP)(void);       /* function pointer type */
+
+typedef unsigned int UINT;
+typedef   signed int SINT;
 
 /* ================================ DATAs     =============================== */
 

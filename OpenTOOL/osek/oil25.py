@@ -76,15 +76,29 @@ class OsGeneral():
         self.posttaskhook = False
         self.shutdownhook = False
         self.startuphook = False
+        self.tasknum = 0
+        self.eventnum = 0
+        self.nresnum = 0 # standard resource
+        self.iresnum = 0 # internal resource
+        self.counternum = 0
+        self.alarmnum = 0
+        self.priority = 0
 
-    def gen(self, fp):
+    def genH(self, fp):
         fp.write("\n/* ====================== General ======================= */\n")
         fp.write("#define cfgOS_STATUS %s\n"%(self.status))
         fp.write("#define cfgOS_ERRORHOOK %s\n"%(int(self.errorhook)))
         fp.write("#define cfgOS_PRETASKHOOK %s\n"%(int(self.pretaskhook)))
         fp.write("#define cfgOS_POSTTASKHOOK %s\n"%(int(self.errorhook)))
         fp.write("#define cfgOS_SHUTDOWDHOOK %s\n"%(int(self.shutdownhook)))
-        fp.write("#define cfgOS_STARTUPHOOK %s\n"%(int(self.startuphook)))
+        fp.write("#define cfgOS_STARTUPHOOK %s\n\n"%(int(self.startuphook)))
+        fp.write('#define cfgOS_TASK_NUM %s\n'%(self.tasknum))
+        fp.write('#define cfgOS_EVENT_NUM %s\n'%(self.eventnum))
+        fp.write('#define cfgOS_S_RES_NUM %s\n'%(self.nresnum))
+        fp.write('#define cfgOS_I_RES_NUM %s\n'%(self.iresnum))
+        fp.write('#define cfgOS_COUNTER_NUM %s\n'%(self.counternum))
+        fp.write('#define cfgOS_ALARM_NUM %s\n'%(self.alarmnum))
+        fp.write('#define cfgOS_MAX_PRIORITY %s\n'%(self.priority))
 
     def parse(self,item):
         grp = re_oil_os_general.search(item).groups();
@@ -126,16 +140,37 @@ class OsTask():
         self.appmodes = []
         self.resources = []
         self.events = []
+        self.eventhandle = -1 # -1 means invalid
         self.id = 0
+        self.rpriority = 0;
     
-    def gen(self, fp):
+    def genH(self, fp):
         fp.write('\n/* %s configuation */\n'%(self.name))
         fp.write('#define %s %s\n'%(self.name,self.id))
-        fp.write('#define %s_priority %s\n'%(self.name,self.priority))
+        fp.write('#define %s_ipriority %s\n'%(self.name,self.priority))
+        if(self.schedule.upper() == 'FULL'):
+            fp.write('#define %s_rpriority %s\n'%(self.name,self.rpriority))
+        else:
+            fp.write('#define %s_rpriority (cfgOS_MAX_PRIORITY)\n'%(self.name))
+        cstr = '\t\t\t/* ['
+        for res in self.resources:
+            cstr += '%s,'%(res)
+        cstr += '] */\n'
+        fp.write(cstr)
         fp.write('#define %s_activation %s\n'%(self.name,self.activation))
         fp.write('#define %s_stacksize %s\n'%(self.name,self.stacksize))
         fp.write('#define %s_autostart %s\n'%(self.name,str(self.autostart).upper()))
         fp.write('#define %s_schedule %s\n'%(self.name,self.schedule))
+        mode = 'INVALID_APPMODE'
+        for appmode in self.appmodes:
+            mode += ' | %s'%(appmode);
+        fp.write('#define %s_appmode (%s)\n'%(self.name,mode));
+        if(len(self.events) > 0):
+            fp.write('#define %s_eventhandle %s\n'%(self.name,self.eventhandle))
+            fp.write('\t\t\t/* [')
+            for event in self.events:
+                fp.write('%s,'%(event))
+            fp.write('] */\n')
 
     def parse(self,item):
         grp = re_oil_os_task.search(item).groups();
@@ -169,7 +204,7 @@ class OsTask():
         for subitem in item.split(';'): #maybe sereval event
             if(re_task_EVENT.search(subitem)): 
                 name = re_task_EVENT.search(subitem).groups()[0]
-                tsk.events.append(name)
+                self.events.append(name)
 
 # 6: for counter
 re_oil_os_counter = re.compile(r'^\s*(COUNTER)\s*(\w+)')
@@ -262,17 +297,23 @@ class OsAlarm():
 re_oil_os_resource = re.compile(r'^\s*(RESOURCE)\s*(\w+)')
 re_resource_property = re.compile(r'RESOURCEPROPERTY\s*=\s*(STANDARD|LINKED|INTERNAL)\s*;')
 class OsResource():
-	def __init__(self):
-		self.name = 'unname'
-		self.property = 'STANDARD'
+    def __init__(self):
+        self.name = 'unname'
+        self.property = 'STANDARD'
+        self.priority = 0
+        self.id = -1
 
-	def parse(self,item):
-		grp = re_oil_os_resource.search(item).groups();
-		if(grp[0] != 'RESOURCE'):
-			return
-		self.name = grp[1];
-		if(re_resource_property.search(item)):
-			self.property = re_resource_property.search(item).groups()[0];
+    def genH(self, fp):
+        fp.write('#define %s %s /* property = %s */\n'%(self.name,self.id,self.property))
+        fp.write('#define %s_priority %s\n'%(self.name,self.priority))
+        
+    def parse(self,item):
+        grp = re_oil_os_resource.search(item).groups();
+        if(grp[0] != 'RESOURCE'):
+            return
+        self.name = grp[1];
+        if(re_resource_property.search(item)):
+            self.property = re_resource_property.search(item).groups()[0];
 
 # 7: for event
 re_oil_os_event = re.compile(r'^\s*(EVENT)\s*(\w+)')
@@ -352,7 +393,7 @@ class OsConfig():
             self.resources.append(res)
         res.parse(item)
     
-    def processResource(self, item):
+    def processEvent(self, item):
         grp = re_oil_os_event.search(item).groups();
         if(grp[0] != 'EVENT'):
             return
@@ -363,7 +404,7 @@ class OsConfig():
             event.name = name
             self.events.append(event)
         event.parse(item)
-        
+     
     def preProcessEach(self, item):
         if(re_oil_os_task.search(item)):
             self.processTask(item);
@@ -432,12 +473,114 @@ class OsConfig():
                     process_one_item_start = False
             #}
         fp.close();
-
+    
+    def postProcessEventsAndTasks(self):
+        """ parse the relation between tasks and events,resolve event mask"""
+        # check each event is special for one task
+        for tsk in self.tasks:
+            for event in tsk.events:
+                for tsk2 in self.tasks:
+                    if(tsk == tsk2):
+                        continue
+                    for event2 in tsk2.events:
+                        if(event == event2):
+                            print 'ERROR: %s is not allowed defined for %s and %s.'%(event, tsk.name, tsk2.name)
+        # check that each event has been refered by one task
+        for event in self.events:
+            find = False
+            for tsk in self.tasks:
+                for evt in tsk.events:
+                    if(event.name == evt):
+                        find = True
+            if(find == False):
+                print 'WARNING: %s has not been refered by task.'%(event.name)
+        # start to parse task masks
+        eventhandle = -1;
+        for tsk in self.tasks:
+            if(len(tsk.events) > 0):
+                eventhandle += 1
+            for event in tsk.events:
+                tsk.eventhandle = eventhandle;
+                ent = findItByName(self.events, event)
+                if(ent == None):
+                    print 'WARNING: %s is not defined for %s.'%(event, tsk.name)
+                    continue
+                if(ent.mask.upper() == 'AUTO'): #start to parse it mask
+                    for i in range(0, 32):
+                        mask = str(hex(1<<i))
+                        find = True
+                        for event2 in tsk.events:
+                            if(event == event2):
+                                continue
+                            ent2 = findItByName(self.events, event2)
+                            if(ent2 == None or ent2.mask == 'AUTO'):
+                                continue
+                            if(int(mask, 16) == int(ent2.mask, 16)):
+                                find = False
+                        if(find == True):
+                            ent.mask = mask
+                            break
+    def postProcessGeneral(self):
+        self.general.tasknum = len(self.tasks)
+        self.general.alarmnum = len(self.alarms)
+        self.general.counternum = len(self.counters)
+        self.general.eventnum = len(self.events)
+        nresnum = 0
+        for res in self.resources:
+            if(res.property.upper() == 'STANDARD'):
+                nresnum += 1
+        self.general.nresnum = nresnum
+        self.general.iresnum = len(self.resources) - nresnum;
+        self.general.priority = 0;
+        for tsk in self.tasks:
+            if(tsk.priority > self.general.priority):
+                self.general.priority = tsk.priority
+        self.general.priority += 1;
+        
+    def postPRocessResAndTasks(self):
+        # check each task can only has on internal resopurce
+        for tsk in self.tasks:
+            inr = 0;
+            for res in tsk.resources:
+                res1 = findItByName(self.resources, res)
+                if(res1.property.upper() == 'INTERNAL'):
+                    inr += 1
+            if(inr > 1):
+                print 'ERROR:only one internal resource should be assigned to one task.'
+        for res in self.resources:
+            if(res.property.upper() == 'LINKED'):
+                print 'ERROR:LINKED resource was not supported.'
+        #start to parse
+        for res in self.resources:
+            res.priority = 0
+            for tsk in self.tasks:
+                for res2 in tsk.resources:
+                    if(res.name == res2):
+                        if(tsk.priority > res.priority):
+                            res.priority = tsk.priority;
+        sid = iid = 0
+        for res in self.resources:
+            if(res.property.upper() == 'STANDARD'):
+                res.id = sid 
+                sid += 1
+            elif(res.property.upper() == 'INTERNAL'):
+                res.id = iid 
+                iid += 1
+        for tsk in self.tasks:
+            tsk.rpriority = tsk.priority
+            for res in tsk.resources:
+                res2 = findItByName(self.resources, res)
+                if(res2.property.upper() == 'INTERNAL'):
+                    tsk.rpriority = res2.priority;
+        
     def postProcess(self):
         id = 0
         for tsk in self.tasks:
             tsk.id = id
             id += 1
+        self.postProcessGeneral();
+        self.postProcessEventsAndTasks();
+        self.postPRocessResAndTasks();
 
     def parse(self, oilfile):
         self.preProcess(oilfile)
@@ -445,6 +588,7 @@ class OsConfig():
 
     def gen(self, path):
         self.genH(path)
+        self.genC(path)
     
     def genH(self, path):
         fp = open('%s/oscfg.h'%(path), 'w')
@@ -452,15 +596,65 @@ class OsConfig():
         fp.write('\n#ifndef OSCFG_H_H\n#define OSCFG_H_H\n\n')
         # =================================================
         # 1. General
-        self.general.gen(fp)
+        self.general.genH(fp)
         # 2. Tasks
         fp.write("\n/* ====================== Tasks ====================== */\n")
         for tsk in self.tasks:
-            tsk.gen(fp)
+            tsk.genH(fp)
+        # 3. Events
+        fp.write("\n/* ====================== Events ====================== */\n")
+        for event in self.events:
+            fp.write('#define %s %s\n'%(event.name,hex(int(event.mask,16))))
+        # 4. Resources
+        fp.write("\n/* ====================== Resources ====================== */\n")
+        for res in self.resources:
+            res.genH(fp);
         # =================================================
         fp.write('\n#endif /* OSCFG_H_H */\n\n')
         fp.close()
-
+        
+    def genC(self, path):
+        fp = open('%s/oscfg.c'%(path), 'w')
+        fp.write(cCodeHead)
+        # =================================================
+        fp.write('#include "Os.h"\n')
+        fp.write('#include "osek_os.h"\n')
+        fp.write("\n/* ====================== Tasks ====================== */\n")
+        # --------------- task pc
+        for tsk in self.tasks:
+            fp.write('IMPORT TASK(%s);\n'%(tsk.name))
+        cstr = '\nEXPORT const FP knl_tcb_pc[] = \n{\n'
+        for tsk in self.tasks:
+            cstr += '\tTASK_PC(%s),\n'%(tsk.name)
+        cstr += '};\n\n'
+        fp.write(cstr);
+        # -------------- task init-priority
+        cstr = 'EXPORT const PriorityType knl_tcb_ipriority[] = \n{\n'
+        for tsk in self.tasks:
+            cstr += '\t%s_ipriority,\n'%(tsk.name)
+        cstr += '};\n\n'
+        fp.write(cstr);
+        # -------------- task run-priority
+        cstr = 'EXPORT const PriorityType knl_tcb_rpriority[] = \n{\n'
+        for tsk in self.tasks:
+            cstr += '\t%s_rpriority,\n'%(tsk.name)
+        cstr += '};\n\n'
+        fp.write(cstr);
+        # -------------- task stacksize
+        cstr = 'EXPORT const StackSizeType knl_tcb_stksz[] = \n{\n'
+        for tsk in self.tasks:
+            cstr += '\t%s_stacksize,\n'%(tsk.name)
+        cstr += '};\n\n'
+        fp.write(cstr);
+        # -------------- task mode
+        cstr = 'EXPORT const AppModeType knl_tcb_mode[] = \n{\n'
+        for tsk in self.tasks:
+            cstr += '\t%s_appmode,\n'%(tsk.name)
+        cstr += '};\n\n'
+        fp.write(cstr);
+        # =================================================
+        fp.write('\n\n')
+        fp.close()
 class OsekConfig():
 	def __init__(self):
 		self.oscfg = OsConfig();
@@ -480,6 +674,6 @@ class Oil():
         
     def gen(self, path):
         self.osekcfg.gen(path);
-        print '>>>>>>>>>>>>>>>>> DONE <<<<<<<<<<<<<<<<<<<<<'
+        
 
 

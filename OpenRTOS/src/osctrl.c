@@ -21,8 +21,8 @@
 
 /* ================================ INCLUDEs  =============================== */
 #include "Os.h"
-#include "Debug.h"
 #include "portable.h"
+#include "osek_os.h"
 
 /* ================================ MACROs    =============================== */
 
@@ -36,7 +36,7 @@ EXPORT uint8    knl_dispatch_disabled = 0u; /* os dispatch state:enabled(0) or d
 /* ================================ FUNCTIONs =============================== */
 EXPORT void StartOS ( AppModeType AppMode )
 {
-    //knl_task_init();
+    knl_task_init();
     //knl_counter_init();
     //knl_alarm_init();
     //knl_resource_init();
@@ -45,7 +45,7 @@ EXPORT void StartOS ( AppModeType AppMode )
 
 EXPORT void ShutdownOS( StatusType Error )
 {
-    DISABLE_INTERRUPT;
+    DISABLE_INTERRUPT();
 #if (cfgOS_SHUT_DOWN_HOOK == STD_ON)
 	ShutdownHook(Error);
 #endif
@@ -57,11 +57,3 @@ EXPORT void ShutdownOS( StatusType Error )
     }
 }
 
-EXPORT void knl_assert(boolean isTrue)
-{
-    if(!isTrue)
-    {
-        DEBUG(DEBUG_HIGH,"The RTOS encounters a serious problem, and will shut down now.\n");
-        ShutdownOS(E_OS_ASSERT);
-    }
-} 

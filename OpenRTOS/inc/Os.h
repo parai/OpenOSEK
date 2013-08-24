@@ -59,12 +59,6 @@
 #define DeclareResource(ResourceName)
 #define DeclareEvent(EventName)  
 
-#ifndef ASSERT
-#warning "The macro < ASSERT(_true) > hasn't been defined, the default one implemented by OpenOSEK will be used."
-#define ASSERT(_true) knl_assert(_true)
-IMPORT void knl_assert(boolean isTrue);
-#endif
-
 /* ================================ TYPEs     =============================== */
 /* This data type identifies a task. */
 typedef uint8 TaskType;
@@ -105,6 +99,9 @@ typedef uint8 StatusType;
 typedef uint32 AppModeType;     /* ecah bit is mapped to a different application mode */
 /* This data type represents the identification of system services. */
 typedef uint8 OSServiceIdType;
+
+/* ================================ INCLUDEs  =============================== */
+#include "oscfg.h"
 
 /* ================================ DATAs     =============================== */
 

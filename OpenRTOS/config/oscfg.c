@@ -18,28 +18,42 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
-/* ================================ INCLUDEs  =============================== */
 #include "Os.h"
+#include "osek_os.h"
 
-/* ================================ MACROs    =============================== */
+/* ====================== Tasks ====================== */
+IMPORT TASK(Task0);
+IMPORT TASK(Task1);
 
-/* ================================ TYPEs     =============================== */
-
-/* ================================ DATAs     =============================== */
-
-/* ================================ FUNCTIONs =============================== */
-/* This is a stardard procedure which will start the os by the default app mode */
-#ifdef __GNUC__
-int main(int argc,char* argv[])
-#else
-void main(void)
-#endif
+EXPORT const FP knl_tcb_pc[] = 
 {
-    /* You can do some-special work here,such as init the system clock and so on... */
-    StartOS(OSDEFAULTAPPMODE);
-    /* never returned when the os is started. */
+	TASK_PC(Task0),
+	TASK_PC(Task1),
+};
 
-    #ifdef __GNUC__
-    return -1;
-    #endif
-}
+EXPORT const PriorityType knl_tcb_ipriority[] = 
+{
+	Task0_ipriority,
+	Task1_ipriority,
+};
+
+EXPORT const PriorityType knl_tcb_rpriority[] = 
+{
+	Task0_rpriority,
+	Task1_rpriority,
+};
+
+EXPORT const StackSizeType knl_tcb_stksz[] = 
+{
+	Task0_stacksize,
+	Task1_stacksize,
+};
+
+EXPORT const AppModeType knl_tcb_mode[] = 
+{
+	Task0_appmode,
+	Task1_appmode,
+};
+
+
+

@@ -29,3 +29,14 @@
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
+//OS-impl internal function
+EXPORT void knl_task_init(void)
+{
+}
+
+EXPORT StatusType TerminateTask(void)
+{
+    StatusType ercd = E_OK;
+    
+    return ercd;
+}

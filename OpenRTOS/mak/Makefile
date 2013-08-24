@@ -13,3 +13,6 @@ clean:
 ifeq ($(PLATFORM),mingw)
 	(cd mingw;make clean)
 endif
+
+run:
+	@(../out/OpenOSEK.exe)

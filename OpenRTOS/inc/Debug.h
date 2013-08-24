@@ -24,13 +24,7 @@
 #include "Std_Types.h"
 
 /* ================================ PRE-PROCESSs  =========================== */
-#ifndef USE_DEBUG
-#warning The macro USE_DEBUG hasn't been defined,the default value STD_OFF will be used.
-#define USE_DEBUG STD_OFF
-#endif
-
 #ifndef DEBUG_LVL
-#warning The macro DEBUG_LVL hasn't been defined,the default value DEBUG_MEDIUM will be used.
 #define DEBUG_LVL		DEBUG_MEDIUM
 #endif
 
@@ -40,8 +34,7 @@
 #define DEBUG_HIGH		3
 #define DEBUG_NONE		4
 
-#ifdef  USE_DEBUG
-
+#ifdef USE_DEBUG
 #define DEBUG(_level,message) DEBUG_PRINT0(_level,message)
 
 #define DEBUG_PRINT0(_level,arg0)    \

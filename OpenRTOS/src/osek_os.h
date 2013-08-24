@@ -18,28 +18,18 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
+#ifndef _OSEK_OS_H_
+#define _OSEK_OS_H_
 /* ================================ INCLUDEs  =============================== */
 #include "Os.h"
 
 /* ================================ MACROs    =============================== */
-
+#define TASK_PC(name) TaskMain##name
 /* ================================ TYPEs     =============================== */
-
-/* ================================ DATAs     =============================== */
+/* Priority type of Task */
+typedef uint8 PriorityType;
+typedef uint16 StackSizeType;
 
 /* ================================ FUNCTIONs =============================== */
-/* This is a stardard procedure which will start the os by the default app mode */
-#ifdef __GNUC__
-int main(int argc,char* argv[])
-#else
-void main(void)
-#endif
-{
-    /* You can do some-special work here,such as init the system clock and so on... */
-    StartOS(OSDEFAULTAPPMODE);
-    /* never returned when the os is started. */
-
-    #ifdef __GNUC__
-    return -1;
-    #endif
-}
+IMPORT void knl_task_init(void);
+#endif /* _OSEK_OS_H_ */

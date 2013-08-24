@@ -1,0 +1,36 @@
+# Object files
+TAGS
+cscope.out
+cscope.files
+*.o
+*.abs
+*.elf
+*.pyc
+*.elf
+*.s19
+*.cmd
+*.exe
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# others
+*.htm
+*.doc
+*.html
+
+# directories
+OpenAPP
+
