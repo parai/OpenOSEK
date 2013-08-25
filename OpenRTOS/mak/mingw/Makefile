@@ -42,6 +42,7 @@ all:$(TARGET)
 	@echo ">>>>>>>>>>>>>>>>>  BUILD DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
 $(TARGET):generator $(OBJS)
+	@echo link to $(BD)/OpenRTOS/out/$@.exe
 	@$(LD) $(LDFLGS) $(OBJS) -o $(BD)/OpenRTOS/out/$@.exe $(BD)/OpenRTOS/src/main.c
 
 generator:
