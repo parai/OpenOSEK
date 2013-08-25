@@ -51,13 +51,11 @@
 typedef unsigned int imask_t;
 
 /* ================================ DATAs     =============================== */
-IMPORT TaskType knl_runtsk;     /* current running task */
-IMPORT TaskType knl_schedtsk;   /* task with highest priority in ready state */
-IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
-IMPORT uint8    knl_dispatch_disabled; /* os dispatch state:enabled(0) or disabled(1) */
 
 /* ================================ FUNCTIONs =============================== */
 IMPORT imask_t knl_disable_int( void );
 IMPORT void knl_enable_int( imask_t mask );
+IMPORT void knl_force_dispatch(void);
+IMPORT void knl_setup_context(TaskType taskid);
 
 #endif /* _PORTABLE_H_ */

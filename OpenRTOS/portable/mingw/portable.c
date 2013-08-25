@@ -19,7 +19,7 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
-#include "Os.h"
+#include "osek_os.h"
 
 /* ================================ MACROs    =============================== */
 
@@ -28,3 +28,13 @@
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
+EXPORT void knl_force_dispatch(void)
+{
+
+}
+
+EXPORT void knl_setup_context(TaskType taskid)
+{
+
+
+}

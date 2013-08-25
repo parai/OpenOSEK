@@ -20,23 +20,76 @@
  */
 
 /* ================================ INCLUDEs  =============================== */
-#include "Os.h"
+#include "osek_os.h"
 
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
+EXPORT TaskStateType       knl_tcb_state[cfgOS_TASK_NUM];
+EXPORT PriorityType        knl_tcb_curpri[cfgOS_TASK_NUM];
+EXPORT TaskType knl_curtsk;
+EXPORT TaskType knl_schedtsk;
 
 /* ================================ FUNCTIONs =============================== */
-//OS-impl internal function
-EXPORT void knl_task_init(void)
-{
-}
-
 EXPORT StatusType TerminateTask(void)
 {
     StatusType ercd = E_OK;
     
     return ercd;
+}
+
+
+
+//OS-impl internal function
+EXPORT void knl_task_init(void)
+{
+	uint8 i;
+	for(i=0; i<cfgOS_TASK_NUM; i++)
+	{
+		knl_tcb_state[i] = SUSPENDED;
+		if((knl_tcb_mode[i]&knl_appmode) != 0u)
+		{
+			knl_make_active(i);
+		}
+	}
+}
+EXPORT void knl_make_active(TaskType taskid)
+{
+	knl_make_ready(taskid);
+	knl_make_runnable(taskid);
+}
+
+EXPORT void knl_make_ready(TaskType taskid)
+{
+	knl_tcb_state[taskid] = READY;
+	knl_tcb_curpri[taskid] = knl_tcb_ipriority[taskid];
+	knl_setup_context(taskid);
+}
+EXPORT void knl_make_runnable(TaskType taskid)
+{
+	if(INVALID_TASK != knl_schedtsk)
+	{
+		if(knl_tcb_curpri[taskid] > knl_tcb_curpri[knl_schedtsk])
+		{   /* taskid has higher priority */
+			//when task is non-preemtable,its priority will be the highest when run.
+			knl_ready_queue_insert_top(knl_schedtsk);
+		}
+		else
+		{   /* taskid has lower priority */
+			knl_ready_queue_insert(taskid);
+			return;
+		}
+	}
+	knl_schedtsk = taskid;
+}
+EXPORT void knl_ready_queue_insert_top(TaskType taskid)
+{
+
+}
+
+EXPORT void knl_ready_queue_insert(TaskType taskid)
+{
+
 }

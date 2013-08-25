@@ -20,8 +20,6 @@
  */
 
 /* ================================ INCLUDEs  =============================== */
-#include "Os.h"
-#include "portable.h"
 #include "osek_os.h"
 
 /* ================================ MACROs    =============================== */
@@ -36,10 +34,13 @@ EXPORT uint8    knl_dispatch_disabled = 0u; /* os dispatch state:enabled(0) or d
 /* ================================ FUNCTIONs =============================== */
 EXPORT void StartOS ( AppModeType AppMode )
 {
-    knl_task_init();
+	DISABLE_INTERRUPT();
+	knl_appmode = AppMode;
+	knl_task_init();
     //knl_counter_init();
     //knl_alarm_init();
     //knl_resource_init();
+    knl_force_dispatch();
     
 }
 

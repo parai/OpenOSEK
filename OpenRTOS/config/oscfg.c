@@ -56,4 +56,23 @@ EXPORT const AppModeType knl_tcb_mode[] =
 };
 
 
+/* ====================== Task Ready Queue ====================== */
+LOCAL TaskType knl_0_queue[2];
+LOCAL TaskType knl_5_queue[3];
+EXPORT RDYQUE knl_rdyque = 
+{
+	/* top_pri= */ NUM_PRI,
+	{/* tskque[] */
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 2, /* queue= */ knl_0_queue},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 3, /* queue= */ knl_5_queue},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
+	},
+	/* null */{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
+};
+
+
 

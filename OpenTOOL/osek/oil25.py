@@ -612,7 +612,32 @@ class OsConfig():
         # =================================================
         fp.write('\n#endif /* OSCFG_H_H */\n\n')
         fp.close()
-        
+    def getPrioSize(self, priority):
+        size = 0;
+        for tsk in self.tasks:
+            if(tsk.priority == priority):
+                size += tsk.activation;
+        for res in self.resources:
+            if(res.priority == priority):
+                size += 1;
+                break;
+        return size;
+            
+    def genTaskReadyQueue(self, fp):
+        cstr = 'EXPORT RDYQUE knl_rdyque = \n{\n';
+        cstr += '\t/* top_pri= */ NUM_PRI,\n'
+        cstr +='\t{/* tskque[] */\n'
+        for i in range(0, self.general.priority+1):
+            size = self.getPrioSize(i);
+            if(size != 0):
+                fp.write('LOCAL TaskType knl_%s_queue[%s];\n'%(i, size+1))
+                cstr += '\t\t{/* head= */ 0,/* tail= */ 0,/* length= */ %s, /* queue= */ knl_%s_queue},\n'%(size+1, i);
+            else:
+                cstr += '\t\t{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},\n';
+        cstr +='\t},\n'
+        cstr +='\t/* null */{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},\n'
+        cstr +='};\n\n'
+        fp.write(cstr);
     def genC(self, path):
         fp = open('%s/oscfg.c'%(path), 'w')
         fp.write(cCodeHead)
@@ -652,6 +677,9 @@ class OsConfig():
             cstr += '\t%s_appmode,\n'%(tsk.name)
         cstr += '};\n\n'
         fp.write(cstr);
+        fp.write('\n/* ====================== Task Ready Queue ====================== */\n')
+        self.genTaskReadyQueue(fp);
+    
         # =================================================
         fp.write('\n\n')
         fp.close()

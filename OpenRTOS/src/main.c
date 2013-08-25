@@ -36,7 +36,8 @@ void main(void)
 #endif
 {
     /* You can do some-special work here,such as init the system clock and so on... */
-    StartOS(OSDEFAULTAPPMODE);
+
+	StartOS(OSDEFAULTAPPMODE);
     /* never returned when the os is started. */
 
     #ifdef __GNUC__

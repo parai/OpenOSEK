@@ -6,12 +6,12 @@ PLATFORM = mingw
 
 all:
 ifeq ($(PLATFORM),mingw)
-	(cd mingw;make all)
+	@(cd mingw;make all)
 endif
 
 clean:
 ifeq ($(PLATFORM),mingw)
-	(cd mingw;make clean)
+	@(cd mingw;make clean)
 endif
 
 run:

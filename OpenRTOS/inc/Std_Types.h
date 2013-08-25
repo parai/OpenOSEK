@@ -48,8 +48,8 @@
 #define FALSE 0
 #endif
 
-#define EXPORT extern
-#define IMPORT 
+#define EXPORT
+#define IMPORT extern
 #define LOCAL  static
 
 #ifndef MIN

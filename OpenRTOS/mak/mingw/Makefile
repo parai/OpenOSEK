@@ -33,6 +33,7 @@ OBJS =  $(BD)/OpenRTOS/src/task.o	\
 
 #common rules
 %.o:%.c
+	@echo compile $<  to $@
 	@$(CC) $(CCFLGS) -o $@ $<
 
 .PHONY:all clean generator
@@ -51,6 +52,7 @@ generator:
 #	$(AR) $(ARFLGS) $(BD)/OpenRTOS/out/$@ $(OBJS)
 
 clean:
-	@$(RM) $(RMFLGS) $(OBJS) $(OUTPUT)
+	@echo remove $(OBJS) $(BD)/OpenRTOS/out/$@.exe
+	@$(RM) $(RMFLGS) $(OBJS) $(BD)/OpenRTOS/out/$@.exe
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
