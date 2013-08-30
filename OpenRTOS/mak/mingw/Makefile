@@ -18,7 +18,6 @@ ASFLGS =
 INCDIR = -I$(BD)/OpenRTOS/inc -I$(BD)/OpenRTOS/src -I$(BD)/OpenRTOS/portable/mingw	\
 		-I$(BD)/OpenRTOS/config	-I$(BD)/OpenAPP
 MACROS = 
-#-DUSE_DEBUG -DDEBUG_LVL=DEBUG_LOW
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
 LDFLGS = -g -O2 -Wall $(INCDIR) -lpthread
 ARFLGS = rv
