@@ -79,6 +79,6 @@ $(TARGET):
 	mv -f OpenOSEK.map $(OUT)
 clean:
 	@echo remove $(OBJS_LINK) $(TARGET) 
-	@$(RM) $(RMFLGS) err.log $(BD)OpenRTOS/out/* $(TARGET)
+	@$(RM) $(RMFLGS) err.log $(BD)OpenRTOS/out/* $(TARGET) OpenOSEK.ini
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
 

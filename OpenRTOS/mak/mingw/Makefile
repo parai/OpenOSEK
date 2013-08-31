@@ -6,6 +6,8 @@ TARGET = OpenOSEK
 #Base Directory
 BD = ../../..
 
+OUT = $(BD)/OpenRTOS/out/
+
 #common compilers
 AS = gcc
 CC = gcc
@@ -41,8 +43,8 @@ all:$(TARGET)
 	@echo ">>>>>>>>>>>>>>>>>  BUILD DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
 $(TARGET):generator $(OBJS)
-	@echo link to $(BD)/OpenRTOS/out/$@.exe
-	@$(LD) $(LDFLGS) $(OBJS) -o $(BD)/OpenRTOS/out/$@.exe $(BD)/OpenRTOS/src/main.c
+	@echo link to $(OUT)/$@.exe
+	@$(LD) $(BD)/OpenRTOS/src/main.c -o $(OUT)/$@.exe  $(OBJS) $(LDFLGS) 
 
 generator:
 	@(python $(BD)/OpenTOOL/startosek.py  --oil $(BD)/OpenRTOS/config/oscfg.oil)
@@ -52,7 +54,7 @@ generator:
 #	$(AR) $(ARFLGS) $(BD)/OpenRTOS/out/$@ $(OBJS)
 
 clean:
-	@echo remove $(OBJS) $(BD)/OpenRTOS/out/$@.exe
-	@$(RM) $(RMFLGS) $(OBJS) $(BD)/OpenRTOS/out/$@.exe
+	@echo remove $(OBJS) $(OUT)/$@.exe
+	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/$@.exe
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
 

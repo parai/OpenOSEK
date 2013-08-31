@@ -5,17 +5,24 @@ COMPILER_DIR = "D:\Program Files\Freescale\CodeWarrior for S12(X) V5.0"
 
 # mklink : the link of the codewarrior 5.0
 CW = OpenRTOS/mak/9s12xep100/CW
-OUT = OpenRTOS/out
 
-.PHONY:all sim clean compiler
-all:compiler
-	@(cd ../../../;$(CW)/Prog/piper.exe $(CW)/Prog/maker.exe OpenRTOS/mak/9s12xep100/Makefile.mk)
+#Base Directory
+BD = ../../..
+
+.PHONY:all sim clean compiler generator
+
+all:compiler generator
+	@(cd $(BD);$(CW)/Prog/piper.exe $(CW)/Prog/maker.exe OpenRTOS/mak/9s12xep100/Makefile.mk)
 
 sim:
-	@(cd ../../../;$(CW)/Prog/hiwave.exe -W -Prod=$(OUT)/OpenOSEK.ini -instance=sim OpenOSEK.abs)
+	@(cd $(BD);$(CW)/Prog/hiwave.exe -W -Prod=OpenOSEK.ini -instance=sim OpenOSEK.abs)
 
 clean:
-	@(cd ../../../;make clean -f OpenRTOS/mak/9s12xep100/Makefile.mk)
+	@(cd $(BD);make clean -f OpenRTOS/mak/9s12xep100/Makefile.mk)
+
+generator:
+	@(python $(BD)/OpenTOOL/startosek.py  --oil $(BD)/OpenRTOS/config/oscfg.oil)
+	@echo ">>>>>>>>>> Convert oscfg.oil DONE <<<<<<<<<<<<<<<<<<<<"
 
 compiler:CW/Prog/piper.exe
 	@echo ">>>   Compiler Ok!  <<<"
