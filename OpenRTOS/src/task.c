@@ -46,6 +46,9 @@ EXPORT StatusType TerminateTask(void)
 EXPORT void knl_task_init(void)
 {
 	uint8 i;
+
+	knl_schedtsk = knl_curtsk = INVALID_TASK;
+
 	for(i=0; i<cfgOS_TASK_NUM; i++)
 	{
 		knl_tcb_state[i] = SUSPENDED;

@@ -43,8 +43,9 @@ all:$(TARGET)
 	@echo ">>>>>>>>>>>>>>>>>  BUILD DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
 $(TARGET):generator $(OBJS)
-	@echo link to $(OUT)/$@.exe
-	@$(LD) $(BD)/OpenRTOS/src/main.c -o $(OUT)/$@.exe  $(OBJS) $(LDFLGS) 
+#$(TARGET):$(OBJS)
+	@echo link to $(OUT)/$@
+	@$(LD) $(BD)/OpenRTOS/src/main.c -o $(OUT)/$@  $(OBJS) $(LDFLGS) 
 
 generator:
 	@(python $(BD)/OpenTOOL/startosek.py  --oil $(BD)/OpenRTOS/config/oscfg.oil)
@@ -54,7 +55,7 @@ generator:
 #	$(AR) $(ARFLGS) $(BD)/OpenRTOS/out/$@ $(OBJS)
 
 clean:
-	@echo remove $(OBJS) $(OUT)/$@.exe
-	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/$@.exe
+	@echo remove $(OBJS) $(OUT)/*
+	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/*
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
 

@@ -31,16 +31,17 @@
 
 /* ================================ MACROs    =============================== */
 /* Posix Signal definitions that can be changed or read as appropriate. */
-#define SIG_SUSPEND					SIGUSR1
-#define SIG_RESUME					SIGUSR2
+#define SIG_SUSPEND					SIGUSR1  //  = 10
+#define SIG_RESUME					SIGUSR2  //  = 12
 /* Enable the following hash defines to make use of the real-time tick where time progresses at real-time. */
-#define SIG_TICK					SIGALRM
-#define TIMER_TYPE					ITIMER_REAL
+#define SIG_TICK					SIGALRM  //  = 14
+#define TIMER_TYPE					ITIMER_REAL  // = 0
 
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
 LOCAL pthread_t knl_tcb_sp[cfgOS_TASK_NUM];
+LOCAL pthread_t portMainThread = NULL;
 // for porting
 LOCAL pthread_once_t portSigSetupThread = PTHREAD_ONCE_INIT;
 /* used for thread start policy */
@@ -58,17 +59,31 @@ LOCAL void portSuspendThread( pthread_t thread );
 LOCAL void portResumeThread( pthread_t thread );
 LOCAL void portSuspendSignalHandler(int sig);
 LOCAL void portResumeSignalHandler(int sig);
+LOCAL void portSystemTickHandler( int sig );
+LOCAL void portSetupTimerInterrupt( void );
+LOCAL void l_dispatch0(void);
 
+EXPORT imask_t knl_disable_int( void )
+{
+	imask_t mask = portInterruptsEnabled;
+	portInterruptsEnabled = FALSE;
+	return mask;
+}
+EXPORT void knl_enable_int( imask_t mask )
+{
+	portInterruptsEnabled = mask;
+}
 EXPORT void knl_force_dispatch(void)
 {
 	(void)pthread_once( &portSigSetupThread, portSetupSignalsAndSchedulerPolicy );
-	if(FALSE == portServicingTick)
-	{
-		portServicingTick = TRUE;
-	}
-	printf("in knl_force_dispatch().\n");
-	for(;;); //should never return.
 
+	if ( (pthread_t)NULL == portMainThread ){
+		portMainThread = pthread_self();
+	}
+
+	knl_dispatch_disabled=1;    /* Dispatch disable */
+	knl_curtsk = INVALID_TASK;
+	l_dispatch0();
 }
 
 EXPORT void knl_setup_context(TaskType taskid)
@@ -78,12 +93,30 @@ EXPORT void knl_setup_context(TaskType taskid)
 	{
 		portSentinel = 0;
 		(void)pthread_create(&knl_tcb_sp[taskid],&portThreadAttr,
-				portWaitForStart,(void*)(int)taskid);
+				portWaitForStart,(void*)(int*)taskid);
 		(void)pthread_mutex_unlock( &portSingleThreadMutex );
 		while(0 == portSentinel);
 	}
+}
+LOCAL void l_dispatch0(void)
+{
+	portInterruptsEnabled = TRUE; //enable interrupt
+	while(INVALID_TASK == knl_schedtsk)
+	{
+		;; //wait here
+	}
+	knl_curtsk = knl_schedtsk;
+	knl_dispatch_disabled=0;    /* Dispatch enable */
 
-
+	/* resume task */
+	portResumeThread(knl_tcb_sp[knl_curtsk]);
+}
+EXPORT void knl_dispatch_entry(void)
+{
+	knl_dispatch_disabled=1;    /* Dispatch disable */
+	portSuspendThread(knl_tcb_sp[knl_curtsk]);
+	knl_curtsk = INVALID_TASK;
+	l_dispatch0();
 }
 
 LOCAL void* portWaitForStart(void* taskid)
@@ -147,6 +180,9 @@ LOCAL void portSetupSignalsAndSchedulerPolicy(void)
 	{
 		printf( "Problem installing SIG_TICK\n" );
 	}
+
+	portSetupTimerInterrupt();
+
 	printf( "Running as PID: %d\n", getpid() );
 
 }
@@ -213,6 +249,7 @@ LOCAL void portResumeSignalHandler(int sig)
 
 LOCAL void portSystemTickHandler( int sig )
 {
+	//printf("int portSystemTickHandler(0x%x).\n",sig);
 	if ( ( TRUE == portInterruptsEnabled ) && ( TRUE != portServicingTick ) )
 	{
 		if ( 0 == pthread_mutex_trylock( &portSingleThreadMutex ) ){
@@ -236,8 +273,8 @@ LOCAL void portSystemTickHandler( int sig )
  */
 LOCAL void portSetupTimerInterrupt( void )
 {
-struct itimerval itimer, oitimer;
-int xMicroSeconds = 1000000 / 100; //100 ticks per second
+	struct itimerval itimer, oitimer;
+	int xMicroSeconds = 1000000 / 100; //100 ticks per second
 
 	/* Initialise the structure with the current timer information. */
 	if ( 0 == getitimer( TIMER_TYPE, &itimer ) )

@@ -26,8 +26,8 @@
 /*
  * Interrupt enable/disable
  */
-#define DISABLE_INTERRUPT()
-#define ENABLE_INTERRUPT()
+#define DISABLE_INTERRUPT() (void)knl_disable_int()
+#define ENABLE_INTERRUPT()  knl_enable_int(TRUE)
 
 /*
  * Start/End interrupt disable section

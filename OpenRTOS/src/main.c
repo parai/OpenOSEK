@@ -40,6 +40,7 @@ void main(void)
 	StartOS(OSDEFAULTAPPMODE);
     /* never returned when the os is started. */
 
+	for(;;);
     #ifdef __GNUC__
     return -1;
     #endif

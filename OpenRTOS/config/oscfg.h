@@ -37,14 +37,14 @@
 #define cfgOS_I_RES_NUM 1
 #define cfgOS_COUNTER_NUM 1
 #define cfgOS_ALARM_NUM 2
-#define cfgOS_MAX_PRIORITY 6
+#define cfgOS_MAX_PRIORITY 11
 
 /* ====================== Tasks ====================== */
 
 /* Task0 configuation */
 #define Task0 0
-#define Task0_ipriority 0
-#define Task0_rpriority 5
+#define Task0_ipriority 10
+#define Task0_rpriority 10
 			/* [ResourceCAN0,ResourceStdOut,] */
 #define Task0_activation 1
 #define Task0_stacksize 256
@@ -75,11 +75,11 @@
 
 /* ====================== Resources ====================== */
 #define ResourceCAN0 0 /* property = STANDARD */
-#define ResourceCAN0_priority 5
+#define ResourceCAN0_priority 10
 #define ResourceCAN1 1 /* property = STANDARD */
 #define ResourceCAN1_priority 5
 #define ResourceStdOut 0 /* property = INTERNAL */
-#define ResourceStdOut_priority 5
+#define ResourceStdOut_priority 10
 
 #endif /* OSCFG_H_H */
 

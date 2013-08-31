@@ -43,7 +43,7 @@
 /* OS Ext-Errors */
 #define E_OS_ASSERT     (9u)    /* serious problem encountered when assert */
 
-#define INVALID_TASK ((TaskType)-1)
+#define INVALID_TASK ((TaskType)0xFF)
 
 /*  Constant of data type ResourceType (see (osek)chapter 8, Resource management).*/
 #define RES_SCHEDULER 0

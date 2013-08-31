@@ -13,7 +13,7 @@ OS OpenRTOS {
 };
 
 TASK Task0 {
-	PRIORITY  = 0; 
+	PRIORITY  = 10; 
 	STACKSIZE = 256;
 	SCHEDULE  = FULL; 
 	ACTIVATION = 1; 
