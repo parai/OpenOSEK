@@ -17,7 +17,7 @@ RM = rm
 
 #common flags
 ASFLGS = 
-INCDIR = -I$(BD)/OpenRTOS/inc -I$(BD)/OpenRTOS/src -I$(BD)/OpenRTOS/portable/mingw	\
+INCDIR = -I$(BD)/OpenRTOS/inc -I$(BD)/OpenRTOS/src -I$(BD)/OpenRTOS/portable/posix	\
 		-I$(BD)/OpenRTOS/config	-I$(BD)/OpenAPP
 MACROS = 
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
@@ -28,7 +28,7 @@ RMFLGS = -f
 #common objectives
 OBJS =  $(BD)/OpenRTOS/src/task.o	\
 		$(BD)/OpenRTOS/src/osctrl.o	\
-		$(BD)/OpenRTOS/portable/mingw/portable.o	\
+		$(BD)/OpenRTOS/portable/posix/portable.o	\
 		$(BD)/OpenRTOS/config/oscfg.o	\
 		$(BD)/OpenAPP/OpenAPP.o	
 
