@@ -30,6 +30,18 @@
 #include <limits.h>
 
 /* ================================ MACROs    =============================== */
+#ifndef SIGUSR1
+#define SIGUSR1 10
+#endif
+#ifndef SIGUSR2
+#define SIGUSR2 12
+#endif
+#ifndef SIGALRM
+#define SIGALRM 14
+#endif
+#ifndef ITIMER_REAL
+#define ITIMER_REAL 0
+#endif
 /* Posix Signal definitions that can be changed or read as appropriate. */
 #define SIG_SUSPEND					SIGUSR1  //  = 10
 #define SIG_RESUME					SIGUSR2  //  = 12
