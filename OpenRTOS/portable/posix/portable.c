@@ -76,7 +76,7 @@ LOCAL void portResumeSignalHandler(int sig);
 LOCAL void portSystemTickHandler( int sig );
 LOCAL void portSetupTimerInterrupt( void );
 LOCAL void l_dispatch0(void);
-LOCAL void portOpenOSEKMonitor(void);
+
 
 EXPORT imask_t knl_disable_int( void )
 {
@@ -90,7 +90,6 @@ EXPORT void knl_enable_int( imask_t mask )
 }
 EXPORT void knl_force_dispatch(void)
 {
-	TaskType taskid;
 	(void)pthread_once( &portSigSetupThread, portSetupSignalsAndSchedulerPolicy );
 
 	if ( (pthread_t)NULL == portMainThread ){
@@ -98,7 +97,6 @@ EXPORT void knl_force_dispatch(void)
 	}
 
 	knl_dispatch_disabled=1;    /* Dispatch disable */
-	taskid = knl_curtsk;
 	knl_curtsk = INVALID_TASK;
 	l_dispatch0();
 	if(pthread_self() != portMainThread)

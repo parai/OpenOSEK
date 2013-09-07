@@ -1,9 +1,11 @@
+#include <windows.h>
 #include "osek_os.h"
 
 TASK(Task0)
 {
     printf("Task0 is running.\n");
     ChainTask(Task2);
+    TerminateTask();
 }
 TASK(Task1)
 {

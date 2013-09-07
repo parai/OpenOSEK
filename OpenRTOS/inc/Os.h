@@ -107,6 +107,7 @@ typedef uint8 OSServiceIdType;
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
+#if !defined(_WINDOWS_H)
 IMPORT StatusType GetCounterValue(CounterType CounterID,TickRefType Value);
 IMPORT StatusType GetElapsedCounterValue(CounterType CounterID,
                                   TickRefType Value,TickRefType ElapsedValue);
@@ -155,5 +156,6 @@ IMPORT void StartupHook(void);
 IMPORT void ErrorHook(StatusType Error);
 IMPORT void PreTaskHook(void);
 IMPORT void PostTaskHook(void);
+#endif
 
 #endif /* _OS_H_ */
