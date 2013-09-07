@@ -13,32 +13,64 @@ OS OpenRTOS {
 };
 
 TASK Task0 {
-	PRIORITY  = 10; 
+	PRIORITY  = 0; 
 	STACKSIZE = 256;
 	SCHEDULE  = FULL; 
 	ACTIVATION = 1; 
-	AUTOSTART = TRUE { 
-	  APPMODE = OSDEFAULTAPPMODE; 
-	}; 
-	EVENT = Event1;
-	EVENT = Event2;
-	EVENT = Event3;
-	RESOURCE = ResourceCAN0 ;
-	RESOURCE = ResourceStdOut;
+	AUTOSTART = FALSE;
+	//AUTOSTART = TRUE { 
+	//  APPMODE = OSDEFAULTAPPMODE; 
+	//}; 
+	//EVENT = Event1;
+	//EVENT = Event2;
+	//EVENT = Event3;
+	//RESOURCE = ResourceCAN0 ;
+	//RESOURCE = ResourceStdOut;
 };
 
 TASK Task1 {
-	PRIORITY  = 5; 
+	PRIORITY  = 1; 
 	STACKSIZE = 200;
 	SCHEDULE  = NON; 
 	ACTIVATION = 1; 
+	AUTOSTART = FALSE;
+	//AUTOSTART = TRUE { 
+	//  APPMODE = OSDEFAULTAPPMODE; 
+	//}; 
+	//EVENT = Event5;
+	//RESOURCE = ResourceCAN0 ;
+	//RESOURCE = ResourceCAN1 ;
+	//RESOURCE = ResourceStdOut;
+};
+
+TASK Task2 {
+	PRIORITY  = 2; 
+	STACKSIZE = 200;
+	SCHEDULE  = NON; 
+	ACTIVATION = 1; 
+	AUTOSTART = FALSE;
+	//AUTOSTART = TRUE { 
+	//  APPMODE = OSDEFAULTAPPMODE; 
+	//};
+	//EVENT = Event5;
+	//RESOURCE = ResourceCAN0 ;
+	//RESOURCE = ResourceCAN1 ;
+	//RESOURCE = ResourceStdOut;
+};
+
+TASK Task3 {
+	PRIORITY  = 3; 
+	STACKSIZE = 200;
+	SCHEDULE  = NON; 
+	ACTIVATION = 1; 
+	//AUTOSTART = FALSE;
 	AUTOSTART = TRUE { 
 	  APPMODE = OSDEFAULTAPPMODE; 
 	}; 
-	EVENT = Event5;
-	RESOURCE = ResourceCAN0 ;
-	RESOURCE = ResourceCAN1 ;
-	RESOURCE = ResourceStdOut;
+	//EVENT = Event5;
+	//RESOURCE = ResourceCAN0 ;
+	//RESOURCE = ResourceCAN1 ;
+	//RESOURCE = ResourceStdOut;
 };
 
 COUNTER SystemTimer { 

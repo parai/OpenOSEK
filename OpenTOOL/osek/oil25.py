@@ -494,6 +494,7 @@ class OsConfig():
                         find = True
             if(find == False):
                 print 'WARNING: %s has not been refered by task.'%(event.name)
+                event.mask = '0x00'
         # start to parse task masks
         eventhandle = -1;
         for tsk in self.tasks:

@@ -37,10 +37,47 @@ EXPORT StatusType TerminateTask(void)
 {
     StatusType ercd = E_OK;
     
+    DISABLE_INTERRUPT();
+
+    knl_tcb_state[knl_curtsk] = SUSPENDED;
+    knl_search_schedtsk();
+    knl_force_dispatch();
     return ercd;
 }
+EXPORT StatusType ActivateTask ( TaskType TaskID )
+{
+	StatusType ercd = E_OK;
 
+	BEGIN_CRITICAL_SECTION();
+	if(SUSPENDED == knl_tcb_state[TaskID])
+	{
+		knl_make_ready(TaskID);
+	}
+	END_CRITICAL_SECTION();
+	return ercd;
+}
+EXPORT  StatusType ChainTask    ( TaskType TaskID )
+{
+	StatusType ercd = E_OK;
 
+	DISABLE_INTERRUPT();
+	if(TaskID == knl_curtsk)
+	{	// chain to itself.
+		knl_search_schedtsk();
+		knl_make_ready(TaskID);
+	}
+	else
+	{
+		//firstly terminate current running task
+		knl_tcb_state[knl_curtsk] = SUSPENDED;
+		if(SUSPENDED == knl_tcb_state[TaskID])
+		{
+			knl_make_ready(TaskID);
+		}
+	}
+	knl_force_dispatch();
+	return ercd;
+}
 
 //OS-impl internal function
 EXPORT void knl_task_init(void)
@@ -48,28 +85,33 @@ EXPORT void knl_task_init(void)
 	uint8 i;
 
 	knl_schedtsk = knl_curtsk = INVALID_TASK;
+	/* init ready queue */
+	knl_rdyque.top_pri = NUM_PRI;
+	for ( i = 0; i < NUM_PRI; i++ ) {
+		knl_rdyque.tskque[i].head = knl_rdyque.tskque[i].tail = 0;
+	}
+	(void)memset(knl_rdyque.bitmap, 0, sizeof(knl_rdyque.bitmap));
+
+	knl_dispatch_disabled = 1; /* disable dispatch */
 
 	for(i=0; i<cfgOS_TASK_NUM; i++)
 	{
 		knl_tcb_state[i] = SUSPENDED;
 		if((knl_tcb_mode[i]&knl_appmode) != 0u)
 		{
-			knl_make_active(i);
+			knl_make_ready(i);
 		}
 	}
 }
-EXPORT void knl_make_active(TaskType taskid)
-{
-	knl_make_ready(taskid);
-	knl_make_runnable(taskid);
-}
-
 EXPORT void knl_make_ready(TaskType taskid)
 {
 	knl_tcb_state[taskid] = READY;
 	knl_tcb_curpri[taskid] = knl_tcb_ipriority[taskid];
 	knl_setup_context(taskid);
+
+	knl_make_runnable(taskid);
 }
+
 EXPORT void knl_make_runnable(TaskType taskid)
 {
 	if(INVALID_TASK != knl_schedtsk)
@@ -87,12 +129,154 @@ EXPORT void knl_make_runnable(TaskType taskid)
 	}
 	knl_schedtsk = taskid;
 }
+
+EXPORT void knl_search_schedtsk(void)
+{
+	PriorityType top_pri = knl_rdyque.top_pri;
+	TaskReadyQueueType *tskque;
+	if(top_pri != NUM_PRI)
+	{
+		tskque = &(knl_rdyque.tskque[top_pri]);
+		knl_schedtsk = tskque->queue[tskque->head];
+		if((tskque->head+1) < tskque->length)
+		{
+			tskque->head++;
+		}
+		else
+		{
+			tskque->head = 0;
+		}
+		if(tskque->head == tskque->tail)
+		{
+			knl_bitmap_clear(top_pri);
+			knl_rdyque.top_pri = knl_bitmap_search(top_pri);
+		}
+	}
+	else
+	{
+		knl_schedtsk = INVALID_TASK;
+	}
+}
 EXPORT void knl_ready_queue_insert_top(TaskType taskid)
 {
+	PriorityType priority = knl_tcb_curpri[taskid];
+	TaskReadyQueueType *tskRdyQue = &knl_rdyque.tskque[priority];
+	if(0 == tskRdyQue->head)
+	{
+		tskRdyQue->head = tskRdyQue->length - 1;
+	}
+	else
+	{
+		tskRdyQue->head --;
+	}
+	tskRdyQue->queue[tskRdyQue->head] = taskid;
 
+	if((priority > knl_rdyque.top_pri) || (NUM_PRI == knl_rdyque.top_pri))
+	{
+		knl_rdyque.top_pri = priority;
+	}
+
+	knl_bitmap_set(priority);
 }
 
 EXPORT void knl_ready_queue_insert(TaskType taskid)
 {
+	PriorityType priority = knl_tcb_ipriority[taskid];
+	TaskReadyQueueType *tskRdyQue = &knl_rdyque.tskque[priority];
 
+	tskRdyQue->queue[tskRdyQue->tail] = taskid;
+	if((tskRdyQue->tail+1) < tskRdyQue->length)
+	{
+		tskRdyQue->tail++;
+	}
+	else
+	{
+		tskRdyQue->tail = 0;
+	}
+
+	if((priority > knl_rdyque.top_pri) || (NUM_PRI == knl_rdyque.top_pri))
+	{
+		knl_rdyque.top_pri = priority;
+	}
+
+	knl_bitmap_set(priority);
+}
+
+EXPORT void knl_bitmap_set(PriorityType priority)
+{
+	uint8* pb = knl_rdyque.bitmap;
+	uint8 mask = (1<<(priority&0x07));
+	pb += (priority>>3);
+	*pb |= mask;
+}
+
+EXPORT void knl_bitmap_clear(PriorityType priority)
+{
+	uint8* pb = knl_rdyque.bitmap;
+	uint8 mask = (1<<(priority&0x07));
+	pb += (priority>>3);
+	*pb &= (~mask);
+}
+
+// search from priority "from" to 0.
+EXPORT PriorityType knl_bitmap_search(PriorityType from)
+{
+	uint8* pb;
+	PriorityType offset;
+	uint8 i;
+
+	if(0 == from)
+	{
+		return NUM_PRI; // no ready task
+	}
+
+	pb = knl_rdyque.bitmap;
+	pb += (from>>3);
+
+	offset = 1;
+
+	if(0 != (*pb))
+	{
+		for(i=(from&0x07) ; i>0 ; i--)
+		{
+			if(((*pb)&(1<<(i-1))) != 0)
+			{
+				return (from -offset);
+			}
+			else
+			{
+				offset ++;
+			}
+		}
+		/* when here error */
+	}
+	else
+	{
+		offset += (from&0x07);
+	}
+
+	while(pb != knl_rdyque.bitmap)
+	{
+		pb--;
+		if(0 != (*pb))
+		{
+			for(i=8 ; i>0 ; i--)
+			{
+				if(((*pb)&(1<<(i-1))) != 0)
+				{
+					return (from -offset);
+				}
+				else
+				{
+					offset ++;
+				}
+			}
+		}
+		else
+		{
+			offset += 8;
+		}
+	}
+
+	return NUM_PRI;
 }

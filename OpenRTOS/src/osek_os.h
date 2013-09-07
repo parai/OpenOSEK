@@ -27,7 +27,7 @@
 /* ================================ MACROs    =============================== */
 #define TASK_PC(name) TaskMain##name
 
-#define BITMAPSZ	( sizeof(UINT) * 8 )
+#define BITMAPSZ	( sizeof(uint8) * 8 )
 #define NUM_BITMAP	( ((cfgOS_MAX_PRIORITY+1) + BITMAPSZ - 1) / BITMAPSZ )
 #define NUM_PRI     (cfgOS_MAX_PRIORITY+1)
 
@@ -40,8 +40,8 @@ typedef struct
 {
 	uint8 head;
 	uint8 tail;
-	uint8 length;
-	TaskRefType queue; /* size at least should be 2 */
+	const uint8 length;
+	const TaskRefType queue; /* size at least should be 2 */
 }TaskReadyQueueType;   /* per priority, FIFO queue */
 
 typedef struct
@@ -49,7 +49,7 @@ typedef struct
 	PriorityType top_pri;
 	TaskReadyQueueType tskque[NUM_PRI];
 	const TaskReadyQueueType null;
-	UINT	bitmap[NUM_BITMAP];	/* Bitmap area per priority */
+	uint8	bitmap[NUM_BITMAP];	/* Bitmap area per priority */
 }RDYQUE;
 
 /* ================================ DATAs     =============================== */
@@ -73,9 +73,12 @@ IMPORT RDYQUE knl_rdyque;
 /* ================================ FUNCTIONs =============================== */
 /* ------------ tasks ------------- */
 IMPORT void knl_task_init(void);
-IMPORT void knl_make_active(TaskType taskid);
 IMPORT void knl_make_ready(TaskType taskid);
 IMPORT void knl_make_runnable(TaskType taskid);
 IMPORT void knl_ready_queue_insert(TaskType taskid);
 IMPORT void knl_ready_queue_insert_top(TaskType taskid);
+IMPORT void knl_bitmap_set(PriorityType priority);
+IMPORT void knl_bitmap_clear(PriorityType priority);
+IMPORT PriorityType knl_bitmap_search(PriorityType from);
+IMPORT void knl_search_schedtsk(void);
 #endif /* _OSEK_OS_H_ */

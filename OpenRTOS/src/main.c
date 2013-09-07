@@ -26,7 +26,7 @@
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
-
+#include "osek_os.h"
 /* ================================ FUNCTIONs =============================== */
 /* This is a stardard procedure which will start the os by the default app mode */
 #ifdef __GNUC__
@@ -36,7 +36,6 @@ void main(void)
 #endif
 {
     /* You can do some-special work here,such as init the system clock and so on... */
-
 	StartOS(OSDEFAULTAPPMODE);
     /* never returned when the os is started. */
 

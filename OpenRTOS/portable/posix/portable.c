@@ -76,6 +76,7 @@ LOCAL void portResumeSignalHandler(int sig);
 LOCAL void portSystemTickHandler( int sig );
 LOCAL void portSetupTimerInterrupt( void );
 LOCAL void l_dispatch0(void);
+LOCAL void portOpenOSEKMonitor(void);
 
 EXPORT imask_t knl_disable_int( void )
 {
@@ -89,6 +90,7 @@ EXPORT void knl_enable_int( imask_t mask )
 }
 EXPORT void knl_force_dispatch(void)
 {
+	TaskType taskid;
 	(void)pthread_once( &portSigSetupThread, portSetupSignalsAndSchedulerPolicy );
 
 	if ( (pthread_t)NULL == portMainThread ){
@@ -96,8 +98,17 @@ EXPORT void knl_force_dispatch(void)
 	}
 
 	knl_dispatch_disabled=1;    /* Dispatch disable */
+	taskid = knl_curtsk;
 	knl_curtsk = INVALID_TASK;
 	l_dispatch0();
+	if(pthread_self() != portMainThread)
+	{
+		pthread_exit(0);
+	}
+	else
+	{
+		for(;;);
+	}
 }
 
 EXPORT void knl_setup_context(TaskType taskid)
@@ -107,7 +118,7 @@ EXPORT void knl_setup_context(TaskType taskid)
 	{
 		portSentinel = 0;
 		(void)pthread_create(&knl_tcb_sp[taskid],&portThreadAttr,
-				portWaitForStart,(void*)(int*)taskid);
+				portWaitForStart,(void*)taskid);
 		(void)pthread_mutex_unlock( &portSingleThreadMutex );
 		while(0 == portSentinel);
 	}
@@ -127,15 +138,21 @@ LOCAL void l_dispatch0(void)
 }
 EXPORT void knl_dispatch_entry(void)
 {
+	TaskType curtsk = knl_curtsk;
+
 	knl_dispatch_disabled=1;    /* Dispatch disable */
-	portSuspendThread(knl_tcb_sp[knl_curtsk]);
+
 	knl_curtsk = INVALID_TASK;
+
 	l_dispatch0();
+	// in fact, should suspend knl_curtsk firstly and then do l_dispatch0()
+	// but, it is not supported by simulation.
+	portSuspendThread(knl_tcb_sp[curtsk]);
+
 }
 
 LOCAL void* portWaitForStart(void* taskid)
 {
-	printf("in portWaitForStart(%d).\n",(int)(TaskType)(TaskRefType)taskid);
 
 	if ( 0 == pthread_mutex_lock( &portSingleThreadMutex ) )
 	{
@@ -166,10 +183,6 @@ LOCAL void portSetupSignalsAndSchedulerPolicy(void)
 	iPolicy = SCHED_FIFO;
 	iResult = pthread_setschedparam( pthread_self(), iPolicy, &iSchedulerPriority );		*/
 
-
-
-	printf("in SetupSignalsAndSchedulerPolicy()\n");
-
 	sigsuspendself.sa_flags = 0;
 	sigsuspendself.sa_handler = portSuspendSignalHandler;
 	sigfillset( &sigsuspendself.sa_mask );
@@ -197,21 +210,20 @@ LOCAL void portSetupSignalsAndSchedulerPolicy(void)
 
 	portSetupTimerInterrupt();
 
-	printf( "Running as PID: %d\n", getpid() );
-
 }
 
 LOCAL void portSuspendThread( pthread_t thread )
 {
-	int xResult = pthread_mutex_lock( &portSuspendResumeThreadMutex );
-	if ( 0 == xResult )
+	int ercd = pthread_mutex_lock( &portSuspendResumeThreadMutex );
+	if ( 0 == ercd )
 	{
 		/* Set-up for the Suspend Signal handler? */
 		portSentinel = 0;
-		xResult = pthread_mutex_unlock( &portSuspendResumeThreadMutex );
-		xResult = pthread_kill( thread, SIG_SUSPEND );
+		ercd = pthread_mutex_unlock( &portSuspendResumeThreadMutex );
+		ercd = pthread_kill( thread, SIG_SUSPEND );
 		while ( ( 0 == portSentinel ) && ( TRUE != portServicingTick ) )
 		{
+			printf("do sched_yield();\n");
 			sched_yield();
 		}
 	}
@@ -246,6 +258,7 @@ LOCAL void portSuspendSignalHandler(int sig)
 	}
 
 	/* Wait on the resume signal. */
+
 	if ( 0 != sigwait( &xSignals, &sig ) )
 	{
 		printf( "SSH: Sw %d\n", sig );
@@ -263,7 +276,6 @@ LOCAL void portResumeSignalHandler(int sig)
 
 LOCAL void portSystemTickHandler( int sig )
 {
-	//printf("int portSystemTickHandler(0x%x).\n",sig);
 	if ( ( TRUE == portInterruptsEnabled ) && ( TRUE != portServicingTick ) )
 	{
 		if ( 0 == pthread_mutex_trylock( &portSingleThreadMutex ) ){

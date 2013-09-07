@@ -39,12 +39,14 @@
  * Start/End critical section
  */
 #define BEGIN_CRITICAL_SECTION()	{ imask_t _primask_ = knl_disable_int()
-#define END_CRITICAL_SECTION()	if ( knl_runtsk != knl_schedtsk         \
+#define END_CRITICAL_SECTION()	if ( knl_curtsk != knl_schedtsk         \
                                      && (0u == knl_taskindp)            \
                                      && (0u == knl_dispatch_disabled) ) { \
         knl_dispatch();                                                 \
     }                                                                   \
     knl_enable_int(_primask_); }
+
+#define knl_dispatch() knl_dispatch_entry()
 
 /* ================================ TYPEs     =============================== */
 /* interrupr mask type.determined by CPU */
@@ -57,5 +59,6 @@ IMPORT imask_t knl_disable_int( void );
 IMPORT void knl_enable_int( imask_t mask );
 IMPORT void knl_force_dispatch(void);
 IMPORT void knl_setup_context(TaskType taskid);
+IMPORT void knl_dispatch_entry(void);
 
 #endif /* _PORTABLE_H_ */
