@@ -35,6 +35,9 @@ EXPORT uint8    knl_dispatch_disabled = 0u; /* os dispatch state:enabled(0) or d
 EXPORT void StartOS ( AppModeType AppMode )
 {
 	DISABLE_INTERRUPT();
+#if defined( OpenOSEKStartupHook )
+	OpenOSEKStartupHook();
+#endif
 	knl_appmode = AppMode;
 	knl_task_init();
     //knl_counter_init();

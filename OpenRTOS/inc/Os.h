@@ -25,6 +25,20 @@
 #include "Std_Types.h"
 
 /* ================================ MACROs    =============================== */
+/* Conformance Class */
+
+/* only basic tasks, limited to one activation request per task and one task per
+ * priority, while all tasks have different priorities */
+#define BCC1 0
+/* like BCC1, plus more than one task per priority possible and multiple requesting
+ * of task activation allowed */
+#define BCC2 1
+/* like BCC1, plus extended tasks */
+#define ECC1 2
+/* like ECC1, plus more than one task per priority possible and multiple requesting
+ * of task activation allowed for basic tasks */
+#define ECC2 3
+
 /* Values for TaskStateType */
 #define SUSPENDED (0x00u)
 #define RUNNING   (0x01u)

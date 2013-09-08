@@ -1,0 +1,229 @@
+/* This is a linker parameter file for the MC9S12XEP100 */
+
+/*
+This file is setup to use the HCS12X core only.
+If you plan to also use the XGATE in your project, best create a new project with the
+'New Project Wizard' (File|New... menu in the CodeWarrior IDE) and choose the appropriate
+project parameters.
+*/
+
+NAMES
+    /* CodeWarrior will pass all the needed files to the linker by command line. But here you may add your additional files */
+END
+
+SEGMENTS /* here all RAM/ROM areas of the device are listed. Used in PLACEMENT below. All addresses are 'logical' */
+/* Register space  */
+/*    IO_SEG        = PAGED                            0x0000 TO   0x07FF; intentionally not defined */
+
+/* non-paged EEPROM */
+      EEPROM        = READ_ONLY   DATA_NEAR IBCC_NEAR  0x0C00 TO   0x0FFF; 
+
+/* non-paged RAM */
+      RAM           = READ_WRITE  DATA_NEAR            0x2000 TO   0x3FFF; 
+
+/* non-banked FLASH */
+      ROM_4000      = READ_ONLY   DATA_NEAR IBCC_NEAR  0x4000 TO   0x7FFF; 
+      ROM_C000      = READ_ONLY   DATA_NEAR IBCC_NEAR  0xC000 TO   0xFEFF; 
+/*    VECTORS       = READ_ONLY                        0xFF00 TO   0xFFFF; intentionally not defined: used for VECTOR commands below */
+    //OSVECTORS     = READ_ONLY                        0xFF10 TO   0xFFFF;  /* OSEK interrupt vectors (use your vector.o) */
+
+/* paged EEPROM                                        0x0800 TO   0x0BFF; addressed through EPAGE */
+      EEPROM_00     = READ_ONLY   DATA_FAR IBCC_FAR  0x000800 TO 0x000BFF; 
+      EEPROM_01     = READ_ONLY   DATA_FAR IBCC_FAR  0x010800 TO 0x010BFF; 
+      EEPROM_02     = READ_ONLY   DATA_FAR IBCC_FAR  0x020800 TO 0x020BFF; 
+      EEPROM_03     = READ_ONLY   DATA_FAR IBCC_FAR  0x030800 TO 0x030BFF; 
+      EEPROM_04     = READ_ONLY   DATA_FAR IBCC_FAR  0x040800 TO 0x040BFF; 
+      EEPROM_05     = READ_ONLY   DATA_FAR IBCC_FAR  0x050800 TO 0x050BFF; 
+      EEPROM_06     = READ_ONLY   DATA_FAR IBCC_FAR  0x060800 TO 0x060BFF; 
+      EEPROM_07     = READ_ONLY   DATA_FAR IBCC_FAR  0x070800 TO 0x070BFF; 
+      EEPROM_08     = READ_ONLY   DATA_FAR IBCC_FAR  0x080800 TO 0x080BFF; 
+      EEPROM_09     = READ_ONLY   DATA_FAR IBCC_FAR  0x090800 TO 0x090BFF; 
+      EEPROM_0A     = READ_ONLY   DATA_FAR IBCC_FAR  0x0A0800 TO 0x0A0BFF; 
+      EEPROM_0B     = READ_ONLY   DATA_FAR IBCC_FAR  0x0B0800 TO 0x0B0BFF; 
+      EEPROM_0C     = READ_ONLY   DATA_FAR IBCC_FAR  0x0C0800 TO 0x0C0BFF; 
+      EEPROM_0D     = READ_ONLY   DATA_FAR IBCC_FAR  0x0D0800 TO 0x0D0BFF; 
+      EEPROM_0E     = READ_ONLY   DATA_FAR IBCC_FAR  0x0E0800 TO 0x0E0BFF; 
+      EEPROM_0F     = READ_ONLY   DATA_FAR IBCC_FAR  0x0F0800 TO 0x0F0BFF; 
+      EEPROM_10     = READ_ONLY   DATA_FAR IBCC_FAR  0x100800 TO 0x100BFF; 
+      EEPROM_11     = READ_ONLY   DATA_FAR IBCC_FAR  0x110800 TO 0x110BFF; 
+      EEPROM_12     = READ_ONLY   DATA_FAR IBCC_FAR  0x120800 TO 0x120BFF; 
+      EEPROM_13     = READ_ONLY   DATA_FAR IBCC_FAR  0x130800 TO 0x130BFF; 
+      EEPROM_14     = READ_ONLY   DATA_FAR IBCC_FAR  0x140800 TO 0x140BFF; 
+      EEPROM_15     = READ_ONLY   DATA_FAR IBCC_FAR  0x150800 TO 0x150BFF; 
+      EEPROM_16     = READ_ONLY   DATA_FAR IBCC_FAR  0x160800 TO 0x160BFF; 
+      EEPROM_17     = READ_ONLY   DATA_FAR IBCC_FAR  0x170800 TO 0x170BFF; 
+      EEPROM_18     = READ_ONLY   DATA_FAR IBCC_FAR  0x180800 TO 0x180BFF; 
+      EEPROM_19     = READ_ONLY   DATA_FAR IBCC_FAR  0x190800 TO 0x190BFF; 
+      EEPROM_1A     = READ_ONLY   DATA_FAR IBCC_FAR  0x1A0800 TO 0x1A0BFF; 
+      EEPROM_1B     = READ_ONLY   DATA_FAR IBCC_FAR  0x1B0800 TO 0x1B0BFF; 
+      EEPROM_1C     = READ_ONLY   DATA_FAR IBCC_FAR  0x1C0800 TO 0x1C0BFF; 
+      EEPROM_1D     = READ_ONLY   DATA_FAR IBCC_FAR  0x1D0800 TO 0x1D0BFF; 
+      EEPROM_1E     = READ_ONLY   DATA_FAR IBCC_FAR  0x1E0800 TO 0x1E0BFF; 
+      EEPROM_1F     = READ_ONLY   DATA_FAR IBCC_FAR  0x1F0800 TO 0x1F0BFF; 
+      EEPROM_FC     = READ_ONLY   DATA_FAR IBCC_FAR  0xFC0800 TO 0xFC0BFF; 
+      EEPROM_FD     = READ_ONLY   DATA_FAR IBCC_FAR  0xFD0800 TO 0xFD0BFF; 
+      EEPROM_FE     = READ_ONLY   DATA_FAR IBCC_FAR  0xFE0800 TO 0xFE0BFF; 
+/*    EEPROM_FF     = READ_ONLY                      0xFF0800 TO 0xFF0BFF; intentionally not defined: equivalent to EEPROM */
+
+/* paged RAM:                                          0x1000 TO   0x1FFF; addressed through RPAGE */
+      RAM_F0        = READ_WRITE  DATA_FAR           0xF01000 TO 0xF01FFF; 
+      RAM_F1        = READ_WRITE  DATA_FAR           0xF11000 TO 0xF11FFF; 
+      RAM_F2        = READ_WRITE  DATA_FAR           0xF21000 TO 0xF21FFF; 
+      RAM_F3        = READ_WRITE  DATA_FAR           0xF31000 TO 0xF31FFF; 
+      RAM_F4        = READ_WRITE  DATA_FAR           0xF41000 TO 0xF41FFF; 
+      RAM_F5        = READ_WRITE  DATA_FAR           0xF51000 TO 0xF51FFF; 
+      RAM_F6        = READ_WRITE  DATA_FAR           0xF61000 TO 0xF61FFF; 
+      RAM_F7        = READ_WRITE  DATA_FAR           0xF71000 TO 0xF71FFF; 
+      RAM_F8        = READ_WRITE  DATA_FAR           0xF81000 TO 0xF81FFF; 
+      RAM_F9        = READ_WRITE  DATA_FAR           0xF91000 TO 0xF91FFF; 
+      RAM_FA        = READ_WRITE  DATA_FAR           0xFA1000 TO 0xFA1FFF; 
+      RAM_FB        = READ_WRITE  DATA_FAR           0xFB1000 TO 0xFB1FFF; 
+      RAM_FC        = READ_WRITE  DATA_FAR           0xFC1000 TO 0xFC1FFF; 
+      RAM_FD        = READ_WRITE  DATA_FAR           0xFD1000 TO 0xFD1FFF; 
+/*    RAM_FE        = READ_WRITE                     0xFE1000 TO 0xFE1FFF; intentionally not defined: equivalent to RAM: 0x2000..0x2FFF */
+/*    RAM_FF        = READ_WRITE                     0xFF1000 TO 0xFF1FFF; intentionally not defined: equivalent to RAM: 0x3000..0x3FFF */
+
+/* paged FLASH:                                        0x8000 TO   0xBFFF; addressed through PPAGE */
+      PAGE_C0       = READ_ONLY   DATA_FAR IBCC_FAR  0xC08000 TO 0xC0BFFF; 
+      PAGE_C1       = READ_ONLY   DATA_FAR IBCC_FAR  0xC18000 TO 0xC1BFFF; 
+      PAGE_C2       = READ_ONLY   DATA_FAR IBCC_FAR  0xC28000 TO 0xC2BFFF; 
+      PAGE_C3       = READ_ONLY   DATA_FAR IBCC_FAR  0xC38000 TO 0xC3BFFF; 
+      PAGE_C4       = READ_ONLY   DATA_FAR IBCC_FAR  0xC48000 TO 0xC4BFFF; 
+      PAGE_C5       = READ_ONLY   DATA_FAR IBCC_FAR  0xC58000 TO 0xC5BFFF; 
+      PAGE_C6       = READ_ONLY   DATA_FAR IBCC_FAR  0xC68000 TO 0xC6BFFF; 
+      PAGE_C7       = READ_ONLY   DATA_FAR IBCC_FAR  0xC78000 TO 0xC7BFFF; 
+
+      PAGE_C8       = READ_ONLY   DATA_FAR IBCC_FAR  0xC88000 TO 0xC8BFFF; 
+      PAGE_C9       = READ_ONLY   DATA_FAR IBCC_FAR  0xC98000 TO 0xC9BFFF; 
+      PAGE_CA       = READ_ONLY   DATA_FAR IBCC_FAR  0xCA8000 TO 0xCABFFF; 
+      PAGE_CB       = READ_ONLY   DATA_FAR IBCC_FAR  0xCB8000 TO 0xCBBFFF; 
+      PAGE_CC       = READ_ONLY   DATA_FAR IBCC_FAR  0xCC8000 TO 0xCCBFFF; 
+      PAGE_CD       = READ_ONLY   DATA_FAR IBCC_FAR  0xCD8000 TO 0xCDBFFF; 
+      PAGE_CE       = READ_ONLY   DATA_FAR IBCC_FAR  0xCE8000 TO 0xCEBFFF; 
+      PAGE_CF       = READ_ONLY   DATA_FAR IBCC_FAR  0xCF8000 TO 0xCFBFFF; 
+
+      PAGE_D0       = READ_ONLY   DATA_FAR IBCC_FAR  0xD08000 TO 0xD0BFFF; 
+      PAGE_D1       = READ_ONLY   DATA_FAR IBCC_FAR  0xD18000 TO 0xD1BFFF; 
+      PAGE_D2       = READ_ONLY   DATA_FAR IBCC_FAR  0xD28000 TO 0xD2BFFF; 
+      PAGE_D3       = READ_ONLY   DATA_FAR IBCC_FAR  0xD38000 TO 0xD3BFFF; 
+      PAGE_D4       = READ_ONLY   DATA_FAR IBCC_FAR  0xD48000 TO 0xD4BFFF; 
+      PAGE_D5       = READ_ONLY   DATA_FAR IBCC_FAR  0xD58000 TO 0xD5BFFF; 
+      PAGE_D6       = READ_ONLY   DATA_FAR IBCC_FAR  0xD68000 TO 0xD6BFFF; 
+      PAGE_D7       = READ_ONLY   DATA_FAR IBCC_FAR  0xD78000 TO 0xD7BFFF; 
+
+      PAGE_D8       = READ_ONLY   DATA_FAR IBCC_FAR  0xD88000 TO 0xD8BFFF; 
+      PAGE_D9       = READ_ONLY   DATA_FAR IBCC_FAR  0xD98000 TO 0xD9BFFF; 
+      PAGE_DA       = READ_ONLY   DATA_FAR IBCC_FAR  0xDA8000 TO 0xDABFFF; 
+      PAGE_DB       = READ_ONLY   DATA_FAR IBCC_FAR  0xDB8000 TO 0xDBBFFF; 
+      PAGE_DC       = READ_ONLY   DATA_FAR IBCC_FAR  0xDC8000 TO 0xDCBFFF; 
+      PAGE_DD       = READ_ONLY   DATA_FAR IBCC_FAR  0xDD8000 TO 0xDDBFFF; 
+      PAGE_DE       = READ_ONLY   DATA_FAR IBCC_FAR  0xDE8000 TO 0xDEBFFF; 
+      PAGE_DF       = READ_ONLY   DATA_FAR IBCC_FAR  0xDF8000 TO 0xDFBFFF; 
+
+      PAGE_E0       = READ_ONLY   DATA_FAR IBCC_FAR  0xE08000 TO 0xE0BFFF; 
+      PAGE_E1       = READ_ONLY   DATA_FAR IBCC_FAR  0xE18000 TO 0xE1BFFF; 
+      PAGE_E2       = READ_ONLY   DATA_FAR IBCC_FAR  0xE28000 TO 0xE2BFFF; 
+      PAGE_E3       = READ_ONLY   DATA_FAR IBCC_FAR  0xE38000 TO 0xE3BFFF; 
+      PAGE_E4       = READ_ONLY   DATA_FAR IBCC_FAR  0xE48000 TO 0xE4BFFF; 
+      PAGE_E5       = READ_ONLY   DATA_FAR IBCC_FAR  0xE58000 TO 0xE5BFFF; 
+      PAGE_E6       = READ_ONLY   DATA_FAR IBCC_FAR  0xE68000 TO 0xE6BFFF; 
+      PAGE_E7       = READ_ONLY   DATA_FAR IBCC_FAR  0xE78000 TO 0xE7BFFF; 
+
+      PAGE_E8       = READ_ONLY   DATA_FAR IBCC_FAR  0xE88000 TO 0xE8BFFF; 
+      PAGE_E9       = READ_ONLY   DATA_FAR IBCC_FAR  0xE98000 TO 0xE9BFFF; 
+      PAGE_EA       = READ_ONLY   DATA_FAR IBCC_FAR  0xEA8000 TO 0xEABFFF; 
+      PAGE_EB       = READ_ONLY   DATA_FAR IBCC_FAR  0xEB8000 TO 0xEBBFFF; 
+      PAGE_EC       = READ_ONLY   DATA_FAR IBCC_FAR  0xEC8000 TO 0xECBFFF; 
+      PAGE_ED       = READ_ONLY   DATA_FAR IBCC_FAR  0xED8000 TO 0xEDBFFF; 
+      PAGE_EE       = READ_ONLY   DATA_FAR IBCC_FAR  0xEE8000 TO 0xEEBFFF; 
+      PAGE_EF       = READ_ONLY   DATA_FAR IBCC_FAR  0xEF8000 TO 0xEFBFFF; 
+
+      PAGE_F0       = READ_ONLY   DATA_FAR IBCC_FAR  0xF08000 TO 0xF0BFFF; 
+      PAGE_F1       = READ_ONLY   DATA_FAR IBCC_FAR  0xF18000 TO 0xF1BFFF; 
+      PAGE_F2       = READ_ONLY   DATA_FAR IBCC_FAR  0xF28000 TO 0xF2BFFF; 
+      PAGE_F3       = READ_ONLY   DATA_FAR IBCC_FAR  0xF38000 TO 0xF3BFFF; 
+      PAGE_F4       = READ_ONLY   DATA_FAR IBCC_FAR  0xF48000 TO 0xF4BFFF; 
+      PAGE_F5       = READ_ONLY   DATA_FAR IBCC_FAR  0xF58000 TO 0xF5BFFF; 
+      PAGE_F6       = READ_ONLY   DATA_FAR IBCC_FAR  0xF68000 TO 0xF6BFFF; 
+      PAGE_F7       = READ_ONLY   DATA_FAR IBCC_FAR  0xF78000 TO 0xF7BFFF; 
+
+      PAGE_F8       = READ_ONLY   DATA_FAR IBCC_FAR  0xF88000 TO 0xF8BFFF; 
+      PAGE_F9       = READ_ONLY   DATA_FAR IBCC_FAR  0xF98000 TO 0xF9BFFF; 
+      PAGE_FA       = READ_ONLY   DATA_FAR IBCC_FAR  0xFA8000 TO 0xFABFFF; 
+      PAGE_FB       = READ_ONLY   DATA_FAR IBCC_FAR  0xFB8000 TO 0xFBBFFF; 
+      PAGE_FC       = READ_ONLY   DATA_FAR IBCC_FAR  0xFC8000 TO 0xFCBFFF; 
+/*    PAGE_FD       = READ_ONLY                      0xFD8000 TO 0xFDBFFF; intentionally not defined: equivalent to ROM_4000 */
+      PAGE_FE       = READ_ONLY   DATA_FAR IBCC_FAR  0xFE8000 TO 0xFEBFFF; 
+/*    PAGE_FF       = READ_ONLY                      0xFF8000 TO 0xFFBFFF; intentionally not defined: equivalent to ROM_C000 */
+END
+
+PLACEMENT /* here all predefined and user segments are placed into the SEGMENTS defined above. */
+      _PRESTART,              /* Used in HIWARE format: jump to _Startup at the code start */
+      STARTUP,                /* startup data structures */
+      ROM_VAR,                /* constant variables */
+      STRINGS,                /* string literals */
+      VIRTUAL_TABLE_SEGMENT,  /* C++ virtual table segment */
+    //.ostext,                /* eventually OSEK code  */
+      NON_BANKED,             /* runtime routines which must not be banked */
+      COPY                    /* copy down information: how to initialize variables */
+                              /* in case you want to use ROM_4000 here as well, make sure
+                                 that all files (incl. library files) are compiled with the
+                                 option: -OnB=b */
+                        INTO  ROM_C000/*, ROM_4000*/;
+
+      DEFAULT_ROM       INTO           PAGE_FE,          PAGE_FC, PAGE_FB, PAGE_FA, PAGE_F9, PAGE_F8, 
+                              PAGE_F7, PAGE_F6, PAGE_F5, PAGE_F4, PAGE_F3, PAGE_F2, PAGE_F1, PAGE_F0, 
+                              PAGE_EF, PAGE_EE, PAGE_ED, PAGE_EC, PAGE_EB, PAGE_EA, PAGE_E9, PAGE_E8, 
+                              PAGE_E7, PAGE_E6, PAGE_E5, PAGE_E4, PAGE_E3, PAGE_E2, PAGE_E1, PAGE_E0, 
+                              PAGE_DF, PAGE_DE, PAGE_DD, PAGE_DC, PAGE_DB, PAGE_DA, PAGE_D9, PAGE_D8, 
+                              PAGE_D7, PAGE_D6, PAGE_D5, PAGE_D4, PAGE_D3, PAGE_D2, PAGE_D1, PAGE_D0, 
+                              PAGE_CF, PAGE_CE, PAGE_CD, PAGE_CC, PAGE_CB, PAGE_CA, PAGE_C9, PAGE_C8, 
+                              PAGE_C7, PAGE_C6, PAGE_C5, PAGE_C4, PAGE_C3, PAGE_C2, PAGE_C1, PAGE_C0;
+
+    //.stackstart,            /* eventually used for OSEK kernel awareness: Main-Stack Start */
+      SSTACK,                 /* allocate stack first to avoid overwriting variables on overflow */
+    //.stackend,              /* eventually used for OSEK kernel awareness: Main-Stack End */
+      DEFAULT_RAM             /* all variables, the default RAM location */
+                        INTO  RAM;
+
+      PAGED_RAM         INTO  /* when using banked addressing for variable data, make sure to specify
+                                 the option -D__FAR_DATA on the compiler command line */
+                              RAM_F0, RAM_F1, RAM_F2, RAM_F3, RAM_F4, RAM_F5, RAM_F6, RAM_F7, 
+                              RAM_F8, RAM_F9, RAM_FA, RAM_FB, RAM_FC, RAM_FD;
+
+      DISTRIBUTE        DISTRIBUTE_INTO
+                              ROM_4000, PAGE_FE, PAGE_FC, PAGE_FB, PAGE_FA, PAGE_F9, PAGE_F8, PAGE_F7, 
+                              PAGE_F6, PAGE_F5, PAGE_F4, PAGE_F3, PAGE_F2, PAGE_F1, PAGE_F0, PAGE_EF, 
+                              PAGE_EE, PAGE_ED, PAGE_EC, PAGE_EB, PAGE_EA, PAGE_E9, PAGE_E8, PAGE_E7, 
+                              PAGE_E6, PAGE_E5, PAGE_E4, PAGE_E3, PAGE_E2, PAGE_E1, PAGE_E0, PAGE_DF, 
+                              PAGE_DE, PAGE_DD, PAGE_DC, PAGE_DB, PAGE_DA, PAGE_D9, PAGE_D8, PAGE_D7, 
+                              PAGE_D6, PAGE_D5, PAGE_D4, PAGE_D3, PAGE_D2, PAGE_D1, PAGE_D0, PAGE_CF, 
+                              PAGE_CE, PAGE_CD, PAGE_CC, PAGE_CB, PAGE_CA, PAGE_C9, PAGE_C8, PAGE_C7, 
+                              PAGE_C6, PAGE_C5, PAGE_C4, PAGE_C3, PAGE_C2, PAGE_C1, PAGE_C0;
+      CONST_DISTRIBUTE  DISTRIBUTE_INTO
+                              ROM_4000, PAGE_FE, PAGE_FC, PAGE_FB, PAGE_FA, PAGE_F9, PAGE_F8, PAGE_F7, 
+                              PAGE_F6, PAGE_F5, PAGE_F4, PAGE_F3, PAGE_F2, PAGE_F1, PAGE_F0, PAGE_EF, 
+                              PAGE_EE, PAGE_ED, PAGE_EC, PAGE_EB, PAGE_EA, PAGE_E9, PAGE_E8, PAGE_E7, 
+                              PAGE_E6, PAGE_E5, PAGE_E4, PAGE_E3, PAGE_E2, PAGE_E1, PAGE_E0, PAGE_DF, 
+                              PAGE_DE, PAGE_DD, PAGE_DC, PAGE_DB, PAGE_DA, PAGE_D9, PAGE_D8, PAGE_D7, 
+                              PAGE_D6, PAGE_D5, PAGE_D4, PAGE_D3, PAGE_D2, PAGE_D1, PAGE_D0, PAGE_CF, 
+                              PAGE_CE, PAGE_CD, PAGE_CC, PAGE_CB, PAGE_CA, PAGE_C9, PAGE_C8, PAGE_C7, 
+                              PAGE_C6, PAGE_C5, PAGE_C4, PAGE_C3, PAGE_C2, PAGE_C1, PAGE_C0;
+      DATA_DISTRIBUTE   DISTRIBUTE_INTO
+                              RAM, RAM_FD, RAM_FC, RAM_FB, RAM_FA, RAM_F9, RAM_F8, RAM_F7, 
+                              RAM_F6, RAM_F5, RAM_F4, RAM_F3, RAM_F2, RAM_F1, RAM_F0;
+    //.vectors          INTO  OSVECTORS; /* OSEK vector table */
+END
+
+
+ENTRIES /* keep the following unreferenced variables */
+    /* OSEK: always allocate the vector table and all dependent objects */
+  //_vectab OsBuildNumber _OsOrtiStackStart _OsOrtiStart
+END
+
+STACKSIZE 0x100   /* size of the stack (will be allocated in DEFAULT_RAM) */
+
+/* use these definitions in plane of the vector table ('vectors') above */
+VECTOR 0 _Startup /* reset vector: this is the default entry point for a C/C++ application. */
+//VECTOR 0 Entry  /* reset vector: this is the default entry point for an Assembly application. */
+//INIT Entry      /* for assembly applications: that this is as well the initialization entry point */

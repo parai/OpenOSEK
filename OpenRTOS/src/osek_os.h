@@ -25,11 +25,37 @@
 #include "portable.h"
 
 /* ================================ MACROs    =============================== */
+#define EXTENDED 0
+#define STANDARD 1
+
 #define TASK_PC(name) TaskMain##name
 
 #define BITMAPSZ	( sizeof(uint8) * 8 )
 #define NUM_BITMAP	( ((cfgOS_MAX_PRIORITY+1) + BITMAPSZ - 1) / BITMAPSZ )
 #define NUM_PRI     (cfgOS_MAX_PRIORITY+1)
+
+#define OS_VALIDATE(_true,_ercd)		\
+	do{									\
+		if(!(_true))					\
+		{								\
+			ercd = _ercd;				\
+			goto Error_Exit;			\
+		}								\
+	}while(FALSE)
+#define OS_VALIDATE_ERROR_EXIT() Error_Exit:
+
+#define OS_STD_VALIDATE(_true,_ercd) OS_VALIDATE(_true,_ercd)
+#if(cfgOS_STATUS == EXTENDED)
+#define OS_EXT_VALIDATE(_true,_ercd) OS_VALIDATE(_true,_ercd)
+#else
+#define OS_EXT_VALIDATE(_true,_ercd)
+#endif
+
+#define knl_make_active(_taskid)	\
+{	\
+	knl_make_ready(_taskid);	\
+	knl_make_runnable(_taskid);	\
+}
 
 /* ================================ TYPEs     =============================== */
 /* Priority type of Task */
@@ -56,10 +82,13 @@ typedef struct
 IMPORT const FP            knl_tcb_pc[];
 IMPORT const PriorityType  knl_tcb_ipriority[];
 IMPORT const PriorityType  knl_tcb_rpriority[];
+IMPORT const uint8         knl_tcb_max_activation[];
 IMPORT const StackSizeType knl_tcb_stksz[];
+EXPORT const uint8*        knl_tcb_stack[];
 IMPORT const AppModeType   knl_tcb_mode[];
 IMPORT TaskStateType       knl_tcb_state[];
 IMPORT PriorityType        knl_tcb_curpri[];
+IMPORT uint8               knl_tcb_activation[];
 IMPORT AppModeType knl_appmode;
 IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
 IMPORT uint8    knl_dispatch_disabled;

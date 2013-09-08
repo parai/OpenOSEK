@@ -23,11 +23,12 @@
 /* ================================ INCLUDEs  =============================== */
 
 /* ================================ MACROs    =============================== */
+#define OpenOSEKStartupHook() portOsStartupHook()
 /*
  * Interrupt enable/disable
  */
-#define DISABLE_INTERRUPT()
-#define ENABLE_INTERRUPT()
+#define DISABLE_INTERRUPT()	{ asm sei;}
+#define ENABLE_INTERRUPT()	{ asm cli;}
 
 /*
  * Start/End interrupt disable section
@@ -39,12 +40,20 @@
  * Start/End critical section
  */
 #define BEGIN_CRITICAL_SECTION()	{ imask_t _primask_ = knl_disable_int()
-#define END_CRITICAL_SECTION()	if ( knl_runtsk != knl_schedtsk         \
+#define END_CRITICAL_SECTION()	if ( knl_curtsk != knl_schedtsk         \
                                      && (0u == knl_taskindp)            \
                                      && (0u == knl_dispatch_disabled) ) { \
         knl_dispatch();                                                 \
     }                                                                   \
     knl_enable_int(_primask_); }
+
+/*
+ * Start task dispatcher
+ */
+#define knl_dispatch() {asm swi;}
+
+//lower IPL firstly and then call dispatch
+#define knl_isr_dispatch() {asm psha;asm ldaa #0;asm tfr a,ccrh;asm pula;asm swi;}
 
 /* ================================ TYPEs     =============================== */
 /* interrupr mask type.determined by CPU */
@@ -57,5 +66,6 @@ IMPORT imask_t knl_disable_int( void );
 IMPORT void knl_enable_int( imask_t mask );
 IMPORT void knl_force_dispatch(void);
 IMPORT void knl_setup_context(TaskType taskid);
+IMPORT void portOsStartupHook(void);
 
 #endif /* _PORTABLE_H_ */

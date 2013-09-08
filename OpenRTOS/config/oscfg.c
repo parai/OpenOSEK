@@ -51,12 +51,32 @@ EXPORT const PriorityType knl_tcb_rpriority[] =
 	Task3_rpriority,
 };
 
+LOCAL uint8 knl_Task0_stack[Task0_stacksize];
+LOCAL uint8 knl_Task1_stack[Task1_stacksize];
+LOCAL uint8 knl_Task2_stack[Task2_stacksize];
+LOCAL uint8 knl_Task3_stack[Task3_stacksize];
 EXPORT const StackSizeType knl_tcb_stksz[] = 
 {
 	Task0_stacksize,
 	Task1_stacksize,
 	Task2_stacksize,
 	Task3_stacksize,
+};
+
+EXPORT const uint8* knl_tcb_stack[] = 
+{
+	(knl_Task0_stack+Task0_stacksize),
+	(knl_Task1_stack+Task1_stacksize),
+	(knl_Task2_stack+Task2_stacksize),
+	(knl_Task3_stack+Task3_stacksize),
+};
+
+EXPORT const uint8 knl_tcb_max_activation[] = 
+{
+	(Task0_activation - 1),
+	(Task1_activation - 1),
+	(Task2_activation - 1),
+	(Task3_activation - 1),
 };
 
 EXPORT const AppModeType knl_tcb_mode[] = 
@@ -69,19 +89,18 @@ EXPORT const AppModeType knl_tcb_mode[] =
 
 
 /* ====================== Task Ready Queue ====================== */
-LOCAL TaskType knl_0_queue[3];
-LOCAL TaskType knl_1_queue[2];
-LOCAL TaskType knl_2_queue[2];
-LOCAL TaskType knl_3_queue[2];
+LOCAL TaskType knl_0_queue[4];
+LOCAL TaskType knl_1_queue[4];
+LOCAL TaskType knl_2_queue[4];
+LOCAL TaskType knl_3_queue[4];
 EXPORT RDYQUE knl_rdyque = 
 {
 	/* top_pri= */ NUM_PRI,
 	{/* tskque[] */
-		{/* head= */ 0,/* tail= */ 0,/* length= */ 3, /* queue= */ knl_0_queue},
-		{/* head= */ 0,/* tail= */ 0,/* length= */ 2, /* queue= */ knl_1_queue},
-		{/* head= */ 0,/* tail= */ 0,/* length= */ 2, /* queue= */ knl_2_queue},
-		{/* head= */ 0,/* tail= */ 0,/* length= */ 2, /* queue= */ knl_3_queue},
-		{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_0_queue},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_1_queue},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_2_queue},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_3_queue},
 	},
 	/* null */{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
 };

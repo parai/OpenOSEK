@@ -23,7 +23,7 @@ RM = rm
 
 #common flags
 # / normal flags
-NMFLGS = -WErrFileOff -WOutFileOff -EnvOBJPATH=$(OUT)
+NMFLGS = -WErrFileOff -WOutFileOff -MapFLASH -EnvOBJPATH=$(OUT)
 
 INCDIR = -I$(BD)OpenRTOS/inc \
 		-I$(BD)OpenRTOS/src \
@@ -32,7 +32,7 @@ INCDIR = -I$(BD)OpenRTOS/inc \
 		 -I$(BD)OpenAPP \
 		 -I$(CW)/lib/hc12c/include	\
 		 -I$(BD)OpenRTOS/
-MACROS = -D__NO_FLOAT__
+MACROS = -D__NO_FLOAT__ -D__MAP_FLASH__ 
 ASFLGS = $(NMFLGS) $(INCDIR) -Mb -CpuHCS12XE
 CCFLGS = $(INCDIR) $(NMFLGS) $(MACROS) -Mb -CpuHCS12XE
 LDFLGS = -M -WmsgNu=abcet $(NMFLGS)

@@ -37,7 +37,8 @@
 #define cfgOS_I_RES_NUM 1
 #define cfgOS_COUNTER_NUM 1
 #define cfgOS_ALARM_NUM 2
-#define cfgOS_MAX_PRIORITY 4
+#define cfgOS_MAX_PRIORITY 3
+#define cfgOS_CC BCC2
 
 /* ====================== Tasks ====================== */
 
@@ -46,7 +47,7 @@
 #define Task0_ipriority 0
 #define Task0_rpriority 0
 			/* [] */
-#define Task0_activation 1
+#define Task0_activation 3
 #define Task0_stacksize 256
 #define Task0_autostart FALSE
 #define Task0_schedule FULL
@@ -55,34 +56,34 @@
 /* Task1 configuation */
 #define Task1 1
 #define Task1_ipriority 1
-#define Task1_rpriority (cfgOS_MAX_PRIORITY)
+#define Task1_rpriority 1
 			/* [] */
-#define Task1_activation 1
+#define Task1_activation 3
 #define Task1_stacksize 200
 #define Task1_autostart FALSE
-#define Task1_schedule NON
+#define Task1_schedule FULL
 #define Task1_appmode (INVALID_APPMODE)
 
 /* Task2 configuation */
 #define Task2 2
 #define Task2_ipriority 2
-#define Task2_rpriority (cfgOS_MAX_PRIORITY)
+#define Task2_rpriority 2
 			/* [] */
-#define Task2_activation 1
+#define Task2_activation 3
 #define Task2_stacksize 200
 #define Task2_autostart FALSE
-#define Task2_schedule NON
+#define Task2_schedule FULL
 #define Task2_appmode (INVALID_APPMODE)
 
 /* Task3 configuation */
 #define Task3 3
 #define Task3_ipriority 3
-#define Task3_rpriority (cfgOS_MAX_PRIORITY)
+#define Task3_rpriority 3
 			/* [] */
-#define Task3_activation 1
+#define Task3_activation 3
 #define Task3_stacksize 200
 #define Task3_autostart TRUE
-#define Task3_schedule NON
+#define Task3_schedule FULL
 #define Task3_appmode (INVALID_APPMODE | OSDEFAULTAPPMODE)
 
 /* ====================== Events ====================== */

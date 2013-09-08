@@ -83,6 +83,7 @@ class OsGeneral():
         self.counternum = 0
         self.alarmnum = 0
         self.priority = 0
+        self.cc = 'ECC2' 
 
     def genH(self, fp):
         fp.write("\n/* ====================== General ======================= */\n")
@@ -99,6 +100,7 @@ class OsGeneral():
         fp.write('#define cfgOS_COUNTER_NUM %s\n'%(self.counternum))
         fp.write('#define cfgOS_ALARM_NUM %s\n'%(self.alarmnum))
         fp.write('#define cfgOS_MAX_PRIORITY %s\n'%(self.priority))
+        fp.write('#define cfgOS_CC %s\n'%(self.cc))
 
     def parse(self,item):
         grp = re_oil_os_general.search(item).groups();
@@ -536,7 +538,21 @@ class OsConfig():
         for tsk in self.tasks:
             if(tsk.priority > self.general.priority):
                 self.general.priority = tsk.priority
-        self.general.priority += 1;
+        # parse os conformance class
+        cc = 'BCC';
+        for tsk in self.tasks:
+            if(len(tsk.events)>0):
+                cc = 'ECC'
+                break;
+        self.general.cc = cc + '1'
+        for tsk in self.tasks:
+            if(tsk.activation > 1):
+                self.general.cc = cc + '2'
+                break;
+            for tsk2 in self.tasks:
+                if(tsk != tsk2 and tsk.priority == tsk2.priority):
+                    self.general.cc = cc + '2'
+                    break
         
     def postPRocessResAndTasks(self):
         # check each task can only has on internal resopurce
@@ -551,6 +567,17 @@ class OsConfig():
         for res in self.resources:
             if(res.property.upper() == 'LINKED'):
                 print 'ERROR:LINKED resource was not supported.'
+        # / check that a resource has been assined to one task at least.
+        for res in self.resources:
+            flag = False
+            for tsk in self.tasks:
+                try:
+                    if(tsk.resources.index(res.name)):
+                        flag = True
+                except:
+                    continue
+            if(flag == False):
+                print 'WARNING: %s hasn\'t been asigned to any task.'%(res.name)
         #start to parse
         for res in self.resources:
             res.priority = 0
@@ -620,8 +647,14 @@ class OsConfig():
                 size += tsk.activation;
         for res in self.resources:
             if(res.priority == priority):
-                size += 1;
-                break;
+                flag = False;
+                for tsk in self.tasks:
+                    for rs in tsk.resources:
+                        if(res.name == res):
+                            flag = True;
+                if(flag == True):
+                    size += 1;
+                    break;
         return size;
             
     def genTaskReadyQueue(self, fp):
@@ -666,10 +699,25 @@ class OsConfig():
             cstr += '\t%s_rpriority,\n'%(tsk.name)
         cstr += '};\n\n'
         fp.write(cstr);
-        # -------------- task stacksize
+        # -------------- task stack buffer
+        for tsk in self.tasks:
+            fp.write('LOCAL uint8 knl_%s_stack[%s_stacksize];\n'%(tsk.name, tsk.name))
+        # -------------- task stacksize list
         cstr = 'EXPORT const StackSizeType knl_tcb_stksz[] = \n{\n'
         for tsk in self.tasks:
             cstr += '\t%s_stacksize,\n'%(tsk.name)
+        cstr += '};\n\n'
+        fp.write(cstr);
+        # -------------- task stackbuffer list
+        cstr = 'EXPORT const uint8* knl_tcb_stack[] = \n{\n'
+        for tsk in self.tasks:
+            cstr += '\t(knl_%s_stack+%s_stacksize),\n'%(tsk.name, tsk.name)
+        cstr += '};\n\n'
+        fp.write(cstr);
+        # -------------- task activation
+        cstr = 'EXPORT const uint8 knl_tcb_max_activation[] = \n{\n'
+        for tsk in self.tasks:
+            cstr += '\t(%s_activation - 1),\n'%(tsk.name)
         cstr += '};\n\n'
         fp.write(cstr);
         # -------------- task mode

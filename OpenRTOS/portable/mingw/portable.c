@@ -28,13 +28,15 @@
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
-LOCAL HANDLE knl_tcb_sp[cfgOS_TASK_NUM];
+LOCAL HANDLE knl_tcb_sp[cfgOS_TASK_NUM] = {NULL};
+LOCAL HANDLE knl_tcb_old_sp[cfgOS_TASK_NUM] = {NULL};
 LOCAL HANDLE portInterruptEventMutex = NULL;
 LOCAL HANDLE portInterruptEvent = NULL;
 LOCAL HANDLE portMainThread = NULL;
 LOCAL HANDLE portIsrTickThread = NULL;
 LOCAL volatile int portInterruptsEnabled = FALSE;
 LOCAL volatile unsigned long portPendingInterrupts = 0L;
+LOCAL int portProcessSimulatedInterruptsCalled = FALSE;
 /* Handlers for all the simulated software interrupts.  The first two positions
 are used for the Yield and Tick interrupts so are handled slightly differently,
 all the other interrupts can be user defined. */
@@ -44,7 +46,6 @@ LOCAL FP portIsrHandler[ portMAX_INTERRUPTS ] = { 0 };
 LOCAL void portStartDispatcher(void);
 LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter );
 LOCAL void portProcessSimulatedInterrupts( void );
-LOCAL void portDeleteThread( HANDLE thread );
 LOCAL void l_dispatch0(void);
 LOCAL void knl_system_timer(void);
 
@@ -61,33 +62,42 @@ EXPORT void knl_enable_int( imask_t mask )
 EXPORT void knl_force_dispatch(void)
 {
 	static int isDispatcherStarted = FALSE;
-	HANDLE curThread = NULL;
+	TaskType curtsk = knl_curtsk;
 	if(FALSE == isDispatcherStarted)
 	{
 		portStartDispatcher();
 		isDispatcherStarted = TRUE;
 	}
 	knl_dispatch_disabled=1;    /* Dispatch disable */
-	if(knl_curtsk != INVALID_TASK)
-	{
-		curThread = knl_tcb_sp[knl_curtsk];
-	}
 
 	knl_curtsk = INVALID_TASK;
 	l_dispatch0();
 
-	if(NULL != curThread)
+	if(curtsk != INVALID_TASK)
 	{
-		// printf("TerminateThread(0x%x).\n",curThread);
-		TerminateThread( curThread, 0 );
+		if( READY == knl_tcb_state[curtsk])
+		{
+			TerminateThread(knl_tcb_old_sp[curtsk],0);
+			knl_tcb_old_sp[curtsk] = NULL;
+		}
+		else if(SUSPENDED== knl_tcb_state[curtsk])
+		{
+			TerminateThread(knl_tcb_sp[curtsk],0);
+			knl_tcb_sp[curtsk] = NULL;
+		}
 	}
 
-	portProcessSimulatedInterrupts();
+	if(FALSE == portProcessSimulatedInterruptsCalled)
+	{
+		portProcessSimulatedInterruptsCalled = TRUE;
+		portProcessSimulatedInterrupts();
+	}
 }
 
 EXPORT void knl_setup_context(TaskType taskid)
 {
 	FP pc = knl_tcb_pc[taskid];
+	knl_tcb_old_sp[taskid] = knl_tcb_sp[taskid];
 	knl_tcb_sp[taskid]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) pc, NULL, CREATE_SUSPENDED, NULL );
 	SetThreadAffinityMask( knl_tcb_sp[taskid], 0x01 );
 	SetThreadPriorityBoost( knl_tcb_sp[taskid], TRUE );
@@ -220,7 +230,6 @@ LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter )
 
 LOCAL void portProcessSimulatedInterrupts( void )
 {
-	static int callcnt = 0;
 	int i;
 	void *pvObjectList[ 2 ];
 
@@ -229,12 +238,7 @@ LOCAL void portProcessSimulatedInterrupts( void )
 	should be processed. */
 	pvObjectList[ 0 ] = portInterruptEventMutex;
 	pvObjectList[ 1 ] = portInterruptEvent;
-	callcnt ++;
-	if(callcnt > 1)
-	{
-		printf("Serious Error : 1.\n");
-		for(;;);
-	}
+
 	for(;;)
 	{
 		WaitForMultipleObjects( sizeof( pvObjectList ) / sizeof( void * ), pvObjectList, TRUE, INFINITE );
