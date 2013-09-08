@@ -94,8 +94,31 @@ EXPORT  StatusType ChainTask    ( TaskType TaskID )
 	}
 	else
 	{
+		if(SUSPENDED != knl_tcb_state[TaskID])
+		{
+			if(knl_tcb_activation[TaskID] < knl_tcb_max_activation[TaskID])
+			{
+				knl_ready_queue_insert(TaskID);
+				knl_tcb_activation[TaskID] ++ ;
+			}
+			else
+			{
+				ercd = E_OS_LIMIT;
+				goto Error_Exit;
+			}
+		}
 		//firstly terminate current running task
-		knl_tcb_state[knl_curtsk] = SUSPENDED;
+		if(knl_tcb_activation[knl_curtsk] > 0)
+		{
+			knl_tcb_activation[knl_curtsk] --;
+			knl_make_ready(knl_curtsk);
+		}
+		else
+		{
+			knl_tcb_state[knl_curtsk] = SUSPENDED;
+		}
+		// then search the next running task.
+		knl_search_schedtsk();
 		if(SUSPENDED == knl_tcb_state[TaskID])
 		{
 			knl_make_active(TaskID);
@@ -104,6 +127,7 @@ EXPORT  StatusType ChainTask    ( TaskType TaskID )
 	knl_force_dispatch();
 
 OS_VALIDATE_ERROR_EXIT()
+	ENABLE_INTERRUPT();
 	return ercd;
 }
 

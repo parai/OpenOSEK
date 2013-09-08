@@ -15,15 +15,17 @@ TASK(Task1)
 }
 TASK(Task2)
 {
-	ActivateTask(Task3);
+	//ActivateTask(Task3);
     printf("Task2 is running.\n");
-    TerminateTask();
+    //TerminateTask();
+    ChainTask(Task3);
 }
 TASK(Task3)
 {
 static int called = FALSE;
     if(called == FALSE)
     {
+    	ActivateTask(Task2);
     	ActivateTask(Task2);
     	ActivateTask(Task2);
     	ActivateTask(Task1);
