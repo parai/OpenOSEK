@@ -112,32 +112,31 @@ LOCAL void l_dispatch0(void)
 	{
 		if(wait == FALSE)
 		{
-			printf("Wait to dispatch Task.\n");
+			//printf("Wait to dispatch Task.\n");
 			wait = TRUE;
 		}
 	}
 	wait = FALSE;
-	//printf("Start to dispatch Task%s.\n",(int)knl_schedtsk);
-	printf("Start to dispatch Task.\n");
+	//printf("Start to dispatch Task.\n");
 	knl_curtsk = knl_schedtsk;
 	knl_dispatch_disabled=0;    /* Dispatch enable */
 
 	/* resume task */
-	ResumeThread(knl_tcb_sp[knl_curtsk]);
+	if(-1 == ResumeThread(knl_tcb_sp[knl_curtsk]))
+	{
+		printf("Resume Task <%d> failed.\n",knl_curtsk);
+	}
 }
 
 EXPORT void knl_dispatch_entry(void)
 {
-	printf("in knl_dispatch_entry()\n");
-	TaskType curtsk = knl_curtsk;
+	//printf("in knl_dispatch_entry()\n");
 
 	knl_dispatch_disabled=1;    /* Dispatch disable */
-
+	SuspendThread( knl_tcb_sp[knl_curtsk]);
 	knl_curtsk = INVALID_TASK;
 
 	l_dispatch0();
-
-	SuspendThread( knl_tcb_sp[curtsk]);
 }
 
 LOCAL void knl_system_timer(void)
@@ -151,6 +150,7 @@ LOCAL void portStartDispatcher(void)
 	int lSuccess = TRUE;
 	// install interrupt handler
 	portIsrHandler[portINTERRUPT_TICK] = knl_system_timer;
+	portIsrHandler[portINTERRUPT_DISPATCH] = knl_dispatch_entry;
 	/* Create the events and mutexes that are used to synchronise all the
 	threads. */
 	portInterruptEventMutex = CreateMutex( NULL, FALSE, NULL );
@@ -273,7 +273,7 @@ LOCAL void portProcessSimulatedInterrupts( void )
 			}
 		}
 		ReleaseMutex( portInterruptEventMutex );
-		if(portDispatchInIsrRequested == TRUE)
+		if((portDispatchInIsrRequested == TRUE) &&(knl_dispatch_disabled == 0))
 		{
 			printf("ISR dispatch!\n");
 			portDispatchInIsrRequested = FALSE;

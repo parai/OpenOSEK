@@ -46,7 +46,6 @@
 #define OS_VALIDATE_ERROR_EXIT() Error_Exit:	\
 	if(ercd != E_OK){	\
 		printf("OS_VALIDATE_ERROR_EXIT(%d).\n",ercd);	\
-		printf("knl_schedtsk = Task%d.\n",(int)knl_schedtsk); \
 	}
 
 #define OS_STD_VALIDATE(_true,_ercd) OS_VALIDATE(_true,_ercd)
@@ -98,7 +97,7 @@ IMPORT AppModeType knl_appmode;
 IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
 IMPORT uint8    knl_dispatch_disabled;
 IMPORT TaskType knl_curtsk;
-IMPORT TaskType knl_schedtsk;
+IMPORT volatile TaskType knl_schedtsk;
 IMPORT RDYQUE knl_rdyque;
 
 // -- Counters and Alarms DATAs

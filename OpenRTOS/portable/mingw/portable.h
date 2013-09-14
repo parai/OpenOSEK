@@ -24,7 +24,8 @@
 
 /* ================================ MACROs    =============================== */
 #define portINTERRUPT_TICK				( 0UL )
-#define portMAX_INTERRUPTS 				( 1UL )
+#define portINTERRUPT_DISPATCH          ( 1UL )
+#define portMAX_INTERRUPTS 				( 2UL )
 
 /*
  * Interrupt enable/disable
@@ -49,7 +50,7 @@
     }                                                                   \
     knl_enable_int(_primask_); }
 
-#define knl_dispatch() knl_dispatch_entry()
+#define knl_dispatch() portGenerateSimulatedInterrupt(portINTERRUPT_DISPATCH)
 #define knl_isr_dispatch() portDispatchInIsrRequested = TRUE
 /* ================================ TYPEs     =============================== */
 /* interrupr mask type.determined by CPU */

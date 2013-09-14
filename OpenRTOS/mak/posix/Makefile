@@ -56,7 +56,7 @@ generator:
 #	$(AR) $(ARFLGS) $(BD)/OpenRTOS/out/$@ $(OBJS)
 
 clean:
-	@echo remove $(OBJS) $(OUT)/*
-	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/*
+	@echo remove objects
+	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/* $(BD)/OpenRTOS/src/main.o
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
 

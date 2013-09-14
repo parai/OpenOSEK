@@ -6,7 +6,7 @@ TARGET = OpenOSEK
 #Base Directory
 BD = ../../..
 
-OUT = $(BD)/OpenRTOS/out/
+OUT = $(BD)/OpenRTOS/out
 
 #common compilers
 AS = gcc
@@ -67,7 +67,7 @@ generator:
 run:
 	@(start $(OUT)/$(TARGET))
 clean:
-	@echo remove $(OBJS) $(OUT)/*
-	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/*
+	@echo remove objects
+	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/* $(BD)/OpenRTOS/src/main.o
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
 

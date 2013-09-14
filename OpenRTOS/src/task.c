@@ -31,7 +31,7 @@ EXPORT TaskStateType       knl_tcb_state[cfgOS_TASK_NUM];
 EXPORT PriorityType        knl_tcb_curpri[cfgOS_TASK_NUM];
 EXPORT uint8               knl_tcb_activation[cfgOS_TASK_NUM];
 EXPORT TaskType knl_curtsk;
-EXPORT TaskType knl_schedtsk;
+EXPORT volatile TaskType knl_schedtsk;
 
 /* ================================ FUNCTIONs =============================== */
 EXPORT StatusType TerminateTask(void)
@@ -68,13 +68,11 @@ EXPORT StatusType ActivateTask ( TaskType TaskID )
 	{
 		if(knl_tcb_activation[TaskID] < knl_tcb_max_activation[TaskID])
 		{
-			printf("In ActivateTask: activation++\n");
 			knl_ready_queue_insert(TaskID);
 			knl_tcb_activation[TaskID] ++ ;
 		}
 		else
 		{
-			printf("In ActivateTask:E_OS_LIMIT \n");
 			ercd = E_OS_LIMIT;
 		}
 	}
