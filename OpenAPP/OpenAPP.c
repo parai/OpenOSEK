@@ -2,7 +2,7 @@
 
 TASK(Task0)
 {
-	//ActivateTask(3);
+	ActivateTask(3);
     printf("Task0 is running.\n");
     //ChainTask(Task2);
     TerminateTask();

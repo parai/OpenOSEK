@@ -32,8 +32,8 @@
 /*
  * Start/End interrupt disable section
  */
-#define BEGIN_DISABLE_INTERRUPT	{ imask_t _primask_ = knl_disable_int()
-#define END_DISABLE_INTERRUPT	knl_enable_int(_primask_); }
+#define BEGIN_DISABLE_INTERRUPT()	{ imask_t _primask_ = knl_disable_int()
+#define END_DISABLE_INTERRUPT()	knl_enable_int(_primask_); }
 
 /*
  * Start/End critical section
@@ -47,7 +47,7 @@
     knl_enable_int(_primask_); }
 
 #define knl_dispatch() knl_dispatch_entry()
-
+#define knl_isr_dispatch() knl_dispatch_entry()
 /* ================================ TYPEs     =============================== */
 /* interrupr mask type.determined by CPU */
 typedef unsigned int imask_t;

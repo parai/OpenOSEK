@@ -28,6 +28,7 @@
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
+EXPORT volatile long portDispatchInIsrRequested = FALSE;
 LOCAL HANDLE knl_tcb_sp[cfgOS_TASK_NUM] = {NULL};
 LOCAL HANDLE knl_tcb_old_sp[cfgOS_TASK_NUM] = {NULL};
 LOCAL HANDLE portInterruptEventMutex = NULL;
@@ -106,11 +107,18 @@ EXPORT void knl_setup_context(TaskType taskid)
 LOCAL void l_dispatch0(void)
 {
 	portInterruptsEnabled = TRUE; //enable interrupt
+	static int wait = FALSE;
 	while(INVALID_TASK == knl_schedtsk)
 	{
-		;; //wait here
+		if(wait == FALSE)
+		{
+			printf("Wait to dispatch Task.\n");
+			wait = TRUE;
+		}
 	}
-
+	wait = FALSE;
+	//printf("Start to dispatch Task%s.\n",(int)knl_schedtsk);
+	printf("Start to dispatch Task.\n");
 	knl_curtsk = knl_schedtsk;
 	knl_dispatch_disabled=0;    /* Dispatch enable */
 
@@ -120,24 +128,28 @@ LOCAL void l_dispatch0(void)
 
 EXPORT void knl_dispatch_entry(void)
 {
-	knl_dispatch_disabled=1;    /* Dispatch disable */
+	printf("in knl_dispatch_entry()\n");
+	TaskType curtsk = knl_curtsk;
 
-	SuspendThread( knl_tcb_sp[knl_curtsk]);
+	knl_dispatch_disabled=1;    /* Dispatch disable */
 
 	knl_curtsk = INVALID_TASK;
 
 	l_dispatch0();
+
+	SuspendThread( knl_tcb_sp[curtsk]);
 }
 
 LOCAL void knl_system_timer(void)
 {
-
+	EnterISR();
+	(void)SignalCounter(0);
+	LeaveISR();
 }
 LOCAL void portStartDispatcher(void)
 {
 	int lSuccess = TRUE;
 	// install interrupt handler
-	portIsrHandler[portINTERRUPT_DISPATCH] = knl_dispatch_entry;
 	portIsrHandler[portINTERRUPT_TICK] = knl_system_timer;
 	/* Create the events and mutexes that are used to synchronise all the
 	threads. */
@@ -260,8 +272,13 @@ LOCAL void portProcessSimulatedInterrupts( void )
 				portPendingInterrupts &= ~( 1UL << i );
 			}
 		}
-
 		ReleaseMutex( portInterruptEventMutex );
+		if(portDispatchInIsrRequested == TRUE)
+		{
+			printf("ISR dispatch!\n");
+			portDispatchInIsrRequested = FALSE;
+			knl_dispatch_entry();
+		}
 	}
 }
 

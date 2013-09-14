@@ -27,10 +27,19 @@ RMFLGS = -f
 
 #common objectives
 OBJS =  $(BD)/OpenRTOS/src/task.o	\
+		$(BD)/OpenRTOS/src/alarm.o	\
 		$(BD)/OpenRTOS/src/osctrl.o	\
 		$(BD)/OpenRTOS/portable/mingw/portable.o	\
 		$(BD)/OpenRTOS/config/oscfg.o	\
 		$(BD)/OpenAPP/OpenAPP.o	
+
+app-obj = $(BD)/OpenAPP/OpenAPP.o
+
+dir-y =	$(BD)/OpenRTOS/src	\
+		$(BD)/OpenRTOS/portable/mingw	
+src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))
+obj-y = $(subst .c,.o,$(src-y))
+obj-y += $(app-obj)
 
 #common rules
 %.o:%.c
@@ -42,11 +51,12 @@ OBJS =  $(BD)/OpenRTOS/src/task.o	\
 all:$(TARGET)
 	@echo ">>>>>>>>>>>>>>>>>  BUILD DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
-$(TARGET):generator $(OBJS)
-#$(TARGET):$(OBJS)
+$(TARGET): $(OBJS)
 	@echo link to $(OUT)/$@
 	@$(LD) $(BD)/OpenRTOS/src/main.c -o $(OUT)/$@  $(OBJS) $(LDFLGS) 
 
+gen : generator
+	
 generator:
 	@(python $(BD)/OpenTOOL/startosek.py  --oil $(BD)/OpenRTOS/config/oscfg.oil)
 	@echo ">>>>>>>>>> Convert oscfg.oil DONE <<<<<<<<<<<<<<<<<<<<"
@@ -54,6 +64,8 @@ generator:
 #$(LIB-OSEK):$(OBJS)
 #	$(AR) $(ARFLGS) $(BD)/OpenRTOS/out/$@ $(OBJS)
 
+run:
+	@(start $(OUT)/$(TARGET))
 clean:
 	@echo remove $(OBJS) $(OUT)/*
 	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/*

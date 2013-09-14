@@ -85,7 +85,7 @@ class OsGeneral():
         self.priority = 0
         self.cc = 'ECC2' 
 
-    def genH(self, fp):
+    def genH(self, fp, appmodes):
         fp.write("\n/* ====================== General ======================= */\n")
         fp.write("#define cfgOS_STATUS %s\n"%(self.status))
         fp.write("#define cfgOS_ERRORHOOK %s\n"%(int(self.errorhook)))
@@ -100,7 +100,15 @@ class OsGeneral():
         fp.write('#define cfgOS_COUNTER_NUM %s\n'%(self.counternum))
         fp.write('#define cfgOS_ALARM_NUM %s\n'%(self.alarmnum))
         fp.write('#define cfgOS_MAX_PRIORITY %s\n'%(self.priority))
-        fp.write('#define cfgOS_CC %s\n'%(self.cc))
+        fp.write('#define cfgOS_CC %s\n\n'%(self.cc))
+        fp.write('/* Application Modes */\n')
+        offset = 1
+        if(len(appmodes) > 32):
+            print 'ERROR: Only 31 APPMODE are allowed but %s modes has been configured!'%(len(appmodes))
+        for mode in appmodes:
+            if(mode != 'OSDEFAULTAPPMODE'):
+                fp.write('#define %s %s\n'%(mode,hex(1<<offset)))
+                offset += 1
 
     def parse(self,item):
         grp = re_oil_os_general.search(item).groups();
@@ -219,7 +227,12 @@ class OsCounter():
         self.maxallowedvalue = 65575
         self.ticksperbase = 1
         self.mincycle = 1
-
+        self.id = 0xFF #invalid id
+    def genH(self, fp):
+        fp.write('#define %s %s\n'%(self.name,self.id))
+        fp.write('#define %s_maxallowedvalue %s\n'%(self.name,self.maxallowedvalue))
+        fp.write('#define %s_ticksperbase %s\n'%(self.name,self.ticksperbase))
+        fp.write('#define %s_mincycle %s\n\n'%(self.name,self.mincycle))
     def parse(self,item):
         grp = re_oil_os_counter.search(item).groups();
         if(grp[0] != 'COUNTER'):
@@ -257,7 +270,26 @@ class OsAlarm():
         self.appmodes = []
         self.alarmtime = 0
         self.cycletime = 100
-
+        #
+        self.id = 0xFF #invalid alarm
+    def genH(self, fp):
+        fp.write('#define %s %s\n'%(self.name,self.id))
+        fp.write('#define %s_counter %s\n'%(self.name,self.counter))
+        fp.write('#define %s_time %s\n'%(self.name,self.alarmtime))
+        fp.write('#define %s_cycle %s\n'%(self.name,self.cycletime))
+        mode = 'INVALID_APPMODE'
+        for appmode in self.appmodes:
+            mode += ' | %s'%(appmode);
+        fp.write('#define %s_appmode (%s)\n'%(self.name,mode));
+        fp.write('#define %s_Action %s\n'%(self.name,self.action))
+        if(self.action == 'ActivateTask'):
+            fp.write('#define %s_Task %s\n'%(self.name,self.task))
+        elif(self.action == 'ActivateTask'):
+            fp.write('#define %s_Task %s\n'%(self.name,self.task))
+            fp.write('#define %s_Event %s\n'%(self.name,self.event))
+        else:
+            fp.write('#define %s_Cbk %s\n'%(self.name,self.alarmcallbackname))
+        fp.write('\n')
     def parse(self,item):
         grp = re_oil_os_alarm.search(item).groups();
         if(grp[0] != 'ALARM'):
@@ -291,9 +323,9 @@ class OsAlarm():
                         modename = re_alarm_APPMODE.search(mode).groups()[0]
                         self.appmodes.append(modename)
         if(re_alarm_ALARMTIME.search(item)):
-            self.alarmTime = int(re_alarm_ALARMTIME.search(item).groups()[0])
+            self.alarmtime = int(re_alarm_ALARMTIME.search(item).groups()[0])
         if(re_alarm_CYCLETIME.search(item)):
-            self.cycleTime = int(re_alarm_CYCLETIME.search(item).groups()[0])
+            self.cycletime = int(re_alarm_CYCLETIME.search(item).groups()[0])
 
 # 6: for resource
 re_oil_os_resource = re.compile(r'^\s*(RESOURCE)\s*(\w+)')
@@ -307,7 +339,7 @@ class OsResource():
 
     def genH(self, fp):
         fp.write('#define %s %s /* property = %s */\n'%(self.name,self.id,self.property))
-        fp.write('#define %s_priority %s\n'%(self.name,self.priority))
+        fp.write('#define %s_priority %s\n\n'%(self.name,self.priority))
         
     def parse(self,item):
         grp = re_oil_os_resource.search(item).groups();
@@ -342,6 +374,7 @@ class OsConfig():
         self.resources = [];
         self.internalresoures = [];
         self.events = [];
+        self.appmodes = [];
     
     def processGeneral(self, item):
         self.general.parse(item)
@@ -554,7 +587,7 @@ class OsConfig():
                     self.general.cc = cc + '2'
                     break
         
-    def postPRocessResAndTasks(self):
+    def postProcessResAndTasks(self):
         # check each task can only has on internal resopurce
         for tsk in self.tasks:
             inr = 0;
@@ -600,7 +633,46 @@ class OsConfig():
                 res2 = findItByName(self.resources, res)
                 if(res2.property.upper() == 'INTERNAL'):
                     tsk.rpriority = res2.priority;
-        
+    def postProcessAlarmAndCounter(self):
+        # determine counter id
+        id =0;
+        for cnt in self.counters:
+            cnt.id = id
+            id += 1
+        # determine alarm id
+        id =0;
+        for alm in self.alarms:
+            alm.id = id
+            id += 1
+        # to check the valid of configuration
+        for alm in self.alarms:
+            if(alm.action == 'ActivateTask'):
+                if(None == findItByName(self.tasks, alm.task)):
+                    print "ERROR: <%s> has not been configured for <%s>."%(alm.task, alm.name)
+            elif(alm.action == 'SetEvent'):
+                if(None == findItByName(self.tasks, alm.task)):
+                    print "ERROR: <%s> has not been configured for <%s>."%(alm.task, alm.name)
+                else:
+                    flag = False;
+                    for evt in findItByName(self.tasks, alm.task).events:
+                        if(evt == alm.event):
+                            flag = True;
+                            break;
+                    if(flag == False):
+                        print "ERROR: <%s> has not been configured for <%s>."%(alm.event, alm.name)
+        #check the alarm owner is valid
+        for alm in self.alarms:
+            if(findItByName(self.counters, alm.counter)== None):
+                print "ERROR:driving counter <%s> is not valid for <%s>."%(alm.counter, alm.name)    
+    def postProcessAppModes(self):
+        for obj in self.tasks+self.alarms:
+            for mode in obj.appmodes:
+                try:
+                    if(self.appmodes.index(mode) == -1):
+                        self.appmodes.append(mode)
+                except:
+                    self.appmodes.append(mode)
+                    
     def postProcess(self):
         id = 0
         for tsk in self.tasks:
@@ -608,7 +680,9 @@ class OsConfig():
             id += 1
         self.postProcessGeneral();
         self.postProcessEventsAndTasks();
-        self.postPRocessResAndTasks();
+        self.postProcessResAndTasks();
+        self.postProcessAlarmAndCounter();
+        self.postProcessAppModes();
 
     def parse(self, oilfile):
         self.preProcess(oilfile)
@@ -624,7 +698,7 @@ class OsConfig():
         fp.write('\n#ifndef OSCFG_H_H\n#define OSCFG_H_H\n\n')
         # =================================================
         # 1. General
-        self.general.genH(fp)
+        self.general.genH(fp, self.appmodes)
         # 2. Tasks
         fp.write("\n/* ====================== Tasks ====================== */\n")
         for tsk in self.tasks:
@@ -637,6 +711,14 @@ class OsConfig():
         fp.write("\n/* ====================== Resources ====================== */\n")
         for res in self.resources:
             res.genH(fp);
+        # 5. Counters
+        fp.write("\n/* ====================== Counters  ====================== */\n")
+        for cnt in self.counters:
+            cnt.genH(fp);
+        # 6. Alarms
+        fp.write("\n/* ======================= Alarms  ======================= */\n")
+        for alm in self.alarms:
+            alm.genH(fp);
         # =================================================
         fp.write('\n#endif /* OSCFG_H_H */\n\n')
         fp.close()
@@ -672,12 +754,8 @@ class OsConfig():
         cstr +='\t/* null */{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},\n'
         cstr +='};\n\n'
         fp.write(cstr);
-    def genC(self, path):
-        fp = open('%s/oscfg.c'%(path), 'w')
-        fp.write(cCodeHead)
-        # =================================================
-        fp.write('#include "Os.h"\n')
-        fp.write('#include "osek_os.h"\n')
+    
+    def genTasks(self, fp):
         fp.write("\n/* ====================== Tasks ====================== */\n")
         # --------------- task pc
         for tsk in self.tasks:
@@ -729,6 +807,82 @@ class OsConfig():
         fp.write('\n/* ====================== Task Ready Queue ====================== */\n')
         self.genTaskReadyQueue(fp);
     
+    def genCountersBaseInfo(self, fp):
+        if(len(self.counters) == 0):
+            return
+        fp.write("\n/* ====================== Counters ====================== */\n")
+        cstr = 'EXPORT const TickType knl_ccb_max[] = \n{\n';
+        for cnt in self.counters:
+            cstr += '\t%s_maxallowedvalue,\n'%(cnt.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        cstr = 'EXPORT const TickType knl_ccb_tpb[] = \n{\n';
+        for cnt in self.counters:
+            cstr += '\t%s_ticksperbase,\n'%(cnt.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        cstr = 'EXPORT const TickType knl_ccb_min[] = \n{\n';
+        for cnt in self.counters:
+            cstr += '\t%s_mincycle,\n'%(cnt.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        
+    def genAlarms(self, fp):
+        if(len(self.alarms) == 0):
+            return
+        fp.write("\n/* ====================== Alarms ====================== */\n")
+        cstr = 'EXPORT const CounterType knl_acb_counter[] = \n{\n';
+        for alm in self.alarms:
+            cstr += '\t%s_counter,\n'%(alm.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        cstr = 'EXPORT const TickType knl_acb_time[] = \n{\n';
+        for alm in self.alarms:
+            cstr += '\t%s_time,\n'%(alm.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        cstr = 'EXPORT const TickType knl_acb_cycle[] = \n{\n';
+        for alm in self.alarms:
+            cstr += '\t%s_cycle,\n'%(alm.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        cstr = 'EXPORT const CounterType knl_acb_mode[] = \n{\n';
+        for alm in self.alarms:
+            cstr += '\t%s_appmode,\n'%(alm.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        cstr = ''
+        for alm in self.alarms:
+            if(alm.action == 'SetEvent'):
+                cstr += 'LOCAL void AlarmMain%s(void)\n{\n'
+                cstr += '\t(void)SetEvent(%s,%s);\n'%(alm.task, alm.event)
+                cstr += '}\n'
+            elif(alm.action == 'ActivateTask'):
+                cstr += 'LOCAL void AlarmMain%s(void)\n{\n'%(alm.name)
+                cstr += '\t(void)ActivateTask(%s);\n'%(alm.task)
+                cstr += '}\n'
+        fp.write(cstr)
+        cstr = 'EXPORT const FP knl_acb_action[] = \n{\n'
+        for alm in self.alarms:
+            if(alm.action != 'ALARMCALLBACK'):
+                cstr += '\tAlarmMain%s,\n'%(alm.name)
+            else:
+                cstr += '\t%s_Cbk,\n'%(alm.name)
+        cstr += '};\n'
+        fp.write(cstr);
+            
+                
+    def genC(self, path):
+        fp = open('%s/oscfg.c'%(path), 'w')
+        fp.write(cCodeHead)
+        # =================================================
+        fp.write('#include "osek_os.h"\n')
+        # Gen Tasks
+        self.genTasks(fp);
+        # Gen Counters
+        self.genCountersBaseInfo(fp)
+        # Gen Alarms
+        self.genAlarms(fp)
         # =================================================
         fp.write('\n\n')
         fp.close()

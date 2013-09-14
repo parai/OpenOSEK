@@ -58,6 +58,9 @@
 #define E_OS_ASSERT     (9u)    /* serious problem encountered when assert */
 
 #define INVALID_TASK ((TaskType)0xFF)
+#define INVALID_ALARM ((AlarmType)0xFF)
+
+#define ALARM_STOPPED ((TickType)0xFFFFFFFFUL)
 
 /*  Constant of data type ResourceType (see (osek)chapter 8, Resource management).*/
 #define RES_SCHEDULER 0
@@ -121,7 +124,6 @@ typedef uint8 OSServiceIdType;
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
-#if !defined(_WINDOWS_H)
 IMPORT StatusType GetCounterValue(CounterType CounterID,TickRefType Value);
 IMPORT StatusType GetElapsedCounterValue(CounterType CounterID,
                                   TickRefType Value,TickRefType ElapsedValue);
@@ -132,6 +134,7 @@ IMPORT StatusType GetAlarm ( AlarmType AlarmID ,TickRefType Tick );
 IMPORT StatusType SetRelAlarm ( AlarmType AlarmID , TickType Increment ,TickType Cycle );
 IMPORT StatusType SetAbsAlarm ( AlarmType AlarmID , TickType Start ,TickType Cycle );
 IMPORT StatusType CancelAlarm ( AlarmType AlarmID ); 
+IMPORT StatusType SignalCounter(CounterType CounterID);
 
 IMPORT StatusType ActivateTask ( TaskType TaskID );
 IMPORT StatusType TerminateTask( void );
@@ -142,10 +145,12 @@ IMPORT StatusType Schedule     ( void );
 IMPORT StatusType GetTaskID    ( TaskRefType TaskID );
 IMPORT StatusType GetTaskState ( TaskType TaskID,TaskStateRefType State );
 
+#if !defined(_WINDOWS_H)
 IMPORT StatusType SetEvent  ( TaskType TaskID , EventMaskType Mask );
 IMPORT StatusType ClearEvent( EventMaskType Mask );
 IMPORT StatusType GetEvent  ( TaskType TaskID , EventMaskRefType Event );
 IMPORT StatusType WaitEvent ( EventMaskType Mask );
+#endif
 
 IMPORT AppModeType GetActiveApplicationMode(void);
 
@@ -170,6 +175,6 @@ IMPORT void StartupHook(void);
 IMPORT void ErrorHook(StatusType Error);
 IMPORT void PreTaskHook(void);
 IMPORT void PostTaskHook(void);
-#endif
+
 
 #endif /* _OS_H_ */

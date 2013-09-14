@@ -68,11 +68,13 @@ EXPORT StatusType ActivateTask ( TaskType TaskID )
 	{
 		if(knl_tcb_activation[TaskID] < knl_tcb_max_activation[TaskID])
 		{
+			printf("In ActivateTask: activation++\n");
 			knl_ready_queue_insert(TaskID);
 			knl_tcb_activation[TaskID] ++ ;
 		}
 		else
 		{
+			printf("In ActivateTask:E_OS_LIMIT \n");
 			ercd = E_OS_LIMIT;
 		}
 	}

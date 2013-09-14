@@ -42,7 +42,12 @@
 			goto Error_Exit;			\
 		}								\
 	}while(FALSE)
-#define OS_VALIDATE_ERROR_EXIT() Error_Exit:
+
+#define OS_VALIDATE_ERROR_EXIT() Error_Exit:	\
+	if(ercd != E_OK){	\
+		printf("OS_VALIDATE_ERROR_EXIT(%d).\n",ercd);	\
+		printf("knl_schedtsk = Task%d.\n",(int)knl_schedtsk); \
+	}
 
 #define OS_STD_VALIDATE(_true,_ercd) OS_VALIDATE(_true,_ercd)
 #if(cfgOS_STATUS == EXTENDED)
@@ -92,12 +97,26 @@ IMPORT uint8               knl_tcb_activation[];
 IMPORT AppModeType knl_appmode;
 IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
 IMPORT uint8    knl_dispatch_disabled;
-
 IMPORT TaskType knl_curtsk;
 IMPORT TaskType knl_schedtsk;
-
 IMPORT RDYQUE knl_rdyque;
 
+// -- Counters and Alarms DATAs
+IMPORT const TickType knl_ccb_max[];
+IMPORT const TickType knl_ccb_tpb[];
+IMPORT const TickType knl_ccb_min[];
+IMPORT    AlarmType   knl_ccb_head[];
+IMPORT    TickType    knl_ccb_value[];
+
+IMPORT const CounterType knl_acb_counter[];
+IMPORT const CounterType knl_acb_mode[];
+IMPORT const FP          knl_acb_action[];
+IMPORT const TickType    knl_acb_time[];
+IMPORT const TickType    knl_acb_cycle[];
+IMPORT AlarmType         knl_acb_next[];
+IMPORT AlarmType         knl_acb_prev[];
+IMPORT    TickType       knl_acb_value[];
+IMPORT    TickType       knl_acb_period[];
 
 /* ================================ FUNCTIONs =============================== */
 /* ------------ tasks ------------- */
@@ -110,4 +129,11 @@ IMPORT void knl_bitmap_set(PriorityType priority);
 IMPORT void knl_bitmap_clear(PriorityType priority);
 IMPORT PriorityType knl_bitmap_search(PriorityType from);
 IMPORT void knl_search_schedtsk(void);
+
+/* ------------ alarms ------------- */
+IMPORT void knl_alarm_counter_init(void);
+IMPORT TickType knl_add_ticks(TickType almval,TickType incr,TickType maxval2);
+IMPORT TickType knl_diff_tick(TickType curval, TickType almval, TickType maxval2);
+IMPORT void knl_alarm_insert(AlarmType alarm);
+IMPORT void knl_alarm_remove(AlarmType alarm);
 #endif /* _OSEK_OS_H_ */

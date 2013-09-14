@@ -88,6 +88,7 @@ ALARM WakeTask0 {
 	  ALARMTIME = 0; 
 	  CYCLETIME = 100; 
 	  APPMODE = OSDEFAULTAPPMODE; 
+	  APPMODE = AppMode1;
 	}; 
 }; 
 

@@ -33,8 +33,8 @@
 /*
  * Start/End interrupt disable section
  */
-#define BEGIN_DISABLE_INTERRUPT	{ imask_t _primask_ = knl_disable_int()
-#define END_DISABLE_INTERRUPT	knl_enable_int(_primask_); }
+#define BEGIN_DISABLE_INTERRUPT()	{ imask_t _primask_ = knl_disable_int()
+#define END_DISABLE_INTERRUPT()	knl_enable_int(_primask_); }
 
 /*
  * Start/End critical section

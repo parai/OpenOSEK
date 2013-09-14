@@ -23,9 +23,8 @@
 /* ================================ INCLUDEs  =============================== */
 
 /* ================================ MACROs    =============================== */
-#define portINTERRUPT_DISPATCH		    ( 0UL )
-#define portINTERRUPT_TICK				( 1UL )
-#define portMAX_INTERRUPTS 				( 2UL )
+#define portINTERRUPT_TICK				( 0UL )
+#define portMAX_INTERRUPTS 				( 1UL )
 
 /*
  * Interrupt enable/disable
@@ -36,8 +35,8 @@
 /*
  * Start/End interrupt disable section
  */
-#define BEGIN_DISABLE_INTERRUPT	{ imask_t _primask_ = knl_disable_int()
-#define END_DISABLE_INTERRUPT	knl_enable_int(_primask_); }
+#define BEGIN_DISABLE_INTERRUPT()	{ imask_t _primask_ = knl_disable_int()
+#define END_DISABLE_INTERRUPT()	knl_enable_int(_primask_); }
 
 /*
  * Start/End critical section
@@ -50,14 +49,14 @@
     }                                                                   \
     knl_enable_int(_primask_); }
 
-#define knl_dispatch() portGenerateSimulatedInterrupt(portINTERRUPT_DISPATCH)
-
+#define knl_dispatch() knl_dispatch_entry()
+#define knl_isr_dispatch() portDispatchInIsrRequested = TRUE
 /* ================================ TYPEs     =============================== */
 /* interrupr mask type.determined by CPU */
 typedef unsigned int imask_t;
 
 /* ================================ DATAs     =============================== */
-
+IMPORT volatile long portDispatchInIsrRequested;
 /* ================================ FUNCTIONs =============================== */
 IMPORT imask_t knl_disable_int( void );
 IMPORT void knl_enable_int( imask_t mask );

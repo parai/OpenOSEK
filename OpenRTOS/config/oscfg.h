@@ -40,6 +40,9 @@
 #define cfgOS_MAX_PRIORITY 3
 #define cfgOS_CC BCC2
 
+/* Application Modes */
+#define AppMode1 0x2
+
 /* ====================== Tasks ====================== */
 
 /* Task0 configuation */
@@ -95,10 +98,38 @@
 /* ====================== Resources ====================== */
 #define ResourceCAN0 0 /* property = STANDARD */
 #define ResourceCAN0_priority 0
+
 #define ResourceCAN1 1 /* property = STANDARD */
 #define ResourceCAN1_priority 0
+
 #define ResourceStdOut 0 /* property = INTERNAL */
 #define ResourceStdOut_priority 0
+
+
+/* ====================== Counters  ====================== */
+#define SystemTimer 0
+#define SystemTimer_maxallowedvalue 1000000
+#define SystemTimer_ticksperbase 1
+#define SystemTimer_mincycle 1
+
+
+/* ======================= Alarms  ======================= */
+#define WakeTask0 0
+#define WakeTask0_counter SystemTimer
+#define WakeTask0_time 0
+#define WakeTask0_cycle 100
+#define WakeTask0_appmode (INVALID_APPMODE | OSDEFAULTAPPMODE | AppMode1)
+#define WakeTask0_Action ActivateTask
+#define WakeTask0_Task Task0
+
+#define WakeTask1 1
+#define WakeTask1_counter SystemTimer
+#define WakeTask1_time 50
+#define WakeTask1_cycle 100
+#define WakeTask1_appmode (INVALID_APPMODE | OSDEFAULTAPPMODE)
+#define WakeTask1_Action ActivateTask
+#define WakeTask1_Task Task1
+
 
 #endif /* OSCFG_H_H */
 

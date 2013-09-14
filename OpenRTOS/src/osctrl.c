@@ -40,8 +40,7 @@ EXPORT void StartOS ( AppModeType AppMode )
 #endif
 	knl_appmode = AppMode;
 	knl_task_init();
-    //knl_counter_init();
-    //knl_alarm_init();
+	knl_alarm_counter_init();
     //knl_resource_init();
     knl_force_dispatch();
     
@@ -61,3 +60,28 @@ EXPORT void ShutdownOS( StatusType Error )
     }
 }
 
+EXPORT void EnterISR(void)
+{
+	if(knl_taskindp < 0xFF)
+	{
+		knl_taskindp++; /* Enter Task Independent Part */
+	}
+	ENABLE_INTERRUPT();
+}
+
+EXPORT void LeaveISR(void)
+{
+	DISABLE_INTERRUPT();
+	if(knl_taskindp > 0)
+	{
+		knl_taskindp--;
+	}
+	if((0 == knl_taskindp) && (!knl_dispatch_disabled))
+	{
+		if(knl_curtsk != knl_schedtsk)
+		{
+			knl_isr_dispatch();
+		}
+	}
+	ENABLE_INTERRUPT();
+}

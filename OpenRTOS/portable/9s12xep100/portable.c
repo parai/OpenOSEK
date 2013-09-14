@@ -182,11 +182,9 @@ interrupt 4 void knl_dispatch_entry(void)
 interrupt 7 void portSystemTimer(void)
 {
     CRGFLG &=0xEF;			// clear the interrupt flag
-#if 0
     EnterISR();
-	(void)IncrementCounter(0);
-	ExitISR();
-#endif
+	(void)SignalCounter(0);
+    LeaveISR();
 }
 #pragma CODE_SEG DEFAULT
 

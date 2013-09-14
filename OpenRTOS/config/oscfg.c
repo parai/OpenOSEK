@@ -18,7 +18,6 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
-#include "Os.h"
 #include "osek_os.h"
 
 /* ====================== Tasks ====================== */
@@ -105,5 +104,54 @@ EXPORT RDYQUE knl_rdyque =
 	/* null */{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},
 };
 
+
+/* ====================== Counters ====================== */
+EXPORT const TickType knl_ccb_max[] = 
+{
+	SystemTimer_maxallowedvalue,
+};
+EXPORT const TickType knl_ccb_tpb[] = 
+{
+	SystemTimer_ticksperbase,
+};
+EXPORT const TickType knl_ccb_min[] = 
+{
+	SystemTimer_mincycle,
+};
+
+/* ====================== Alarms ====================== */
+EXPORT const CounterType knl_acb_counter[] = 
+{
+	WakeTask0_counter,
+	WakeTask1_counter,
+};
+EXPORT const TickType knl_acb_time[] = 
+{
+	WakeTask0_time,
+	WakeTask1_time,
+};
+EXPORT const TickType knl_acb_cycle[] = 
+{
+	WakeTask0_cycle,
+	WakeTask1_cycle,
+};
+EXPORT const CounterType knl_acb_mode[] = 
+{
+	WakeTask0_appmode,
+	WakeTask1_appmode,
+};
+LOCAL void AlarmMainWakeTask0(void)
+{
+	(void)ActivateTask(Task0);
+}
+LOCAL void AlarmMainWakeTask1(void)
+{
+	(void)ActivateTask(Task1);
+}
+EXPORT const FP knl_acb_action[] = 
+{
+	AlarmMainWakeTask0,
+	AlarmMainWakeTask1,
+};
 
 
