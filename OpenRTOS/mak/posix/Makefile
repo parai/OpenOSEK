@@ -28,6 +28,7 @@ RMFLGS = -f
 #common objectives
 OBJS =  $(BD)/OpenRTOS/src/task.o	\
 		$(BD)/OpenRTOS/src/alarm.o	\
+		$(BD)/OpenRTOS/src/event.o	\
 		$(BD)/OpenRTOS/src/osctrl.o	\
 		$(BD)/OpenRTOS/portable/posix/portable.o	\
 		$(BD)/OpenRTOS/config/oscfg.o	\

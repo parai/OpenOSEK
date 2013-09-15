@@ -34,6 +34,42 @@ EXPORT TickType  knl_acb_value[cfgOS_ALARM_NUM];
 EXPORT TickType  knl_acb_period[cfgOS_ALARM_NUM];
 
 /* ================================ FUNCTIONs =============================== */
+StatusType GetAlarmBase ( AlarmType AlarmID, AlarmBaseRefType Info )
+{
+	StatusType ercd = E_OK;
+	CounterType counter;
+    OS_EXT_VALIDATE((AlarmID < cfgOS_ALARM_NUM),E_OS_ID);
+    counter = knl_acb_counter[AlarmID];
+    Info->maxallowedvalue = knl_ccb_max[counter];
+    Info->mincycle = knl_ccb_min[counter];
+    Info->ticksperbase = knl_ccb_tpb[counter];
+
+OS_VALIDATE_ERROR_EXIT()
+    return ercd;
+}
+
+StatusType GetAlarm ( AlarmType AlarmID ,TickRefType Tick )
+{
+	StatusType ercd = E_OK;
+    CounterType counter;
+    OS_EXT_VALIDATE((AlarmID < cfgOS_ALARM_NUM),E_OS_ID);
+    OS_STD_VALIDATE((ALARM_STOPPED != knl_acb_value[AlarmID]),E_OS_NOFUNC);
+    counter = knl_acb_counter[AlarmID];
+
+    BEGIN_DISABLE_INTERRUPT();
+    if(knl_ccb_value[counter] <  knl_acb_value[AlarmID])
+    {
+        *Tick = knl_acb_value[AlarmID] - knl_ccb_value[counter];
+    }
+    else
+    {
+        *Tick = knl_ccb_max[counter]*2 + 1- knl_ccb_value[counter] + knl_acb_value[AlarmID];
+    }
+    END_DISABLE_INTERRUPT();
+
+OS_VALIDATE_ERROR_EXIT()
+    return ercd;
+}
 StatusType SetRelAlarm ( AlarmType AlarmID , TickType Increment ,TickType Cycle )
 {
 	StatusType ercd = E_OK;
@@ -80,6 +116,7 @@ StatusType CancelAlarm ( AlarmType AlarmID )
 
 	BEGIN_DISABLE_INTERRUPT();
 	knl_alarm_remove(AlarmID);
+	knl_acb_value[AlarmID] = ALARM_STOPPED;
 	END_DISABLE_INTERRUPT();
 OS_VALIDATE_ERROR_EXIT()
 	return ercd;
@@ -112,6 +149,10 @@ EXPORT StatusType SignalCounter(CounterType counter)
 														knl_acb_period[alarm],	\
 														knl_ccb_max[counter]*2);
 				knl_alarm_insert(alarm);
+			}
+			else
+			{
+				knl_acb_value[alarm] = ALARM_STOPPED;
 			}
 			alarm = next;
 		}

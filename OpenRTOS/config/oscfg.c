@@ -78,6 +78,14 @@ EXPORT const uint8 knl_tcb_max_activation[] =
 	(Task3_activation - 1),
 };
 
+EXPORT const uint8 knl_tcb_flgid[] = 
+{
+	Task0_eventhandle,
+	Task1_eventhandle,
+	Task2_eventhandle,
+	Task3_eventhandle,
+};
+
 EXPORT const AppModeType knl_tcb_mode[] = 
 {
 	Task0_appmode,
@@ -89,7 +97,7 @@ EXPORT const AppModeType knl_tcb_mode[] =
 
 /* ====================== Task Ready Queue ====================== */
 LOCAL TaskType knl_0_queue[4];
-LOCAL TaskType knl_1_queue[4];
+LOCAL TaskType knl_1_queue[2];
 LOCAL TaskType knl_2_queue[4];
 LOCAL TaskType knl_3_queue[4];
 EXPORT RDYQUE knl_rdyque = 
@@ -97,7 +105,7 @@ EXPORT RDYQUE knl_rdyque =
 	/* top_pri= */ NUM_PRI,
 	{/* tskque[] */
 		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_0_queue},
-		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_1_queue},
+		{/* head= */ 0,/* tail= */ 0,/* length= */ 2, /* queue= */ knl_1_queue},
 		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_2_queue},
 		{/* head= */ 0,/* tail= */ 0,/* length= */ 4, /* queue= */ knl_3_queue},
 	},

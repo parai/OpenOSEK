@@ -14,6 +14,7 @@ cscope.files
 *.glo
 *.map
 *.tdt
+*.xpr
 
 # Libraries
 *.lib

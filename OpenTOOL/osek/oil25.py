@@ -94,7 +94,7 @@ class OsGeneral():
         fp.write("#define cfgOS_SHUTDOWDHOOK %s\n"%(int(self.shutdownhook)))
         fp.write("#define cfgOS_STARTUPHOOK %s\n\n"%(int(self.startuphook)))
         fp.write('#define cfgOS_TASK_NUM %s\n'%(self.tasknum))
-        fp.write('#define cfgOS_EVENT_NUM %s\n'%(self.eventnum))
+        fp.write('#define cfgOS_FLAG_NUM %s\n'%(self.eventnum))
         fp.write('#define cfgOS_S_RES_NUM %s\n'%(self.nresnum))
         fp.write('#define cfgOS_I_RES_NUM %s\n'%(self.iresnum))
         fp.write('#define cfgOS_COUNTER_NUM %s\n'%(self.counternum))
@@ -181,6 +181,8 @@ class OsTask():
             for event in self.events:
                 fp.write('%s,'%(event))
             fp.write('] */\n')
+        else:
+            fp.write('#define %s_eventhandle INVALID_FLAG\n'%(self.name))
 
     def parse(self,item):
         grp = re_oil_os_task.search(item).groups();
@@ -560,7 +562,11 @@ class OsConfig():
         self.general.tasknum = len(self.tasks)
         self.general.alarmnum = len(self.alarms)
         self.general.counternum = len(self.counters)
-        self.general.eventnum = len(self.events)
+        nevtnum = 0
+        for tsk in self.tasks:
+            if(len(tsk.events) > 0):
+                nevtnum += 1
+        self.general.eventnum = nevtnum
         nresnum = 0
         for res in self.resources:
             if(res.property.upper() == 'STANDARD'):
@@ -798,6 +804,13 @@ class OsConfig():
             cstr += '\t(%s_activation - 1),\n'%(tsk.name)
         cstr += '};\n\n'
         fp.write(cstr);
+        # -------------- task event handle
+        if(len(self.events) > 0):
+            cstr = 'EXPORT const uint8 knl_tcb_flgid[] = \n{\n'
+            for tsk in self.tasks:
+                cstr += '\t%s_eventhandle,\n'%(tsk.name)
+            cstr += '};\n\n'
+            fp.write(cstr);
         # -------------- task mode
         cstr = 'EXPORT const AppModeType knl_tcb_mode[] = \n{\n'
         for tsk in self.tasks:

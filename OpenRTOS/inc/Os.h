@@ -54,13 +54,6 @@
 #define E_OS_RESOURCE   (6u)
 #define E_OS_STATE      (7u)
 #define E_OS_VALUE      (8u)
-/* OS Ext-Errors */
-#define E_OS_ASSERT     (9u)    /* serious problem encountered when assert */
-
-#define INVALID_TASK ((TaskType)0xFF)
-#define INVALID_ALARM ((AlarmType)0xFF)
-
-#define ALARM_STOPPED ((TickType)0xFFFFFFFFUL)
 
 /*  Constant of data type ResourceType (see (osek)chapter 8, Resource management).*/
 #define RES_SCHEDULER 0
@@ -145,12 +138,15 @@ IMPORT StatusType Schedule     ( void );
 IMPORT StatusType GetTaskID    ( TaskRefType TaskID );
 IMPORT StatusType GetTaskState ( TaskType TaskID,TaskStateRefType State );
 
-#if !defined(_WINDOWS_H)
+#if !defined(SIMULATE_ON_WIN)
 IMPORT StatusType SetEvent  ( TaskType TaskID , EventMaskType Mask );
+#else  // as it conflict with WINAPI SetEvent();
+IMPORT StatusType osekSetEvent  ( TaskType TaskID , EventMaskType Mask );
+#endif
 IMPORT StatusType ClearEvent( EventMaskType Mask );
 IMPORT StatusType GetEvent  ( TaskType TaskID , EventMaskRefType Event );
 IMPORT StatusType WaitEvent ( EventMaskType Mask );
-#endif
+
 
 IMPORT AppModeType GetActiveApplicationMode(void);
 

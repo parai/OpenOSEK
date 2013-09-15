@@ -162,6 +162,17 @@ EXPORT void knl_make_ready(TaskType taskid)
 {
 	knl_tcb_state[taskid] = READY;
 	knl_tcb_curpri[taskid] = knl_tcb_ipriority[taskid];
+	#if(cfgOS_FLAG_NUM > 0)
+	{
+		uint8 flgid;
+		flgid = knl_tcb_flgid[taskid];
+		if(flgid != INVALID_FLAG)
+		{
+			knl_fcb_wait[flgid]=NO_EVENT;
+			knl_fcb_set[flgid]=NO_EVENT;
+		}
+	}
+	#endif
 	knl_setup_context(taskid);
 }
 

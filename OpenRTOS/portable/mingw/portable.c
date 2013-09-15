@@ -78,12 +78,18 @@ EXPORT void knl_force_dispatch(void)
 	{
 		if( READY == knl_tcb_state[curtsk])
 		{
-			TerminateThread(knl_tcb_old_sp[curtsk],0);
+			if(-1 == TerminateThread(knl_tcb_old_sp[curtsk],0))
+			{
+				printf("Terminate Task %d failed.\n",curtsk);
+			}
 			knl_tcb_old_sp[curtsk] = NULL;
 		}
 		else if(SUSPENDED== knl_tcb_state[curtsk])
 		{
-			TerminateThread(knl_tcb_sp[curtsk],0);
+			if(-1 == TerminateThread(knl_tcb_sp[curtsk],0))
+			{
+				printf("Terminate Task %d failed.\n",curtsk);
+			}
 			knl_tcb_sp[curtsk] = NULL;
 		}
 	}
@@ -107,16 +113,9 @@ EXPORT void knl_setup_context(TaskType taskid)
 LOCAL void l_dispatch0(void)
 {
 	portInterruptsEnabled = TRUE; //enable interrupt
-	static int wait = FALSE;
 	while(INVALID_TASK == knl_schedtsk)
 	{
-		if(wait == FALSE)
-		{
-			//printf("Wait to dispatch Task.\n");
-			wait = TRUE;
-		}
 	}
-	wait = FALSE;
 	//printf("Start to dispatch Task.\n");
 	knl_curtsk = knl_schedtsk;
 	knl_dispatch_disabled=0;    /* Dispatch enable */
@@ -130,13 +129,16 @@ LOCAL void l_dispatch0(void)
 
 EXPORT void knl_dispatch_entry(void)
 {
-	//printf("in knl_dispatch_entry()\n");
-
+	TaskType curtsk;
 	knl_dispatch_disabled=1;    /* Dispatch disable */
-	SuspendThread( knl_tcb_sp[knl_curtsk]);
+	curtsk = knl_curtsk;
 	knl_curtsk = INVALID_TASK;
 
 	l_dispatch0();
+	if(-1 == SuspendThread( knl_tcb_sp[curtsk]))
+	{
+		printf("Suspend Task %d failed.\n",curtsk);
+	}
 }
 
 LOCAL void knl_system_timer(void)
@@ -150,7 +152,6 @@ LOCAL void portStartDispatcher(void)
 	int lSuccess = TRUE;
 	// install interrupt handler
 	portIsrHandler[portINTERRUPT_TICK] = knl_system_timer;
-	portIsrHandler[portINTERRUPT_DISPATCH] = knl_dispatch_entry;
 	/* Create the events and mutexes that are used to synchronise all the
 	threads. */
 	portInterruptEventMutex = CreateMutex( NULL, FALSE, NULL );

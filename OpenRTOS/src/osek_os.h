@@ -25,6 +25,16 @@
 #include "portable.h"
 
 /* ================================ MACROs    =============================== */
+#define ReleaseInternalResource()
+#define GetInternalResource()
+#define INVALID_TASK  ((TaskType)0xFF)
+#define INVALID_ALARM ((AlarmType)0xFF)
+#define INVALID_FLAG ((uint8)0xFF)
+
+#define NO_EVENT 0
+
+#define ALARM_STOPPED ((TickType)0xFFFFFFFFUL)
+
 #define EXTENDED 0
 #define STANDARD 1
 
@@ -83,6 +93,7 @@ typedef struct
 }RDYQUE;
 
 /* ================================ DATAs     =============================== */
+// task control block
 IMPORT const FP            knl_tcb_pc[];
 IMPORT const PriorityType  knl_tcb_ipriority[];
 IMPORT const PriorityType  knl_tcb_rpriority[];
@@ -90,9 +101,11 @@ IMPORT const uint8         knl_tcb_max_activation[];
 IMPORT const StackSizeType knl_tcb_stksz[];
 EXPORT const uint8*        knl_tcb_stack[];
 IMPORT const AppModeType   knl_tcb_mode[];
+IMPORT const uint8         knl_tcb_flgid[];
 IMPORT TaskStateType       knl_tcb_state[];
 IMPORT PriorityType        knl_tcb_curpri[];
 IMPORT uint8               knl_tcb_activation[];
+
 IMPORT AppModeType knl_appmode;
 IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
 IMPORT uint8    knl_dispatch_disabled;
@@ -100,13 +113,14 @@ IMPORT TaskType knl_curtsk;
 IMPORT volatile TaskType knl_schedtsk;
 IMPORT RDYQUE knl_rdyque;
 
-// -- Counters and Alarms DATAs
+// counter control block
 IMPORT const TickType knl_ccb_max[];
 IMPORT const TickType knl_ccb_tpb[];
 IMPORT const TickType knl_ccb_min[];
 IMPORT    AlarmType   knl_ccb_head[];
 IMPORT    TickType    knl_ccb_value[];
 
+// alarm control block
 IMPORT const CounterType knl_acb_counter[];
 IMPORT const CounterType knl_acb_mode[];
 IMPORT const FP          knl_acb_action[];
@@ -116,6 +130,10 @@ IMPORT AlarmType         knl_acb_next[];
 IMPORT AlarmType         knl_acb_prev[];
 IMPORT    TickType       knl_acb_value[];
 IMPORT    TickType       knl_acb_period[];
+
+// flag control block
+IMPORT EventMaskType knl_fcb_set[];
+IMPORT EventMaskType knl_fcb_wait[];
 
 /* ================================ FUNCTIONs =============================== */
 /* ------------ tasks ------------- */
@@ -135,4 +153,5 @@ IMPORT TickType knl_add_ticks(TickType almval,TickType incr,TickType maxval2);
 IMPORT TickType knl_diff_tick(TickType curval, TickType almval, TickType maxval2);
 IMPORT void knl_alarm_insert(AlarmType alarm);
 IMPORT void knl_alarm_remove(AlarmType alarm);
+
 #endif /* _OSEK_OS_H_ */
