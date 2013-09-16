@@ -20,7 +20,7 @@
  */
 /* ================================ INCLUDEs  =============================== */
 #include "osek_os.h"
-
+#if(cfgOS_FLAG_NUM > 0)
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
@@ -123,3 +123,4 @@ EXPORT StatusType WaitEvent ( EventMaskType Mask )
 OS_VALIDATE_ERROR_EXIT()
 	return ercd;
 }
+#endif /* cfgOS_FLAG_NUM */

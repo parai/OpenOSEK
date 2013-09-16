@@ -142,7 +142,7 @@ LOCAL void portActivateR(void)
 {
     /* This is the most easiest Way to get Internal Resourse and
      * to make a task non-preemtable I think */
-    //GetInternalResource();
+    GetInternalResource();
 	ENABLE_INTERRUPT();
     knl_tcb_pc[knl_curtsk]();
 }

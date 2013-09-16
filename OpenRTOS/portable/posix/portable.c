@@ -156,7 +156,7 @@ LOCAL void* portWaitForStart(void* taskid)
 	{
 		portSuspendThread( pthread_self() );
 	}
-
+	GetInternalResource();
 	knl_tcb_pc[(TaskType)(TaskRefType)taskid]();
 	return NULL;
 }

@@ -38,8 +38,10 @@ EXPORT StatusType TerminateTask(void)
 {
     StatusType ercd = E_OK;
     OS_EXT_VALIDATE((0 == knl_taskindp),E_OS_CALLEVEL);
-    // OS_EXT_VALIDATE(,E_OS_RESOURCE);
+    OS_EXT_VALIDATE((INVALID_RESOURCE == knl_tcb_resque[knl_curtsk]),E_OS_RESOURCE);
     DISABLE_INTERRUPT();
+    //release internal resource or for non-preemtable task
+    ReleaseInternalResource();
     if(knl_tcb_activation[knl_curtsk] > 0)
     {
     	knl_tcb_activation[knl_curtsk] --;
@@ -85,10 +87,12 @@ EXPORT  StatusType ChainTask    ( TaskType TaskID )
 	StatusType ercd = E_OK;
 	OS_STD_VALIDATE((TaskID<cfgOS_TASK_NUM),E_OS_ID);
 	OS_EXT_VALIDATE((0 == knl_taskindp),E_OS_CALLEVEL);
-	//OS_EXT_VALIDATE(,E_OS_RESOURCE);
+	OS_EXT_VALIDATE((INVALID_RESOURCE == knl_tcb_resque[knl_curtsk]),E_OS_RESOURCE);
 	DISABLE_INTERRUPT();
 	if(TaskID == knl_curtsk)
 	{	// chain to itself.
+		//release internal resource or for non-preemtable task
+		ReleaseInternalResource();
 		knl_search_schedtsk();
 		knl_make_active(TaskID);
 	}
@@ -107,6 +111,9 @@ EXPORT  StatusType ChainTask    ( TaskType TaskID )
 				goto Error_Exit;
 			}
 		}
+
+		//release internal resource or for non-preemtable task
+		ReleaseInternalResource();
 		//firstly terminate current running task
 		if(knl_tcb_activation[knl_curtsk] > 0)
 		{
@@ -129,6 +136,27 @@ EXPORT  StatusType ChainTask    ( TaskType TaskID )
 OS_VALIDATE_ERROR_EXIT()
 	ENABLE_INTERRUPT();
 	return ercd;
+}
+StatusType Schedule ( void )
+{
+    StatusType ercd = E_OK;
+    OS_EXT_VALIDATE((0 == knl_taskindp),E_OS_CALLEVEL);
+    OS_EXT_VALIDATE((INVALID_RESOURCE == knl_tcb_resque[knl_curtsk]),E_OS_RESOURCE);
+
+	BEGIN_CRITICAL_SECTION();
+	//if task has internal resource or task is non-premtable
+	if(knl_rdyque.top_pri > knl_tcb_ipriority[knl_curtsk])
+	{	//release internal resource or for Non-Preemtable Task
+    	ReleaseInternalResource();
+        knl_reschedule();
+    }
+	END_CRITICAL_SECTION();
+
+	//re-get internal resource or for Non-Preemtable task
+	GetInternalResource();
+
+OS_VALIDATE_ERROR_EXIT()
+    return ercd;
 }
 
 //OS-impl internal function
@@ -156,6 +184,7 @@ EXPORT void knl_task_init(void)
 		}
 	}
 }
+
 // ready to run, but not runnable(cann't be scheduled),
 // not in the ready queue
 EXPORT void knl_make_ready(TaskType taskid)
@@ -173,6 +202,9 @@ EXPORT void knl_make_ready(TaskType taskid)
 		}
 	}
 	#endif
+#if(cfgOS_S_RES_NUM > 0)
+	knl_tcb_resque[taskid] = INVALID_RESOURCE;
+#endif
 	knl_setup_context(taskid);
 }
 
@@ -221,6 +253,36 @@ EXPORT void knl_search_schedtsk(void)
 	else
 	{
 		knl_schedtsk = INVALID_TASK;
+	}
+}
+//no matter what,will put current ready task to the ready queue
+//and the high ready task <toptsk> will be dispatched.
+EXPORT void knl_reschedule( void )
+{
+	TaskType toptsk;
+
+	toptsk = knl_ready_queue_top();
+	if ( knl_schedtsk != toptsk ){
+		toptsk = knl_schedtsk;
+		knl_search_schedtsk();	// will delete the toptsk, and make knl_schedtsk = toptsk.
+	    knl_ready_queue_insert_top(toptsk);
+	}
+}
+
+// just poll the top priority task in the ready queue
+EXPORT TaskType knl_ready_queue_top(void)
+{
+	PriorityType top_pri = knl_rdyque.top_pri;
+	TaskReadyQueueType *tskque;
+
+	tskque = &(knl_rdyque.tskque[top_pri]);
+	if(tskque->head != tskque->tail)
+	{  // not empty.
+		return tskque->queue[tskque->head];
+	}
+	else
+	{
+		return INVALID_TASK;
 	}
 }
 EXPORT void knl_ready_queue_insert_top(TaskType taskid)

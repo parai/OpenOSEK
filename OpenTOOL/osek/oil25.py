@@ -95,7 +95,7 @@ class OsGeneral():
         fp.write("#define cfgOS_STARTUPHOOK %s\n\n"%(int(self.startuphook)))
         fp.write('#define cfgOS_TASK_NUM %s\n'%(self.tasknum))
         fp.write('#define cfgOS_FLAG_NUM %s\n'%(self.eventnum))
-        fp.write('#define cfgOS_S_RES_NUM %s\n'%(self.nresnum))
+        fp.write('#define cfgOS_S_RES_NUM %s\n'%(self.nresnum+1))
         fp.write('#define cfgOS_I_RES_NUM %s\n'%(self.iresnum))
         fp.write('#define cfgOS_COUNTER_NUM %s\n'%(self.counternum))
         fp.write('#define cfgOS_ALARM_NUM %s\n'%(self.alarmnum))
@@ -226,7 +226,7 @@ re_counter_MINCYCLE = re.compile(r'MINCYCLE\s*=\s*(\w+)\s*;')
 class OsCounter():
     def __init__(self):
         self.name = 'unname'
-        self.maxallowedvalue = 65575
+        self.maxallowedvalue = 65535/2
         self.ticksperbase = 1
         self.mincycle = 1
         self.id = 0xFF #invalid id
@@ -610,11 +610,10 @@ class OsConfig():
         for res in self.resources:
             flag = False
             for tsk in self.tasks:
-                try:
-                    if(tsk.resources.index(res.name)):
-                        flag = True
-                except:
-                    continue
+                for resn in tsk.resources:
+                    if(resn == res.name):
+                        flag = True;
+                        break;
             if(flag == False):
                 print 'WARNING: %s hasn\'t been asigned to any task.'%(res.name)
         #start to parse
@@ -625,7 +624,8 @@ class OsConfig():
                     if(res.name == res2):
                         if(tsk.priority > res.priority):
                             res.priority = tsk.priority;
-        sid = iid = 0
+        sid = 1 # 0 is for RES_SCHEDULER
+        iid = 0
         for res in self.resources:
             if(res.property.upper() == 'STANDARD'):
                 res.id = sid 
@@ -640,6 +640,20 @@ class OsConfig():
                 if(res2.property.upper() == 'INTERNAL'):
                     tsk.rpriority = res2.priority;
     def postProcessAlarmAndCounter(self):
+        # check if SystemTimer is configured
+        flag = False
+        for cnt in self.counters:
+            if(cnt.name == 'SystemTimer'):
+                #move it to firstly
+                self.counters.remove(cnt)
+                self.counters.insert(0, cnt)
+                flag = True;
+                break
+        if(flag == False):
+            # if no, add it use default value
+            cnt = OsCounter()
+            cnt.name = 'SystemTimer'
+            self.counters.insert(0, cnt)
         # determine counter id
         id =0;
         for cnt in self.counters:
@@ -884,7 +898,20 @@ class OsConfig():
         cstr += '};\n'
         fp.write(cstr);
             
-                
+    def genResources(self, fp):
+        for res in self.resources:
+            if(res.name == 'RES_SCHEDULER'):
+                print "WARNING:RES_SCHEDULER shouldn't be configured."
+                self.resources.remove(res)
+        fp.write("\n/* ====================== Resources ====================== */\n")
+        cstr = 'EXPORT const PriorityType knl_rcb_priority[] = \n{\n';
+        cstr += '\tcfgOS_MAX_PRIORITY,/* RES_SCHEDULER */\n'
+        for res in self.resources:
+            if(res.property == 'STANDARD'):
+                cstr += '\t%s_priority,\n'%(res.name)
+        cstr += '};\n'
+        fp.write(cstr);
+        
     def genC(self, path):
         fp = open('%s/oscfg.c'%(path), 'w')
         fp.write(cCodeHead)
@@ -896,6 +923,8 @@ class OsConfig():
         self.genCountersBaseInfo(fp)
         # Gen Alarms
         self.genAlarms(fp)
+        # Gen Resources
+        self.genResources(fp)
         # =================================================
         fp.write('\n\n')
         fp.close()

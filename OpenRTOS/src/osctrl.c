@@ -40,8 +40,10 @@ EXPORT void StartOS ( AppModeType AppMode )
 #endif
 	knl_appmode = AppMode;
 	knl_task_init();
+#if(cfgOS_ALARM_NUM > 0)
 	knl_alarm_counter_init();
-    //knl_resource_init();
+#endif
+	knl_resource_init();
     knl_force_dispatch();
     
 }

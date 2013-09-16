@@ -63,12 +63,14 @@
 
 #define TASK(TaskName) void TaskMain##TaskName(void)
 #define ALARM(AlarmName) void AlarmMain##AlarmName(void) 
-#define ALARMCALLBACK(cbk) void AlarmMain##cbk(void)    
+#define ALARMCALLBACK(cbk) void AlarmMain##cbk(void)
+#define ISR(isrname) void ISRMain##isrname(void)
 
 #define DeclareTask(TaskName)
 #define DeclareAlarm(AlarmName)
 #define DeclareResource(ResourceName)
 #define DeclareEvent(EventName)  
+
 
 /* ================================ TYPEs     =============================== */
 /* This data type identifies a task. */

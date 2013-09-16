@@ -48,6 +48,7 @@ LOCAL void portStartDispatcher(void);
 LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter );
 LOCAL void portProcessSimulatedInterrupts( void );
 LOCAL void l_dispatch0(void);
+LOCAL void portWaitForStart(void);
 LOCAL void knl_system_timer(void);
 
 EXPORT imask_t knl_disable_int( void )
@@ -103,7 +104,8 @@ EXPORT void knl_force_dispatch(void)
 
 EXPORT void knl_setup_context(TaskType taskid)
 {
-	FP pc = knl_tcb_pc[taskid];
+	//FP pc = knl_tcb_pc[taskid];
+	FP pc = portWaitForStart;
 	knl_tcb_old_sp[taskid] = knl_tcb_sp[taskid];
 	knl_tcb_sp[taskid]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) pc, NULL, CREATE_SUSPENDED, NULL );
 	SetThreadAffinityMask( knl_tcb_sp[taskid], 0x01 );
@@ -144,7 +146,9 @@ EXPORT void knl_dispatch_entry(void)
 LOCAL void knl_system_timer(void)
 {
 	EnterISR();
+#if(cfgOS_ALARM_NUM > 0)
 	(void)SignalCounter(0);
+#endif
 	LeaveISR();
 }
 LOCAL void portStartDispatcher(void)
@@ -302,4 +306,9 @@ void portGenerateSimulatedInterrupt( unsigned long ulInterruptNumber )
 
 		ReleaseMutex( portInterruptEventMutex );
 	}
+}
+LOCAL void portWaitForStart(void)
+{
+	GetInternalResource();
+	knl_tcb_pc[knl_curtsk]();
 }

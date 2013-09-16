@@ -29,10 +29,17 @@ RMFLGS = -f
 OBJS =  $(BD)/OpenRTOS/src/task.o	\
 		$(BD)/OpenRTOS/src/alarm.o	\
 		$(BD)/OpenRTOS/src/event.o	\
+		$(BD)/OpenRTOS/src/resource.o	\
 		$(BD)/OpenRTOS/src/osctrl.o	\
 		$(BD)/OpenRTOS/portable/posix/portable.o	\
-		$(BD)/OpenRTOS/config/oscfg.o	\
-		$(BD)/OpenAPP/OpenAPP.o	
+		$(BD)/OpenRTOS/config/oscfg.o
+
+dir-y =	$(BD)/OpenAPP
+
+src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))
+obj-y = $(subst .c,.o,$(src-y))
+
+OBJS += $(obj-y)
 
 #common rules
 %.o:%.c

@@ -11,7 +11,7 @@ BD = ../../..
 
 .PHONY:all sim clean compiler generator
 
-all:compiler generator
+all:compiler
 	@(cd $(BD);$(CW)/Prog/piper.exe $(CW)/Prog/maker.exe OpenRTOS/mak/9s12xep100/Makefile.mk)
 
 sim:
@@ -20,6 +20,7 @@ sim:
 clean:
 	@(cd $(BD);make clean -f OpenRTOS/mak/9s12xep100/Makefile.mk)
 
+gen:generator
 generator:
 	@(python $(BD)/OpenTOOL/startosek.py  --oil $(BD)/OpenRTOS/config/oscfg.oil)
 	@echo ">>>>>>>>>> Convert oscfg.oil DONE <<<<<<<<<<<<<<<<<<<<"

@@ -20,7 +20,7 @@
  */
 /* ================================ INCLUDEs  =============================== */
 #include "osek_os.h"
-
+#if(cfgOS_ALARM_NUM > 0)
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
@@ -296,4 +296,4 @@ EXPORT void knl_alarm_remove(AlarmType alarm)
 		knl_acb_prev[next] = prev;
 	}
 }
-
+#endif /* cfgOS_ALARM_NUM */

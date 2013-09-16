@@ -46,21 +46,19 @@ OBJS=	\
 	$(BD)OpenRTOS/src/main.o \
 	$(BD)OpenRTOS/src/osctrl.o \
 	$(BD)OpenRTOS/src/task.o \
-	$(BD)/OpenRTOS/src/alarm.o	\
-	$(BD)/OpenRTOS/src/event.o	\
+	$(BD)OpenRTOS/src/alarm.o	\
 	$(BD)OpenRTOS/config/oscfg.o	\
 	$(BD)OpenRTOS/portable/9s12xep100/portable.o	\
 	$(BD)OpenAPP/OpenAPP.o	\
 	$(CW)/lib/hc12c/src/start12.o	\
 	$(CW)/lib/hc12c/src/mc9s12xep100.o \
 	$(CW)/lib/hc12c/src/DATAPAGE.o
-	
+
 OBJS_LINK= 	\
 	$(OUT)/main.o \
 	$(OUT)/osctrl.o \
 	$(OUT)/task.o \
 	$(OUT)/alarm.o \
-	$(OUT)/event.o \
 	$(OUT)/oscfg.o	\
 	$(OUT)/portable.o	\
 	$(OUT)/OpenAPP.o	\
@@ -77,7 +75,7 @@ OBJS_LINK= 	\
 
 all: $(OBJS) $(TARGET)
 	echo >>>>>>  BUILD DONE OK!  <<<<<<<
-		
+
 $(TARGET):
 	$(LD) $(DEF_PRM) $(LDFLGS) -Add($(LIBS)) -Add($(OBJS_LINK)) -O$(TARGET)
 	mv -f OpenOSEK.map $(OUT)

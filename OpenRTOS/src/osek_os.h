@@ -25,16 +25,18 @@
 #include "portable.h"
 
 /* ================================ MACROs    =============================== */
-#define ReleaseInternalResource()
-#define GetInternalResource()
-#define INVALID_TASK  ((TaskType)0xFF)
-#define INVALID_ALARM ((AlarmType)0xFF)
-#define INVALID_FLAG ((uint8)0xFF)
+#define ReleaseInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_ipriority[knl_curtsk]; }
+#define GetInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_rpriority[knl_curtsk]; }
+
+#define INVALID_TASK      ((TaskType)0xFF)
+#define INVALID_ALARM     ((AlarmType)0xFF)
+#define INVALID_FLAG      ((uint8)0xFF)
+#define INVALID_RESOURCE  ((ResourceType)0xFF)
+#define INVALID_PRIORITY  ((PriorityType)0xFF)
 
 #define NO_EVENT 0
 
-#define ALARM_STOPPED ((TickType)0xFFFFFFFFUL)
-
+#define ALARM_STOPPED   ((TickType)0xFFFFFFFFUL)
 #define EXTENDED 0
 #define STANDARD 1
 
@@ -71,6 +73,11 @@
 	knl_make_runnable(_taskid);	\
 }
 
+#define knl_preempt()	\
+{		\
+	knl_ready_queue_insert_top(knl_schedtsk);	\
+	knl_search_schedtsk();	\
+}
 /* ================================ TYPEs     =============================== */
 /* Priority type of Task */
 typedef uint8 PriorityType;
@@ -105,6 +112,7 @@ IMPORT const uint8         knl_tcb_flgid[];
 IMPORT TaskStateType       knl_tcb_state[];
 IMPORT PriorityType        knl_tcb_curpri[];
 IMPORT uint8               knl_tcb_activation[];
+IMPORT ResourceType        knl_tcb_resque[];
 
 IMPORT AppModeType knl_appmode;
 IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
@@ -135,6 +143,9 @@ IMPORT    TickType       knl_acb_period[];
 IMPORT EventMaskType knl_fcb_set[];
 IMPORT EventMaskType knl_fcb_wait[];
 
+// resources control block
+IMPORT const PriorityType knl_rcb_priority[];
+IMPORT ResourceType       knl_rcb_next[];
 /* ================================ FUNCTIONs =============================== */
 /* ------------ tasks ------------- */
 IMPORT void knl_task_init(void);
@@ -142,10 +153,12 @@ IMPORT void knl_make_ready(TaskType taskid);
 IMPORT void knl_make_runnable(TaskType taskid);
 IMPORT void knl_ready_queue_insert(TaskType taskid);
 IMPORT void knl_ready_queue_insert_top(TaskType taskid);
+IMPORT TaskType knl_ready_queue_top(void);
 IMPORT void knl_bitmap_set(PriorityType priority);
 IMPORT void knl_bitmap_clear(PriorityType priority);
 IMPORT PriorityType knl_bitmap_search(PriorityType from);
 IMPORT void knl_search_schedtsk(void);
+IMPORT void knl_reschedule( void );
 
 /* ------------ alarms ------------- */
 IMPORT void knl_alarm_counter_init(void);
@@ -154,4 +167,6 @@ IMPORT TickType knl_diff_tick(TickType curval, TickType almval, TickType maxval2
 IMPORT void knl_alarm_insert(AlarmType alarm);
 IMPORT void knl_alarm_remove(AlarmType alarm);
 
+/* ------------ resources ------------- */
+IMPORT void knl_resource_init(void);
 #endif /* _OSEK_OS_H_ */
