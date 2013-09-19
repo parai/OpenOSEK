@@ -71,6 +71,56 @@
 #define DeclareResource(ResourceName)
 #define DeclareEvent(EventName)  
 
+//----------------------- OS Error Process -----------
+/*
+ *  OS Error Process Macors
+ */
+#define OSServiceId_ActivateTask    0
+#define OSServiceId_TerminateTask   1
+#define OSServiceId_ChainTask       2
+#define OSServiceId_Schedule        3
+#define OSServiceId_GetTaskID       4
+#define OSServiceId_GetTaskState    5
+#define OSServiceId_GetAlarmBase    6
+#define OSServiceId_GetAlarm        7
+#define OSServiceId_SetRelAlarm     8
+#define OSServiceId_SetAbsAlarm     9
+#define OSServiceId_CancelAlarm     10
+#define OSServiceId_SetEvent        11
+#define OSServiceId_ClearEvent      12
+#define OSServiceId_GetEvent        13
+#define OSServiceId_WaitEvent       14
+#define OSServiceId_GetResource     15
+#define OSServiceId_ReleaseResource 16
+#define OSServiceId_StartOS         17
+#define OSServiceId_ShutdownOS      18
+#define OSErrorGetServiceId()				(_errorhook_svcid)
+
+#define OSError_ActivateTask_TaskID()		(_errorhook_par1._tskid)
+#define OSError_ChainTask_TaskID()			(_errorhook_par1._tskid)
+#define OSError_GetTaskID_TaskID()			(_errorhook_par1._p_tskid)
+#define OSError_GetTaskState_TaskID()		(_errorhook_par1._tskid)
+#define OSError_GetTaskState_State()		(_errorhook_par2._p_state)
+#define OSError_GetResource_ResID()			(_errorhook_par1._resid)
+#define OSError_ReleaseResource_ResID()		(_errorhook_par1._resid)
+#define OSError_SetEvent_TaskID()			(_errorhook_par1._tskid)
+#define OSError_SetEvent_Mask()				(_errorhook_par2._mask)
+#define OSError_ClearEvent_Mask()			(_errorhook_par1._mask)
+#define OSError_GetEvent_TaskID()			(_errorhook_par1._tskid)
+#define OSError_GetEvent_Mask()				(_errorhook_par2._p_mask)
+#define OSError_WaitEvent_Mask()			(_errorhook_par1._mask)
+#define OSError_GetAlarmBase_AlarmID()		(_errorhook_par1._almid)
+#define OSError_GetAlarmBase_Info()			(_errorhook_par2._p_info)
+#define OSError_GetAlarm_AlarmID()			(_errorhook_par1._palmid)
+#define OSError_GetAlarm_Tick()				(_errorhook_par2._p_tick)
+#define OSError_SetRelAlarm_AlarmID()		(_errorhook_par1._almid)
+#define OSError_SetRelAlarm_increment()		(_errorhook_par2._incr)
+#define OSError_SetRelAlarm_cycle()			(_errorhook_par3._cycle)
+#define OSError_SetAbsAlarm_AlarmID()		(_errorhook_par1._almid)
+#define OSError_SetAbsAlarm_start()			(_errorhook_par2._start)
+#define OSError_SetAbsAlarm_cycle()			(_errorhook_par3._cycle)
+#define OSError_CancelAlarm_AlarmID()		(_errorhook_par1._almid)
+#define OSError_SignalCounter_CounterID()	(_errorhook_par1._cntid)
 
 /* ================================ TYPEs     =============================== */
 /* This data type identifies a task. */
@@ -112,6 +162,28 @@ typedef uint8 StatusType;
 typedef uint32 AppModeType;     /* ecah bit is mapped to a different application mode */
 /* This data type represents the identification of system services. */
 typedef uint8 OSServiceIdType;
+
+//-------------------------------- TYPEs for ERROR   -------------------------
+//this is a copy and paste from nxtOSEK
+typedef union {
+		TaskType			_tskid;
+		TaskRefType			_p_tskid;
+		TaskStateRefType	_p_state;
+		ResourceType		_resid;
+		EventMaskType		_mask;
+		EventMaskRefType	_p_mask;
+		AlarmType			_almid;
+		AlarmBaseRefType	_p_info;
+		TickRefType			_p_tick;
+		TickType			_incr;
+		TickType			_cycle;
+		TickType			_start;
+		AppModeType			_mode;
+		CounterType			_cntid;
+	} _ErrorHook_Par;
+
+extern OSServiceIdType	_errorhook_svcid;
+extern _ErrorHook_Par	_errorhook_par1, _errorhook_par2, _errorhook_par3;
 
 /* ================================ INCLUDEs  =============================== */
 #include "oscfg.h"

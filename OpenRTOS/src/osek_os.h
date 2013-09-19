@@ -55,10 +55,7 @@
 		}								\
 	}while(FALSE)
 
-#define OS_VALIDATE_ERROR_EXIT() Error_Exit:	\
-	if(ercd != E_OK){	\
-		printf("OS_VALIDATE_ERROR_EXIT(%d).\n",ercd);	\
-	}
+#define OS_VALIDATE_ERROR_EXIT() Error_Exit:
 
 #define OS_STD_VALIDATE(_true,_ercd) OS_VALIDATE(_true,_ercd)
 #if(cfgOS_STATUS == EXTENDED)
@@ -78,6 +75,67 @@
 	knl_ready_queue_insert_top(knl_schedtsk);	\
 	knl_search_schedtsk();	\
 }
+
+// OSEK-OS Error Process
+#if(cfgOS_ERRORHOOK == 1)
+// For Service without Parameters
+#define OsErrorProcess0(ServiceName)	\
+do{												\
+	if(E_OK != ercd)	\
+	{	\
+		BEGIN_CRITICAL_SECTION();	\
+		_errorhook_svcid = OSServiceId_##ServiceName;	\
+		knl_call_errorhook(ercd);	\
+		END_CRITICAL_SECTION();	\
+	}	\
+}while(0)
+// For Service with 1 Parameter
+#define OsErrorProcess1(ServiceName,ParamName1,param1)	\
+do{												\
+	if(E_OK != ercd)	\
+	{	\
+    	BEGIN_CRITICAL_SECTION();	\
+    	_errorhook_svcid = OSServiceId_##ServiceName;	\
+    	_errorhook_par1._##ParamName1 = (param1);	\
+    	knl_call_errorhook(ercd);	\
+    	END_CRITICAL_SECTION();	\
+	}	\
+}while(0)
+
+// For Service with 2 Parameters
+#define OsErrorProcess2(ServiceName,ParamName1,param1,ParamName2,param2)	\
+do{												\
+	if(E_OK != ercd)	\
+	{	\
+    	BEGIN_CRITICAL_SECTION();	\
+    	_errorhook_svcid = OSServiceId_##ServiceName;	\
+    	_errorhook_par1._##ParamName1 = (param1);	\
+    	_errorhook_par2._##ParamName2 = (param2);	\
+    	knl_call_errorhook(ercd);	\
+    	END_CRITICAL_SECTION();	\
+	}	\
+}while(0)
+
+// For Service with 3 Parameters
+#define OsErrorProcess3(ServiceName,ParamName1,param1,ParamName2,param2,ParamName3,param3)	\
+do{												\
+	if(E_OK != ercd)	\
+	{	\
+    	BEGIN_CRITICAL_SECTION();	\
+    	_errorhook_svcid = OSServiceId_##ServiceName;	\
+    	_errorhook_par1._##ParamName1 = (param1);	\
+    	_errorhook_par2._##ParamName2 = (param2);	\
+    	_errorhook_par2._##ParamName3 = (param3);	\
+    	knl_call_errorhook(ercd);	\
+    	END_CRITICAL_SECTION();	\
+	}	\
+}while(0)
+#else
+#define OsErrorProcess0(ServiceName)
+#define OsErrorProcess1(ServiceName,ParamName,param1)
+#define OsErrorProcess2(ServiceName,ParamName1,param1,ParamName2,param2)
+#define OsErrorProcess3(ServiceName,ParamName1,param1,ParamName2,param2,ParamName3,param3)
+#endif
 /* ================================ TYPEs     =============================== */
 /* Priority type of Task */
 typedef uint8 PriorityType;
@@ -147,6 +205,7 @@ IMPORT EventMaskType knl_fcb_wait[];
 IMPORT const PriorityType knl_rcb_priority[];
 IMPORT ResourceType       knl_rcb_next[];
 /* ================================ FUNCTIONs =============================== */
+IMPORT void knl_call_errorhook(StatusType ercd);
 /* ------------ tasks ------------- */
 IMPORT void knl_task_init(void);
 IMPORT void knl_make_ready(TaskType taskid);
@@ -169,4 +228,5 @@ IMPORT void knl_alarm_remove(AlarmType alarm);
 
 /* ------------ resources ------------- */
 IMPORT void knl_resource_init(void);
+
 #endif /* _OSEK_OS_H_ */

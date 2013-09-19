@@ -32,6 +32,25 @@ EXPORT uint8    knl_taskindp = 0u;   /* task in independent part nested level */
 EXPORT uint8    knl_dispatch_disabled = 0u; /* os dispatch state:enabled(0) or disabled(1) */
 
 /* ================================ FUNCTIONs =============================== */
+/* |------------------+------------------------------------------------------| */
+/* | Syntax:          | void StartOS ( AppModeType <Mode> )                  | */
+/* |------------------+------------------------------------------------------| */
+/* | Parameter (In):  | Mode:application mode                                | */
+/* |------------------+------------------------------------------------------| */
+/* | Parameter (Out): | none                                                 | */
+/* |------------------+------------------------------------------------------| */
+/* | Description:     | The user can call this system service to start the   | */
+/* |                  | operating system in a specific mode, see chapter 5   | */
+/* |                  | (os223.doc), Application modes.                      | */
+/* |------------------+------------------------------------------------------| */
+/* | Particularities: | Only allowed outside of the operating system,        | */
+/* |                  | therefore implementation specific restrictions may   | */
+/* |                  | apply. See also chapter 11.3, System start-up,       | */
+/* |                  | especially with respect to systems where OSEK and    | */
+/* |                  | OSEKtime coexist. This call does not need to return. | */
+/* |------------------+------------------------------------------------------| */
+/* | Conformance:     | BCC1, BCC2, ECC1, ECC2                               | */
+/* |------------------+------------------------------------------------------| */
 EXPORT void StartOS ( AppModeType AppMode )
 {
 	DISABLE_INTERRUPT();
@@ -48,10 +67,43 @@ EXPORT void StartOS ( AppModeType AppMode )
     
 }
 
+/* |------------------+------------------------------------------------------------------| */
+/* | Syntax:          | void ShutdownOS ( StatusType <Error> )                           | */
+/* |------------------+------------------------------------------------------------------| */
+/* | Parameter (In):  | Error:error occurred                                             | */
+/* |------------------+------------------------------------------------------------------| */
+/* | Parameter (Out): | none                                                             | */
+/* |------------------+------------------------------------------------------------------| */
+/* | Description:     | 1.The user can call this system service to abort                 | */
+/* |                  | the overall system (e.g. emergency off). The                     | */
+/* |                  | operating system also calls this function internally,            | */
+/* |                  | if it has reached an undefined internal state and is             | */
+/* |                  | no longer ready to run.                                          | */
+/* |                  | 2.If a ShutdownHook is configured the hook routine               | */
+/* |                  | ShutdownHook is always called (with <Error> as argument)         | */
+/* |                  | before shutting down the operating system.                       | */
+/* |                  | 3.If ShutdownHook returns, further behaviour of ShutdownOS       | */
+/* |                  | is implementation specific.                                      | */
+/* |                  | 4.In case of a system where OSEK OS and OSEKtime OS coexist,     | */
+/* |                  | ShutdownHook has to return. <Error> needs to be a valid          | */
+/* |                  | error code supported by OSEK OS.                                 | */
+/* |                  | 5.In case of a system where OSEK OS and OSEKtime OS coexist,     | */
+/* |                  | <Error> might also be a value accepted by OSEKtime OS.           | */
+/* |                  | In this case, if enabled by an OSEKtime configuration parameter, | */
+/* |                  | OSEKtime OS will be shut down after OSEK OS shutdown.            | */
+/* |------------------+------------------------------------------------------------------| */
+/* | Particularities: | After this service the operating system is shut down.            | */
+/* |                  | Allowed at task level, ISR level, in ErrorHook and StartupHook,  | */
+/* |                  | and also called internally by the operating system.              | */
+/* |                  | If the operating system calls ShutdownOS it never uses E_OK      | */
+/* |                  | as the passed parameter value.                                   | */
+/* |------------------+------------------------------------------------------------------| */
+/* | Conformance:     | BCC1, BCC2, ECC1, ECC2                                           | */
+/* |------------------+------------------------------------------------------------------| */
 EXPORT void ShutdownOS( StatusType Error )
 {
     DISABLE_INTERRUPT();
-#if (cfgOS_SHUT_DOWN_HOOK == STD_ON)
+#if (cfgOS_SHUTDOWNHOOK == STD_ON)
 	ShutdownHook(Error);
 #endif
     /* @req OS425: If ShutdownOS() is called and ShutdownHook() returns then the operating
@@ -87,3 +139,16 @@ EXPORT void LeaveISR(void)
 	}
 	ENABLE_INTERRUPT();
 }
+
+#if(cfgOS_ERRORHOOK == 1)
+EXPORT void knl_call_errorhook(StatusType ercd)
+{
+    static call_count = 0;
+    call_count++;
+    if(1 == call_count)
+    {
+        ErrorHook(ercd);
+    }
+    call_count--;
+}
+#endif

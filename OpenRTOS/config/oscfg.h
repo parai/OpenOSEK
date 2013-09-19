@@ -28,17 +28,17 @@
 #define cfgOS_ERRORHOOK 0
 #define cfgOS_PRETASKHOOK 0
 #define cfgOS_POSTTASKHOOK 0
-#define cfgOS_SHUTDOWDHOOK 0
+#define cfgOS_SHUTDOWNHOOK 0
 #define cfgOS_STARTUPHOOK 0
 
-#define cfgOS_TASK_NUM 2
+#define cfgOS_TASK_NUM 4
 #define cfgOS_FLAG_NUM 0
 #define cfgOS_S_RES_NUM 1
 #define cfgOS_I_RES_NUM 0
 #define cfgOS_COUNTER_NUM 0
 #define cfgOS_ALARM_NUM 0
-#define cfgOS_MAX_PRIORITY 2
-#define cfgOS_CC BCC1
+#define cfgOS_MAX_PRIORITY 4
+#define cfgOS_CC BCC2
 
 /* Application Modes */
 
@@ -49,7 +49,7 @@
 #define Task1_ipriority 1
 #define Task1_rpriority 1
 			/* [] */
-#define Task1_activation 1
+#define Task1_activation 2
 #define Task1_stacksize 200
 #define Task1_autostart TRUE
 #define Task1_schedule FULL
@@ -67,6 +67,30 @@
 #define Task2_schedule FULL
 #define Task2_appmode (INVALID_APPMODE)
 #define Task2_eventhandle INVALID_FLAG
+
+/* Task3 configuation */
+#define Task3 2
+#define Task3_ipriority 2
+#define Task3_rpriority 2
+			/* [] */
+#define Task3_activation 1
+#define Task3_stacksize 200
+#define Task3_autostart FALSE
+#define Task3_schedule FULL
+#define Task3_appmode (INVALID_APPMODE)
+#define Task3_eventhandle INVALID_FLAG
+
+/* Task4 configuation */
+#define Task4 3
+#define Task4_ipriority 4
+#define Task4_rpriority 4
+			/* [] */
+#define Task4_activation 1
+#define Task4_stacksize 200
+#define Task4_autostart FALSE
+#define Task4_schedule FULL
+#define Task4_appmode (INVALID_APPMODE)
+#define Task4_eventhandle INVALID_FLAG
 
 /* ====================== Events ====================== */
 

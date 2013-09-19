@@ -1,4 +1,4 @@
-// OSEK OSEK {
+//OSEK OSEK {
 
 OS	ExampleOS {
 	STATUS = EXTENDED;
@@ -8,26 +8,44 @@ OS	ExampleOS {
    ERRORHOOK = FALSE;
    SHUTDOWNHOOK = FALSE;
 	MEMMAP = FALSE;
-	USERESSCHEDULER = TRUE;
+	USERESSCHEDULER = FALSE;
 };
 
 TASK Task1 {
    PRIORITY = 1;
-   SCHEDULE = FULL;	//or NON,but for gainos when NON, no need to get resource,so failed at 
-   ACTIVATION = 1;
+   SCHEDULE = FULL;
+   ACTIVATION = 2;
    AUTOSTART = TRUE {
 		APPMODE = OSDEFAULTAPPMODE;
 	};
-	StackSize = 256;
+	STACK = 256;
 	TYPE = BASIC;
 };
 
 TASK Task2 {
 	PRIORITY = 2;
-	SCHEDULE = FULL;	//or NON 
+	SCHEDULE = FULL;
 	ACTIVATION = 1;
 	AUTOSTART = FALSE;
-	StackSize = 256;
+	STACK = 256;
+	TYPE = BASIC;
+}
+
+TASK Task3 {
+	PRIORITY = 2;
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	AUTOSTART = FALSE;
+	STACK = 256;
+	TYPE = BASIC;
+}
+
+TASK Task4 {
+	PRIORITY = 4;
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	AUTOSTART = FALSE;
+	STACK = 256;
 	TYPE = BASIC;
 }
 

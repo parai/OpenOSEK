@@ -30,6 +30,48 @@ EXPORT ResourceType        knl_rcb_next[cfgOS_S_RES_NUM];
 LOCAL  PriorityType        knl_rcb_tskpri[cfgOS_S_RES_NUM];
 
 /* ================================ FUNCTIONs =============================== */
+/* |------------------+-----------------------------------------------------------| */
+/* | Syntax:          | StatusType GetResource ( ResourceType <ResID> )           | */
+/* |------------------+-----------------------------------------------------------| */
+/* | Parameter (In):  | ResID:Reference to resource                               | */
+/* |------------------+-----------------------------------------------------------| */
+/* | Parameter (Out): | none                                                      | */
+/* |------------------+-----------------------------------------------------------| */
+/* | Description:     | This call serves to enter critical sections in the code   | */
+/* |                  | that are assigned to the resource referenced by <ResID>.  | */
+/* |                  | A critical section shall always be left using             | */
+/* |                  | ReleaseResource.                                          | */
+/* |------------------+-----------------------------------------------------------| */
+/* | Particularities: | 1.The OSEK priority ceiling protocol for resource         | */
+/* |                  | management is described in chapter 8.5.                   | */
+/* |                  | 2.Nested resource occupation is only allowed if the       | */
+/* |                  | inner critical sections are completely executed within    | */
+/* |                  | the surrounding critical section (strictly stacked,       | */
+/* |                  | see chapter 8.2, Restrictions when using resources).      | */
+/* |                  | Nested occupation of one and the same resource is         | */
+/* |                  | also forbidden!                                           | */
+/* |                  | 3.It is recommended that corresponding calls to           | */
+/* |                  | GetResource and ReleaseResource appear within the         | */
+/* |                  | same function.                                            | */
+/* |                  | 4.It is not allowed to use services which are points      | */
+/* |                  | of rescheduling for non preemptable tasks (TerminateTask, | */
+/* |                  | ChainTask, Schedule and WaitEvent, see chapter 4.6.2)     | */
+/* |                  | in critical sections. Additionally, critical sections     | */
+/* |                  | are to be left before completion of an interrupt service  | */
+/* |                  | routine.                                                  | */
+/* |                  | 5.Generally speaking, critical sections should be short.  | */
+/* |                  | 6.The service may be called from an ISR and from task     | */
+/* |                  | level (see Figure 12-1).                                  | */
+/* |------------------+-----------------------------------------------------------| */
+/* | Status:          | Standard:1.No error, E_OK                                 | */
+/* |                  | Extended:1.Resource <ResID> is invalid, E_OS_ID           | */
+/* |                  | 2.Attempt to get a resource which is already occupied     | */
+/* |                  | by any task or ISR, or the statically assigned priority   | */
+/* |                  | of the calling task or interrupt routine is higher than   | */
+/* |                  | the calculated ceiling priority, E_OS_ACCESS              | */
+/* |------------------+-----------------------------------------------------------| */
+/* | Conformance:     | BCC1, BCC2, ECC1, ECC2                                    | */
+/* |------------------+-----------------------------------------------------------| */
 StatusType GetResource (ResourceType ResID)
 {
 	StatusType ercd = E_OK;
@@ -49,9 +91,37 @@ StatusType GetResource (ResourceType ResID)
     knl_tcb_resque[knl_curtsk] = ResID;
     END_DISABLE_INTERRUPT();
 OS_VALIDATE_ERROR_EXIT()
+    OsErrorProcess1(GetResource,resid,ResID);
 	return ercd;
 }
 
+/* |------------------+------------------------------------------------------------| */
+/* | Syntax:          | StatusType ReleaseResource ( ResourceType <ResID> )        | */
+/* |------------------+------------------------------------------------------------| */
+/* | Parameter (In):  | ResID:Reference to resource                                | */
+/* |------------------+------------------------------------------------------------| */
+/* | Parameter (Out): | none                                                       | */
+/* |------------------+------------------------------------------------------------| */
+/* | Description:     | ReleaseResource is the counterpart of GetResource and      | */
+/* |                  | serves to leave critical sections in the code that are     | */
+/* |                  | assigned to the resource referenced by <ResID>.            | */
+/* |------------------+------------------------------------------------------------| */
+/* | Particularities: | For information on nesting conditions, see particularities | */
+/* |                  | of GetResource.                                            | */
+/* |                  | The service may be called from an ISR and from task level  | */
+/* |                  | (see Figure 12-1).                                         | */
+/* |------------------+------------------------------------------------------------| */
+/* | Status:          | Standard: No error, E_OK                                   | */
+/* |                  | Extended: Resource <ResID> is invalid, E_OS_ID             | */
+/* |                  | Attempt to release a resource which is not occupied by     | */
+/* |                  | any task or ISR, or another resource shall be released     | */
+/* |                  | before, E_OS_NOFUNC                                        | */
+/* |                  | Attempt to release a resource which has a lower ceiling    | */
+/* |                  | priority than the statically assigned priority of the      | */
+/* |                  | calling task or interrupt routine, E_OS_ACCESS             | */
+/* |------------------+------------------------------------------------------------| */
+/* | Conformance:     | BCC1, BCC2, ECC1, ECC2                                     | */
+/* |------------------+------------------------------------------------------------| */
 StatusType ReleaseResource ( ResourceType ResID )
 {
 	StatusType ercd = E_OK;
@@ -71,6 +141,7 @@ StatusType ReleaseResource ( ResourceType ResID )
     }
     END_CRITICAL_SECTION();
 OS_VALIDATE_ERROR_EXIT()
+    OsErrorProcess1(ReleaseResource,resid,ResID);
 	return ercd;
 }
 

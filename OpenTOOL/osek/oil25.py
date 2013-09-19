@@ -91,7 +91,7 @@ class OsGeneral():
         fp.write("#define cfgOS_ERRORHOOK %s\n"%(int(self.errorhook)))
         fp.write("#define cfgOS_PRETASKHOOK %s\n"%(int(self.pretaskhook)))
         fp.write("#define cfgOS_POSTTASKHOOK %s\n"%(int(self.errorhook)))
-        fp.write("#define cfgOS_SHUTDOWDHOOK %s\n"%(int(self.shutdownhook)))
+        fp.write("#define cfgOS_SHUTDOWNHOOK %s\n"%(int(self.shutdownhook)))
         fp.write("#define cfgOS_STARTUPHOOK %s\n\n"%(int(self.startuphook)))
         fp.write('#define cfgOS_TASK_NUM %s\n'%(self.tasknum))
         fp.write('#define cfgOS_FLAG_NUM %s\n'%(self.eventnum))
