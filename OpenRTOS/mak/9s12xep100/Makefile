@@ -14,7 +14,7 @@ BD = ../../..
 all:compiler
 	@(cd $(BD);$(CW)/Prog/piper.exe $(CW)/Prog/maker.exe OpenRTOS/mak/9s12xep100/Makefile.mk)
 
-sim:
+run:
 	@(cd $(BD);$(CW)/Prog/hiwave.exe -W -Prod=OpenOSEK.ini -instance=sim OpenOSEK.abs)
 
 clean:

@@ -47,24 +47,28 @@ OBJS=	\
 	$(BD)OpenRTOS/src/osctrl.o \
 	$(BD)OpenRTOS/src/task.o \
 	$(BD)OpenRTOS/src/alarm.o	\
+	$(BD)OpenRTOS/src/resource.o	\
+	$(BD)OpenRTOS/src/event.o	\
 	$(BD)OpenRTOS/config/oscfg.o	\
 	$(BD)OpenRTOS/portable/9s12xep100/portable.o	\
-	$(BD)OpenAPP/OpenAPP.o	\
 	$(CW)/lib/hc12c/src/start12.o	\
 	$(CW)/lib/hc12c/src/mc9s12xep100.o \
-	$(CW)/lib/hc12c/src/DATAPAGE.o
+	$(CW)/lib/hc12c/src/DATAPAGE.o	\
+	$(BD)OpenAPP/OpenAPP.o	\
 
 OBJS_LINK= 	\
 	$(OUT)/main.o \
 	$(OUT)/osctrl.o \
 	$(OUT)/task.o \
 	$(OUT)/alarm.o \
+	$(OUT)/resource.o	\
+	$(OUT)/event.o	\
 	$(OUT)/oscfg.o	\
 	$(OUT)/portable.o	\
-	$(OUT)/OpenAPP.o	\
 	$(OUT)/start12.o	\
 	$(OUT)/mc9s12xep100.o	\
-	$(OUT)/DATAPAGE.o
+	$(OUT)/DATAPAGE.o	\
+	$(OUT)/OpenAPP.o
 
 #common rules	
 .asm.o:
