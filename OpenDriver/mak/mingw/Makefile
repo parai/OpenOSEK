@@ -17,7 +17,7 @@ RM = rm
 
 #common flags
 ASFLGS = 
-INCDIR = -I$(BD)/OpenRTOS/inc -I$(BD)/OpenDriver/inc -I$(BD)/OpenAPP
+INCDIR = -I$(BD)/OpenRTOS/inc -I$(BD)/OpenDriver/inc -I$(BD)/OpenCom/inc -I$(BD)/OpenAPP
 MACROS = 
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
 LDFLGS = -g -O2 -Wall $(INCDIR) -L$(OUT) -l$(TARGET)  -lwsock32
@@ -43,6 +43,7 @@ all:$(TARGET)
 $(TARGET): $(obj-y)
 
 clean:
+	@echo remove $(obj-y) $(OUT)/*
 	@$(RM) $(RMFLGS) $(obj-y) $(OUT)/*
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
