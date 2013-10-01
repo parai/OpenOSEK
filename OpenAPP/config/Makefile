@@ -5,4 +5,5 @@ OUT = ../out
 .PHONY:all
 
 all:
-	($(CC) -S $(OUT)/OpenAPP.csv -o $(OUT) OpenAPP.oil)
+	@($(CC) -S $(OUT)/OpenAPP.csv -o $(OUT) OpenAPP.oil)
+	@echo ">>>>>>>>>>  OILCC BUILD DONE <<<<<<<<<<<<<<<< "

@@ -824,7 +824,6 @@ def Compile(file = ''):
     itemsToOsekObj()
     osekObjPostProcess()
     GenerateCode()
-    print '>>>>>>>>>>  OILCC BUILD DONE <<<<<<<<<<<<<<<< '
 
 def GetOption():
     global oilcc_I,oilcc_o,oilcc_S,oilcc_target
@@ -850,7 +849,6 @@ def GetOption():
             oilcc_S = arg
             option = ''
         elif(os.path.exists(arg) and arg[-4:].lower() == '.oil'):
-            print "Start to compile %s."%(arg)
             oilcc_target = arg
         elif(arg == sys.argv[0]):
             continue

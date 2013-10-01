@@ -1,7 +1,7 @@
 # Makefile for the OpenRTOS part of OpenOSEK
 
-#output
-TARGET = OpenOSEK
+#output Library
+TARGET = OpenRTOS
 
 #Base Directory
 BD = ../../..
@@ -24,19 +24,12 @@ CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
 LDFLGS = -g -O2 -Wall $(INCDIR)
 ARFLGS = rv
 RMFLGS = -f
-
-#common objectives
-OBJS =  $(BD)/OpenRTOS/src/task.o	\
-		$(BD)/OpenRTOS/src/alarm.o	\
-		$(BD)/OpenRTOS/src/event.o	\
-		$(BD)/OpenRTOS/src/resource.o	\
-		$(BD)/OpenRTOS/src/osctrl.o	\
-		$(BD)/OpenRTOS/portable/mingw/portable.o	\
-		$(BD)/OpenAPP/out/oscfg.o	
 		
-dir-y =	$(BD)/OpenAPP
-
-src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))
+#common objectives		
+dir-y =	$(BD)/OpenRTOS/src	\
+		$(BD)/OpenRTOS/portable/mingw
+src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))	\
+		$(BD)/OpenAPP/out/oscfg.c
 obj-y = $(subst .c,.o,$(src-y))
 
 OBJS += $(obj-y)
@@ -46,27 +39,16 @@ OBJS += $(obj-y)
 	@echo compile $<  to $@
 	@$(CC) $(CCFLGS) -o $@ $<
 
-.PHONY:all clean generator
+.PHONY:all clean
 
 all:$(TARGET)
-	@echo ">>>>>>>>>>>>>>>>>  BUILD DONE   <<<<<<<<<<<<<<<<<<<<<<"
+	$(AR) $(ARFLGS) $(OUT)/lib$(TARGET).a $(obj-y)
+	@echo ">>>>>>>>>>>>>>>>>  BUILD $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
-$(TARGET): $(OBJS)
-	@echo link to $(OUT)/$@
-	@$(LD) $(BD)/OpenRTOS/src/main.c -o $(OUT)/$@  $(OBJS) $(LDFLGS) 
+$(TARGET): $(obj-y)
 
-gen : generator
-	
-generator:
-	(cd $(BD)/OpenAPP/config; make all)
-
-#$(LIB-OSEK):$(OBJS)
-#	$(AR) $(ARFLGS) $(BD)/OpenRTOS/out/$@ $(OBJS)
-
-run:
-	@(start $(OUT)/$(TARGET))
 clean:
-	@echo remove objects
-	@$(RM) $(RMFLGS) $(OBJS) $(OUT)/* $(BD)/OpenRTOS/src/main.o
-	@echo ">>>>>>>>>>>>>>>>>  CLEAN DONE   <<<<<<<<<<<<<<<<<<<<<<"
+	@echo remove $(obj-y) $(OUT)/*
+	@$(RM) $(RMFLGS) $(obj-y) $(OUT)/*
+	@echo ">>>>>>>>>>>>>>>>>  CLEAN $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
