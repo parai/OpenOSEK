@@ -38,7 +38,6 @@ cscope.files
 *.html
 
 # directories
-OpenAPP/
 OpenRTOS/mak/9s12xep100/CW
 #OpenRTOS/mak/9s12xep100/cw_make
 OpenRTOS/out

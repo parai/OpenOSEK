@@ -286,7 +286,7 @@ class OsAlarm():
         fp.write('#define %s_Action %s\n'%(self.name,self.action))
         if(self.action == 'ActivateTask'):
             fp.write('#define %s_Task %s\n'%(self.name,self.task))
-        elif(self.action == 'ActivateTask'):
+        elif(self.action == 'SetEvent'):
             fp.write('#define %s_Task %s\n'%(self.name,self.task))
             fp.write('#define %s_Event %s\n'%(self.name,self.event))
         else:
@@ -302,19 +302,19 @@ class OsAlarm():
         if(re_alarm_ACTION.search(item)):
             action = re_alarm_ACTION.search(item).groups(); 
         if(action[0] == 'ACTIVATETASK'):
-            self.action = 'ActivateTask';
-        if(re_action_TASK.search(action[1])):
-            self.task = re_action_TASK.search(action[1]).groups()[0]
+			self.action = 'ActivateTask';
+			if(re_action_TASK.search(action[1])):
+				self.task = re_action_TASK.search(action[1]).groups()[0]
         elif(action[0] == 'SETEVENT'):
-            self.action = 'SetEvent';
-        if(re_action_TASK.search(action[1])):
-            self.task = re_action_TASK.search(action[1]).groups()[0]
-        if(re_action_EVENT.search(action[1])):
-            self.event = re_action_EVENT.search(action[1]).groups()[0]
+			self.action = 'SetEvent';
+			if(re_action_TASK.search(action[1])):
+				self.task = re_action_TASK.search(action[1]).groups()[0]
+			if(re_action_EVENT.search(action[1])):
+				self.event = re_action_EVENT.search(action[1]).groups()[0]
         elif(action[0] == 'ALARMCALLBACK'):
-            self.action = 'ALARMCALLBACK';
-        if(re_action_ALARMCALLBACKNAME.search(action[1])):
-            self.alarmcallbackname = re_action_ALARMCALLBACKNAME.search(action[1]).groups()[0]
+			self.action = 'ALARMCALLBACK';
+			if(re_action_ALARMCALLBACKNAME.search(action[1])):
+				self.alarmcallbackname = re_action_ALARMCALLBACKNAME.search(action[1]).groups()[0]
         if(re_alarm_AUTOSTART.search(item)):
             self.autostart = bool(re_alarm_AUTOSTART.search(item).groups()[0]);
         if(self.autostart == True):
@@ -698,11 +698,12 @@ class OsConfig():
         for tsk in self.tasks:
             tsk.id = id
             id += 1
-        self.postProcessGeneral();
         self.postProcessEventsAndTasks();
         self.postProcessResAndTasks();
         self.postProcessAlarmAndCounter();
         self.postProcessAppModes();
+        self.postProcessGeneral();
+        
 
     def parse(self, oilfile):
         self.preProcess(oilfile)
@@ -881,13 +882,15 @@ class OsConfig():
         cstr = ''
         for alm in self.alarms:
             if(alm.action == 'SetEvent'):
-                cstr += 'LOCAL void AlarmMain%s(void)\n{\n'
+                cstr += 'LOCAL void AlarmMain%s(void)\n{\n'%(alm.name)
                 cstr += '\t(void)SetEvent(%s,%s);\n'%(alm.task, alm.event)
                 cstr += '}\n'
             elif(alm.action == 'ActivateTask'):
                 cstr += 'LOCAL void AlarmMain%s(void)\n{\n'%(alm.name)
                 cstr += '\t(void)ActivateTask(%s);\n'%(alm.task)
                 cstr += '}\n'
+            else: #if(alm.action == 'ALARMCALLBACK'):
+                cstr += 'IMPORT void AlarmMain%s(void);\n'%(alm.name)
         fp.write(cstr)
         cstr = 'EXPORT const FP knl_acb_action[] = \n{\n'
         for alm in self.alarms:

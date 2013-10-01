@@ -146,8 +146,11 @@ EXPORT void knl_dispatch_entry(void)
 LOCAL void knl_system_timer(void)
 {
 	EnterISR();
-#if(cfgOS_ALARM_NUM > 0)
+#if(cfgOS_COUNTER_NUM > 0)
 	(void)SignalCounter(0);
+#endif
+#if(cfgOS_COUNTER_NUM > 1)
+	(void)SignalCounter(1);
 #endif
 	LeaveISR();
 }

@@ -1,4 +1,3 @@
-//OSEK OSEK {
 
 OS	ExampleOS {
 	STATUS = EXTENDED;
@@ -48,7 +47,3 @@ TASK Task4 {
 	STACK = 256;
 	TYPE = BASIC;
 }
-
-//APPMODE AppMode1;
-
-//};

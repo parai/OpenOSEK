@@ -1,3 +1,4 @@
+
 /* Copyright(C) 2013, OpenOSEK by Fan Wang(parai). All rights reserved.
  *
  * This file is part of OpenOSEK.
@@ -105,24 +106,8 @@ EXPORT RDYQUE knl_rdyque =
 };
 
 
-/* ====================== Counters ====================== */
-EXPORT const TickType knl_ccb_max[] = 
-{
-	SystemTimer_maxallowedvalue,
-};
-EXPORT const TickType knl_ccb_tpb[] = 
-{
-	SystemTimer_ticksperbase,
-};
-EXPORT const TickType knl_ccb_min[] = 
-{
-	SystemTimer_mincycle,
-};
-
 /* ====================== Resources ====================== */
 EXPORT const PriorityType knl_rcb_priority[] = 
 {
 	cfgOS_MAX_PRIORITY,/* RES_SCHEDULER */
 };
-
-
