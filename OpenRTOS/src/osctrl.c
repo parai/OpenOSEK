@@ -63,6 +63,9 @@ EXPORT void StartOS ( AppModeType AppMode )
 	knl_alarm_counter_init();
 #endif
 	knl_resource_init();
+#if(cfgOS_STARTUPHOOK == TRUE)
+	StartupHook();
+#endif
     knl_force_dispatch();
     
 }

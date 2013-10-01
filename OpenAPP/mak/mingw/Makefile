@@ -40,7 +40,8 @@ lib-y = OpenDriver OpenRTOS
 
 # append you speical library after LIB-Y
 LIB-Y = $(foreach x,$(lib-y),$(addprefix -L$(BD)/$(x)/,out))	\
-		$(foreach x,$(lib-y),$(addprefix -l,$(x)))
+		$(foreach x,$(lib-y),$(addprefix -l,$(x)))	\
+		-lwsock32
 
 #common rules
 %.o:%.c
@@ -49,24 +50,34 @@ LIB-Y = $(foreach x,$(lib-y),$(addprefix -L$(BD)/$(x)/,out))	\
 
 .PHONY:all clean gen openosek.lib
 
-all:openosek.lib $(TARGET)
+all:openosek.lib $(TARGET) 
 	@$(LD) $(BD)/OpenAPP/src/start/main.c -o $(OUT)/$(TARGET) $(obj-y) $(LDFLGS) $(LIB-Y)
 	@echo ">>>>>>>>>>>>>>>>>  BUILD $(TARGET).EXE DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
 openosek.lib: $(lib-y)
 
-OpenRTOS:
+OpenRTOS:$(BD)/OpenRTOS/out/libOpenRTOS.a
+	
+$(BD)/OpenRTOS/out/libOpenRTOS.a:
 	(cd $(BD)/OpenRTOS/mak/mingw; make all)
-OpenDriver:
+OpenDriver:$(BD)/OpenDriver/out/libOpenDriver.a
+
+$(BD)/OpenDriver/out/libOpenDriver.a:
 	(cd $(BD)/OpenDriver/mak/mingw; make all)
-OpenCom:
+OpenCom:$(BD)/OpenCom/out/libOpenCom.a
+
+$(BD)/OpenCom/out/libOpenCom.a:
 	(cd $(BD)/OpenCom/mak/mingw; make all)
+
 $(TARGET): $(obj-y)
 
 gen:
 	(cd $(BD)/OpenAPP/config; make all)
 
+test-gen:
+	(cd $(BD)/OpenAPP/config; make test)
 run:
+	@(start python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000)
 	@(start $(OUT)/$(TARGET))
 clean:
 	@echo remove $(obj-y) $(OUT)/*

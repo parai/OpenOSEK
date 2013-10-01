@@ -442,8 +442,8 @@ class OsekAlarm(OeskObject):
         fp.write('#define %s_time %s\n'%(self.name,self.getValue('ALARMTIME')))
         fp.write('#define %s_cycle %s\n'%(self.name,self.getValue('CYCLETIME')))
         mode = 'INVALID_APPMODE'
-        for appmode in self.getAttribute('APPMODE'):
-            mode += ' | %s'%(appmode);
+        for attr in self.getAttribute('APPMODE'):
+            mode += ' | %s'%(attr.value);
         fp.write('#define %s_appmode (%s)\n'%(self.name,mode));
         fp.write('#define %s_Action %s\n'%(self.name,self.getValue('ACTION')))
         if(self.getValue('ACTION') == 'ACTIVATETASK'):
@@ -778,13 +778,13 @@ class GenerateOsCfgC():
         fp.write(cstr);
         cstr = ''
         for alm in GetOsekObjects('ALARM'):
-            if(alm.getValue('ACTION') == 'SetEvent'):
+            if(alm.getValue('ACTION') == 'SETEVENT'):
                 cstr += 'LOCAL void AlarmMain%s(void)\n{\n'%(alm.name)
-                cstr += '\t(void)SetEvent(%s,%s);\n'%(alm.task, alm.event)
+                cstr += '\t(void)SetEvent(%s,%s);\n'%(alm.getValue('TASK'), alm.getValue('EVENT'))
                 cstr += '}\n'
-            elif(alm.getValue('ACTION') == 'ActivateTask'):
+            elif(alm.getValue('ACTION') == 'ACTIVATETASK'):
                 cstr += 'LOCAL void AlarmMain%s(void)\n{\n'%(alm.name)
-                cstr += '\t(void)ActivateTask(%s);\n'%(alm.task)
+                cstr += '\t(void)ActivateTask(%s);\n'%(alm.getValue('TASK'))
                 cstr += '}\n'
             else: #if(alm.action == 'ALARMCALLBACK'):
                 cstr += 'IMPORT void AlarmMain%s(void);\n'%(alm.name)

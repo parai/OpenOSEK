@@ -224,7 +224,7 @@ LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter )
 		prevent overruns in this very non real time simulated/emulated
 		environment. */
 
-		Sleep( 10 ); //sleep 10ms
+		Sleep( 1 ); //sleep 1ms
 
 		WaitForSingleObject( portInterruptEventMutex, INFINITE );
 

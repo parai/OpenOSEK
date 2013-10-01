@@ -20,6 +20,10 @@
  */
 """
 import socket
+import time
+
+server_startTime = time.time() # in second
+
 def CanBusServerUsage():
     print "Usage:"
     print "\t python CanBusServer.py --server port"
@@ -38,13 +42,14 @@ def CanBusServerTrace(msg):
     for i in range(0,8):
         cstr += '%s, '%(hex(ord(msg[5+i])))
     cstr += ']'
-    cstr += '...['
+    cstr += '<->['
     for i in range(0,8):
         if(i<dlc):
-            cstr += '%s, '%(msg[5+i])
+            cstr += '%s'%(msg[5+i])
         else:
-            cstr += '., '
+            cstr += '.'
     cstr += '] From %s'%(port)
+    cstr += ' at %s '%(round(time.time() - server_startTime,3))
     print cstr
 
 def CanBusServerForward(msg,port = 8000):

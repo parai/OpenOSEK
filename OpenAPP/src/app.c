@@ -1,25 +1,17 @@
 #include "Os.h"
-
+#include "Can.h"
+void StartupHook(void)
+{
+	printf("In StartupHook()\n");
+	Can_Init(NULL);
+}
 TASK(Task1)
 {
-	printf("Task1 is running!\n");
-	TerminateTask();
-}
-
-TASK(Task2)
-{
-	printf("Task2 is running!\n");
-	TerminateTask();
-}
-
-TASK(Task3)
-{
-	printf("Task3 is running!\n");
-	TerminateTask();
-}
-
-TASK(Task4)
-{
-	printf("Task4 is running!\n");
+	Can_PduType pdu;
+	pdu.id =0x731;
+	pdu.length = 5;
+	pdu.sdu = "Hello";
+	pdu.swPduHandle = 0;
+	Can_Write(0,&pdu);
 	TerminateTask();
 }
