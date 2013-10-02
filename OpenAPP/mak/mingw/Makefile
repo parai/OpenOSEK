@@ -20,14 +20,17 @@ ASFLGS =
 INCDIR = 	-I$(BD)/OpenRTOS/inc \
 			-I$(BD)/OpenDriver/inc \
 			-I$(BD)/OpenCom/inc \
+			-I$(BD)/OpenCom/config \
 			-I$(BD)/OpenAPP/inc	\
-			-I$(BD)/OpenAPP	\
-			-I$(BD)/OpenAPP/out
-MACROS = 
+			-I$(BD)/OpenAPP/out	\
+			-I$(BD)/OpenRTOS/src	\
+			-I$(BD)/OpenRTOS/portable/mingw
+
+MACROS = -DSIMULATE_ON_WIN
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
-LDFLGS = -g -O2 -Wall $(INCDIR) 
+LDFLGS = -g -O2 -Wall $(INCDIR) -lwsock32
 ARFLGS = rv
-RMFLGS = -f
+RMFLGS = -f	
 
 #common objectives		
 dir-y =	$(BD)/OpenAPP/src
@@ -35,13 +38,11 @@ src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))
 obj-y = $(subst .c,.o,$(src-y))
 
 # common library needed for OpenOSEK
-lib-y = OpenDriver OpenRTOS 
-#OpenCom
+lib-y = OpenDriver OpenRTOS OpenCom
 
 # append you speical library after LIB-Y
 LIB-Y = $(foreach x,$(lib-y),$(addprefix -L$(BD)/$(x)/,out))	\
-		$(foreach x,$(lib-y),$(addprefix -l,$(x)))	\
-		-lwsock32
+		$(foreach x,$(lib-y),$(addprefix -l,$(x)))
 
 #common rules
 %.o:%.c
@@ -49,7 +50,8 @@ LIB-Y = $(foreach x,$(lib-y),$(addprefix -L$(BD)/$(x)/,out))	\
 	@$(CC) $(CCFLGS) -o $@ $<
 
 .PHONY:all clean gen openosek.lib
-
+	
+######	
 all:openosek.lib $(TARGET) 
 	@$(LD) $(BD)/OpenAPP/src/start/main.c -o $(OUT)/$(TARGET) $(obj-y) $(LDFLGS) $(LIB-Y)
 	@echo ">>>>>>>>>>>>>>>>>  BUILD $(TARGET).EXE DONE   <<<<<<<<<<<<<<<<<<<<<<"
@@ -76,9 +78,12 @@ gen:
 
 test-gen:
 	(cd $(BD)/OpenAPP/config; make test)
+	
 run:
 	@(start python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000)
-	@(start $(OUT)/$(TARGET))
+	@(start $(OUT)/$(TARGET) 16)
+	@(start $(OUT)/$(TARGET) 32)
+	
 clean:
 	@echo remove $(obj-y) $(OUT)/*
 	@$(RM) $(RMFLGS) $(obj-y) $(OUT)/*
@@ -86,3 +91,19 @@ clean:
 	@(cd $(BD)/OpenDriver/mak/mingw; make clean)
 	@(cd $(BD)/OpenCom/mak/mingw; make clean)
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
+	
+##   Fask-Build
+#common objectives		
+dir-y =	$(BD)/OpenAPP/src	\
+		$(BD)/OpenRTOS/src \
+		$(BD)/OpenRTOS/portable/mingw \
+		$(BD)/OpenDriver/src/mingw \
+		$(BD)/OpenCom/src \
+		$(BD)/OpenCom/config \
+		$(BD)/OpenAPP/out
+src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))
+obj-y = $(subst .c,.o,$(src-y))	
+
+f-all:$(obj-y)
+	@$(LD) $(BD)/OpenAPP/src/start/main.c -o $(OUT)/$(TARGET) $(obj-y) $(LDFLGS)
+	@echo ">>>>>>>>>>>>>>>>>  BUILD $(TARGET).EXE DONE   <<<<<<<<<<<<<<<<<<<<<<"	

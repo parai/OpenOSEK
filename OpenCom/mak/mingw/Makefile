@@ -1,7 +1,55 @@
+# Makefile for the OpenRTOS part of OpenOSEK
 
-.PHONY:all clean
+#output Library
+TARGET = OpenCom
 
-all:
-	@echo Do nothing.
+#Base Directory
+BD = ../../..
+
+OUT = $(BD)/OpenCom/out
+
+#common compilers
+AS = gcc
+CC = gcc
+LD = gcc
+AR = ar
+RM = rm
+
+#common flags
+ASFLGS = 
+INCDIR = 	-I$(BD)/OpenRTOS/inc \
+			-I$(BD)/OpenDriver/inc \
+			-I$(BD)/OpenCom/inc \
+			-I$(BD)/OpenCom/config \
+			-I$(BD)/OpenAPP/inc	\
+			-I$(BD)/OpenAPP	\
+			-I$(BD)/OpenAPP/out
+MACROS = -DSIMULATE_ON_WIN
+CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
+LDFLGS = -g -O2 -Wall $(INCDIR) -L$(OUT) -l$(TARGET)
+ARFLGS = rv
+RMFLGS = -f
+
+#common objectives		
+dir-y =	$(BD)/OpenCom/src $(BD)/OpenCom/config
+src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))
+obj-y = $(subst .c,.o,$(src-y))
+
+#common rules
+%.o:%.c
+	@echo compile $<  to $@
+	@$(CC) $(CCFLGS) -o $@ $<
+
+.PHONY:all clean generator
+
+all:$(TARGET)
+	$(AR) $(ARFLGS) $(OUT)/lib$(TARGET).a $(obj-y)
+	@echo ">>>>>>>>>>>>>>>>>  BUILD $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
+
+$(TARGET): $(obj-y)
+
 clean:
-	@echo Do nothing.
+	@echo remove $(obj-y) $(OUT)/*
+	@$(RM) $(RMFLGS) $(obj-y) $(OUT)/*
+	@echo ">>>>>>>>>>>>>>>>>  CLEAN $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
+

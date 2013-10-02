@@ -18,30 +18,17 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
-#ifndef DLL_H_H_H_H
-#define DLL_H_H_H_H
+#ifndef NM_CFG_H_H_H_H
+#define NM_CFG_H_H_H_H
 /* ================================ INCLUDEs  =============================== */
-#include "Nm.h"
-/* ================================ MACROs    =============================== */
 
+/* ================================ MACROs    =============================== */
+#define cfgNM_NET_NUM 1
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
-/* @ nm253.pdf 5.2.1 P108 :: Requirements of the data link layer */
-IMPORT void D_Init(NetIdType NetId,RoutineRefType InitRoutine);
-IMPORT void D_GetLayerStatus(NetIdType NetId,uint32* status);
-IMPORT void D_Offline(NetIdType NetId);
-IMPORT void D_Online(NetIdType NetId);
-IMPORT void D_DefineWindow(NetIdType NetId,uint32 WindowMask,uint32 IdBase,		\
-			PduIdType SourceId,uint8 DataLengthTx,uint8 DataLengthRx);
-IMPORT StatusType D_WindowDataReq(NetIdType NetId,NMPduType* NMPDU,uint8 DataLengthTx);
-// Indication from dll. D_Status.ind
-// errors or wake-up signal
-IMPORT void D_StatusInd(NetIdType NetId,uint32 status);
-IMPORT void D_WindowDataInd( NetIdType udNetId,uint8* NMPDU,uint8 DataLEngthRx);
 
-// Function needed by DLL
-EXPORT void BusInit(NetIdType NetId);
-#endif  /* DLL_H_H_H_H */
+
+#endif /* NM_CFG_H_H_H_H */

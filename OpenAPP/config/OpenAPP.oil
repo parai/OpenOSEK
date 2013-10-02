@@ -1,3 +1,4 @@
+#include "../../OpenCom/config/OpenCom.oil"
 
 OS	ExampleOS {
 	STATUS = EXTENDED;
@@ -10,17 +11,6 @@ OS	ExampleOS {
 	USERESSCHEDULER = FALSE;
 };
 
-TASK Task1 {
-   PRIORITY = 1;
-   SCHEDULE = FULL;
-   ACTIVATION = 2;
-   AUTOSTART = TRUE {
-		APPMODE = OSDEFAULTAPPMODE;
-	};
-	STACK = 256;
-	TYPE = BASIC;
-};
-
 COUNTER SystemTimer
 {
 	MAXALLOWEDVALUE = 0xFFFF;
@@ -28,15 +18,3 @@ COUNTER SystemTimer
 	MINCYCLE = 1;
 	TYPE = SOFTWARE;
 }
-
-ALARM Alarm1 {
-	COUNTER = SystemTimer;
-	ACTION = ACTIVATETASK {
-		TASK = Task1;
-	};
-	AUTOSTART = TRUE {
-		ALARMTIME = 0;
-		CYCLETIME = 1000;  //1000 ms
-		APPMODE = OSDEFAULTAPPMODE;
-	}
-};

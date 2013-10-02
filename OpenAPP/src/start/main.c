@@ -26,7 +26,7 @@
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
-
+EXPORT uint32 argNMNodeId;
 /* ================================ FUNCTIONs =============================== */
 /* This is a stardard procedure which will start the os by the default app mode */
 #ifdef __GNUC__
@@ -35,6 +35,7 @@ int main(int argc,char* argv[])
 void main(void)
 #endif
 {
+	argNMNodeId = atoi(argv[1]);
     /* You can do some-special work here,such as init the system clock and so on... */
 	StartOS(OSDEFAULTAPPMODE);
     /* never returned when the os is started. */

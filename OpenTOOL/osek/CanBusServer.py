@@ -30,6 +30,7 @@ def CanBusServerUsage():
     print "Example: python CanBusServer.py --server 8000"
 
 def CanBusServerTrace(msg):
+    global server_startTime
     if(len(msg) != 17):
         print 'Error: length of msg is invalid!'
         return
@@ -44,12 +45,13 @@ def CanBusServerTrace(msg):
     cstr += ']'
     cstr += '<->['
     for i in range(0,8):
-        if(i<dlc):
+        if(i<dlc and msg[5+i] != '\n' and msg[5+i] != '\t'):
             cstr += '%s'%(msg[5+i])
         else:
             cstr += '.'
     cstr += '] From %s'%(port)
     cstr += ' at %s '%(round(time.time() - server_startTime,3))
+    #server_startTime = time.time()
     print cstr
 
 def CanBusServerForward(msg,port = 8000):
@@ -58,11 +60,13 @@ def CanBusServerForward(msg,port = 8000):
     portR = (ord(msg[13])<<24)+(ord(msg[14])<<16)+(ord(msg[15])<<8)+(ord(msg[16]))
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     for p in range(port+1,port+32):
+        if(p == portR):
+            continue
         try: # only 31 nodes supported on one can bus.
+            socket.setdefaulttimeout(0.00001); # 10 us
             sock.connect(('127.0.0.1', p))  
             sock.send(msg)
         except:
-            # print 'Invalid Port ', p
             continue  
     sock.close()
 
@@ -73,7 +77,7 @@ def CanBusServerHost(port = 8000):
     while True:  
         connection,address = sock.accept()  
         try:  
-            connection.settimeout(5)  
+            connection.settimeout(0.1)  
             msg = connection.recv(1024) 
             CanBusServerTrace(msg)
             CanBusServerForward(msg);           

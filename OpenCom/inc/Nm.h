@@ -23,6 +23,7 @@
 /* ================================ INCLUDEs  =============================== */
 #include "Os.h"
 #include "ComStack_Types.h"
+#include "NM_Cfg.h"
 /* ================================ MACROs    =============================== */
 // Mask bit for ScalingParamType
 // If 1 the function is supported, 0 not
@@ -31,11 +32,19 @@
 #define NM_NormalConfigDeltaSupport    0x04
 #define NM_LimphomeConfigDeltaSupport  0x08
 #define NM_RingdataSupport             0x10
+
+// Macros for OpCode
+#define NM_MaskAlive   	 0x01
+#define NM_MaskRing   	 0x02
+#define NM_MaskLimphome  0x04
+#define NM_MaskSI        0x10   // sleep ind
+#define NM_MaskSA        0x20   // sleep ack
+
 /* ================================ TYPEs     =============================== */
 /* @ nm253.pdf 4.3 P89 */
 typedef uint8 NodeIdType;
 typedef uint8 NetIdType;
-typedef void (*RoutineRefType)(void);
+typedef void (*RoutineRefType)(NetIdType NetId);
 // import EventMaskType from OS
 typedef enum{
 	SignalActivation,
@@ -54,13 +63,22 @@ typedef uint8 ScalingParamType; // 8 bit is enough
 typedef uint8* ConfigRefType;
 typedef enum
 {
-	NM_Normal,
-	NM_NormalExtended,
-	NM_LimpHome
+	NM_ckNormal,                  // supported by direct and indirect NM
+	NM_ckNormalExtended,          // only supported by indirect NM
+	NM_ckLimphome                 // only supported by direct NM
 }ConfigKindName;
 typedef ConfigRefType ConfigHandleType;
-typedef uint8* StatusRefType;
+typedef union
+{
+	uint32 w;
+	struct{
+		unsigned NMactive:1;
+		unsigned bussleep:1;
+		unsigned configurationstable:1;
+	}W;
+}NetworkStatusType;
 
+typedef NetworkStatusType* StatusRefType;
 /* @ nm253.pdf 4.4.3.1 P98 */
 typedef enum
 {
@@ -69,16 +87,39 @@ typedef enum
 }NMModeName;
 typedef enum
 {
-	NM_stsNormal,
-	NM_stsLimphome
+	NM_stInit,
+	NM_stInitReset,
+	NM_stNormal,
+	NM_stNormalPrepSleep,
+	NM_stLimphome,
+	NM_stLimphomePrepSleep
 	// ...  and so on
-}NetworkStatusType;
-typedef NetworkStatusType* NetworkStatusRefType;
+}NMStateType;
 typedef StatusRefType StatusHandleType;
 
 /* @ nm253.pdf 4.4.5.3.1 P103 */
 typedef uint8 RingDataType[6];
 typedef RingDataType* RingDataRefType;
+
+typedef struct
+{
+	uint8 Source;
+	uint8 Destination;
+	union
+	{
+		uint8 b;
+		struct {
+			uint8 Alive     :1;
+			uint8 Ring      :1;
+			uint8 Limphome  :1;
+			uint8 reserved1 :1;
+			uint8 SleepInd  :1;
+			uint8 SleepAck  :1;
+			uint8 reserved2 :2;
+		}B;
+	}OpCode;
+	RingDataType RingData ;
+}NMPduType;
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
@@ -90,10 +131,10 @@ IMPORT void SelectHWRoutines(NetIdType NetId,RoutineRefType BusInit,RoutineRefTy
 IMPORT void InitCMaskTable(NetIdType NetId,ConfigKindName ConfigKind,ConfigRefType CMask);
 IMPORT void InitTargetConfigTable(NetIdType NetId,ConfigKindName ConfigKind,ConfigRefType TargetConfig);
 IMPORT void InitIndDeltaConfig(NetIdType NetId,ConfigKindName ConfigKind,SignallingMode SMode,	\
-				TaskRefType TaskId,EventMaskType EMask);
+				TaskType TaskId,EventMaskType EMask);
 IMPORT void InitSMaskTable(NetIdType NetId,StatusRefType SMask);
-IMPORT void InitTargetStatusTable(NetIdType NetId,StatusRefType SMask);
-IMPORT void InitIndDeltaStatus(NetIdType NetId,SignallingMode SMode,TaskRefType TaskId,EventMaskType EMask);
+IMPORT void InitTargetStatusTable(NetIdType NetId,StatusRefType TargetStatus);
+IMPORT void InitIndDeltaStatus(NetIdType NetId,SignallingMode SMode,TaskType TaskId,EventMaskType EMask);
 /* @ nm253.pdf 4.4.2.3 P95 Services */
 IMPORT StatusType InitConfig(NetIdType NetId);
 IMPORT StatusType GetConfig(NetIdType NetId,ConfigRefType Config,ConfigKindName ConfigKind);
@@ -103,7 +144,7 @@ IMPORT StatusType SelectDeltaConfig(NetIdType NetId,ConfigKindName ConfigKind,Co
 IMPORT StatusType StartNM(NetIdType NetId);
 IMPORT StatusType StopNM(NetIdType NetId);
 IMPORT StatusType GotoMode(NetIdType NetId,NMModeName NewMode);
-IMPORT StatusType GetStatus(NetIdType NetId,NetworkStatusRefType NetworkStatus);
+IMPORT StatusType GetStatus(NetIdType NetId,StatusRefType NetworkStatus);
 IMPORT StatusType CmpStatus(NetIdType NetId,StatusRefType TestStatus,StatusRefType RefStatus,StatusRefType SMask);
 IMPORT StatusType SelectDeltaStatus(NetIdType NetId,StatusHandleType StatusHandle,StatusHandleType SMaskHandle);
 
@@ -120,9 +161,4 @@ IMPORT void TransmitRingData(NetIdType NetId,RingDataRefType RingData);
 IMPORT void InitIndirectNMParams(NetIdType NetId,NodeIdType NodeId,TickType TOB,TickType TimerError,TickType TimerWaitBusSleep);
 IMPORT void InitExtNodeMonitiring(NetIdType NetId,NodeIdType NodeId,uint8 DeltaInc,uint8 DeltaDec);
 
-/* @ nm253.pdf 5.2.1 P108 :: Requirements of the data link layer */
-// Indication from dll. D_Status.ind
-// errors or wake-up signal
-IMPORT void D_StatusInd(NetIdType NetId,uint32 status);
-IMPORT void D_WindowDataInd( NetIdType udNetId,uint8* NMPDU,uint8 DataLEngthRx);
 #endif

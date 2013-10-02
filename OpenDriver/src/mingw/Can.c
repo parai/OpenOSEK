@@ -75,6 +75,7 @@ LOCAL Can_PduType2 Can_PduMsg[CAN_CONTROLLER_CNT];
 LOCAL Can_StateTransitionType Can_CtrlState[CAN_CONTROLLER_CNT];
 LOCAL uint32 Can_CtrlServerPort[CAN_CONTROLLER_CNT];
 /* ================================ FUNCTIONs =============================== */
+IMPORT void Can_TxConformation(PduIdType TxHandle);
 LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* ctrlConfig);
 LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* ctrlConfig);
 // Set-up the simulate environment for CAN communication
@@ -142,7 +143,7 @@ EXPORT void Can_InitController(uint8 Controller,const void* Config)
 	{
 		printf("Failed at Can_InitController() to create the Tx Event.\n");
 	}
-	(void)Can_SetControllerMode(Controller,CAN_T_START);
+//	(void)Can_SetControllerMode(Controller,CAN_T_START);
 }
 
 EXPORT Can_ReturnType Can_SetControllerMode(uint8 Controller,Can_StateTransitionType Transition)
@@ -269,6 +270,7 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 		if (ercd == SOCKET_ERROR){
 			printf("closesocket function failed with error: %d\n", WSAGetLastError());
 		}
+		Can_TxConformation(Can_PduMsg[Controller].swPduHandle);
 		ReleaseMutex( Can_CtrlTxMutex[Controller] );
 	}
 	return NULL;
@@ -283,6 +285,7 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 	// The socket address to be passed to bind
 	struct sockaddr_in service;
 	int ercd;
+	uint32 port = Config->CanSocketServerPort+1;  // try until find one.
 	//----------------------
 	// Create a SOCKET for listening for
 	// incoming connection requests
@@ -308,15 +311,16 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 	do{
 		//----------------------
 		// Bind the socket.
-		uint32 port = Config->CanSocketServerPort+1;  // try until find one.
 		service.sin_port = htons(port);
 		ercd = bind(ListenSocket, (SOCKADDR *) &service, sizeof (service));
 		if (ercd == SOCKET_ERROR) {
+			port ++;
 			continue;
 		}
 		else
 		{
 			Can_CtrlServerPort[Controller] = port;
+			printf("Listen to %d\n",(int)port);
 			break; // OK
 		}
 	}while(TRUE);

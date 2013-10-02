@@ -1,0 +1,51 @@
+
+TASK TaskNmMain
+{
+	PRIORITY = 2;
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	AUTOSTART = FALSE;
+	STACK = 256;
+	TYPE = BASIC;
+}
+
+TASK TaskNmInd{
+	PRIORITY = 5;
+	SCHEDULE = FULL;
+	ACTIVATION = 3;
+	AUTOSTART = TRUE 
+	{
+		APPMODE = OSDEFAULTAPPMODE;
+	};
+	EVENT = EventNmNormal;
+	EVENT = EventNmLimphome;
+	EVENT = EventNmStatus;
+	STACK = 256;
+	TYPE = EXTENDED;
+}
+
+EVENT EventNmNormal
+{
+	MASK = AUTO;
+};
+
+EVENT EventNmLimphome
+{
+	MASK = AUTO;
+};
+EVENT EventNmStatus
+{
+	MASK = AUTO;
+};
+
+ALARM AlarmNmMain {
+	COUNTER = SystemTimer;
+	ACTION = ACTIVATETASK {
+		TASK = TaskNmMain;
+	};
+	AUTOSTART = TRUE {
+		ALARMTIME = 10;
+		CYCLETIME = 10;  //10 ms
+		APPMODE = OSDEFAULTAPPMODE;
+	}
+};

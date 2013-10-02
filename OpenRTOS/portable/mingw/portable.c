@@ -118,7 +118,6 @@ LOCAL void l_dispatch0(void)
 	while(INVALID_TASK == knl_schedtsk)
 	{
 	}
-	//printf("Start to dispatch Task.\n");
 	knl_curtsk = knl_schedtsk;
 	knl_dispatch_disabled=0;    /* Dispatch enable */
 

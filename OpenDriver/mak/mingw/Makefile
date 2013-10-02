@@ -47,13 +47,3 @@ clean:
 	@$(RM) $(RMFLGS) $(obj-y) $(OUT)/*
 	@echo ">>>>>>>>>>>>>>>>>  CLEAN $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
 
-# ====================  for test purpose ==============
-test:all
-	$(LD) $(BD)/OpenDriver/src/main.c -o $(OUT)/test  $(OBJS) $(LDFLGS) 
-
-test-run:
-	@echo ">>>>>>>>>>>>>>>  Start server firstly <<<<<<<<<<<<<<<<<<<<<<<<<<<"
-	@(start python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000)
-	@echo ">>>>>>>>>>>>>>>  Start app secondly   <<<<<<<<<<<<<<<<<<<<<<<<<<<"
-	@(start $(OUT)/test)	
-
