@@ -53,6 +53,16 @@ do												\
 	NM_ControlBlock[NetId].Alarm._##Timer = 0;	\
 }while(0)
 
+#define nmSendMessage()					\
+do{										\
+	StatusType ercd;					\
+	ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);		\
+	if(ercd != E_OK)					\
+	{									\
+		nmSetAlarm(TTx); /* re-Transmit after TTx */						\
+	}									\
+}while(0)
+
 /* ================================ TYPEs     =============================== */
 typedef struct
 {
@@ -300,16 +310,10 @@ LOCAL void nmInitReset(NetIdType NetId)
 	nmCancelAlarm(TError);
 	if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 	{
-		StatusType ercd;
-
 		NM_ControlBlock[NetId].nmTxCount += 1;
 		// Send A alive message
 		NM_ControlBlock[NetId].nmTxPdu.OpCode.b = NM_MaskAlive;
-		ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);
-		if(ercd != E_OK)
-		{
-			nmSetAlarm(TTx); // re-Transmit after TTx
-		}
+		nmSendMessage();
 	}
 	if((NM_ControlBlock[NetId].nmTxCount <= tx_limit)	&&
 		(NM_ControlBlock[NetId].nmRxCount <= rx_limit))
@@ -408,18 +412,13 @@ LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU)
 				{
 					if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 					{
-						StatusType ercd;
 						NM_ControlBlock[NetId].nmTxPdu.OpCode.b= NM_MaskAlive;
 						NM_ControlBlock[NetId].nmTxPdu.Destination= NM_ControlBlock[NetId].nmDirectNMParams.NodeId;
 						if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep)
 						{
 							NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd = 1;
 						}
-						ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);
-						if(ercd != E_OK)
-						{
-							nmSetAlarm(TTx); // re-Transmit after TTx
-						}
+						nmSendMessage();
 					}
 				}
 			}
@@ -579,22 +578,18 @@ LOCAL void nmNormalMain(NetIdType NetId)
 		nmSingalAlarm(TTyp);
 		if(nmIsAlarmTimeout(TTyp))
 		{
+			nmCancelAlarm(TTyp);
 			nmCancelAlarm(TMax);
 			nmSetAlarm(TMax);
 			if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 			{
-				StatusType ercd;
 				NM_ControlBlock[NetId].nmTxPdu.OpCode.b = NM_MaskRing;
 				if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep)
 				{
 					NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd = 1;
 				}
 				NM_ControlBlock[NetId].nmTxCount ++;
-				ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);
-				if(ercd != E_OK)
-				{
-					nmSetAlarm(TTx); // re-Transmit after TTx
-				}
+				nmSendMessage();
 			}
 			if(NM_ControlBlock[NetId].nmTxCount > tx_limit)
 			{
@@ -620,6 +615,7 @@ LOCAL void nmNormalMain(NetIdType NetId)
 		nmSingalAlarm(TMax);
 		if(nmIsAlarmTimeout(TMax))
 		{
+			nmCancelAlarm(TMax);
 			nmInitReset(NetId);
 		}
 	}
@@ -645,12 +641,7 @@ LOCAL void nmLimphomeMain(NetIdType NetId)
 			}
 			if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 			{
-				StatusType ercd;
-				ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);
-				if(ercd != E_OK)
-				{
-					nmSetAlarm(TTx); // re-Transmit after TTx
-				}
+				nmSendMessage();
 			}
 		}
 	}
@@ -665,14 +656,9 @@ EXPORT void NM_MainTask(void)
 			nmSingalAlarm(TTx);
 			if(nmIsAlarmTimeout(TTx))
 			{
-				StatusType ercd;
 				nmCancelAlarm(TTx);
-				ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);
-				if(ercd != E_OK)
-				{
-					nmSetAlarm(TTx); // re-Transmit after TTx
-				}
-				continue; // ship the process of state
+				nmSendMessage();
+				continue; // skip the process of state
 			}
 		}
 		switch(NM_ControlBlock[NetId].nmState)

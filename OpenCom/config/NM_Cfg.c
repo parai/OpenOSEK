@@ -25,11 +25,11 @@
 /* ================================ MACROs    =============================== */
 #define LocalNodeId 0x5A
 // NM Main Task Tick = 10 ms
-#define tTyp 100
-#define tMax 260
-#define tError 1000
-#define tWBS   5000
-#define tTx    20
+#define tTyp 10
+#define tMax 26
+#define tError 100
+#define tWBS   500
+#define tTx    2
 
 #define NM_PDUID 0x00
 /* ================================ TYPEs     =============================== */

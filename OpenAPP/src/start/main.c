@@ -19,10 +19,12 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
+#include <windows.h>
 #include "Os.h"
+#include "Nm.h"
 
 /* ================================ MACROs    =============================== */
-
+#define NM_TEST 1
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
@@ -35,7 +37,15 @@ int main(int argc,char* argv[])
 void main(void)
 #endif
 {
+#if(NM_TEST == 1)  // On MinGW, RTOS real-time is a shit
 	argNMNodeId = atoi(argv[1]);
+	StartupHook();
+	for(;;)
+	{
+		NM_MainTask();
+		Sleep(10);
+	}
+#endif
     /* You can do some-special work here,such as init the system clock and so on... */
 	StartOS(OSDEFAULTAPPMODE);
     /* never returned when the os is started. */
