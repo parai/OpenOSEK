@@ -55,7 +55,7 @@
 
 /* ================================ DATAs     =============================== */
 LOCAL pthread_t knl_tcb_sp[cfgOS_TASK_NUM];
-LOCAL pthread_t portMainThread = NULL;
+LOCAL pthread_t portMainThread = -1;
 // for porting
 LOCAL pthread_once_t portSigSetupThread = PTHREAD_ONCE_INIT;
 /* used for thread start policy */
@@ -278,13 +278,17 @@ LOCAL void portSystemTickHandler( int sig )
 	{
 		if ( 0 == pthread_mutex_trylock( &portSingleThreadMutex ) ){
 			portServicingTick = TRUE;
-
-			if(FALSE){
-				//if ok,do dispatch here
-			}else{
-				/* Release the lock as we are Resuming. */
-				(void)pthread_mutex_unlock( &portSingleThreadMutex );
-			}
+			EnterISR();
+			printf("In portSystemTickHandler().\n");
+#if(cfgOS_COUNTER_NUM > 0)
+			(void)SignalCounter(0);
+#endif
+#if(cfgOS_COUNTER_NUM > 1)
+			(void)SignalCounter(1);
+#endif
+			LeaveISR();
+			/* Release the lock as we are Resuming. */
+			(void)pthread_mutex_unlock( &portSingleThreadMutex );
 			portServicingTick = FALSE;
 		}
 	}

@@ -482,6 +482,7 @@ LOCAL void nmLimphomeMain(NetIdType NetId)
 TASK(TaskNmMain)
 {
 	NetIdType NetId;
+	printf("In TaskNmMain.\n");
 	for(NetId= 0; NetId < cfgNM_NET_NUM; NetId ++)
 	{
 		switch(NM_ControlBlock[NetId].nmState)

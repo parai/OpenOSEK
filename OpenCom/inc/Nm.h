@@ -161,4 +161,6 @@ IMPORT void TransmitRingData(NetIdType NetId,RingDataRefType RingData);
 IMPORT void InitIndirectNMParams(NetIdType NetId,NodeIdType NodeId,TickType TOB,TickType TimerError,TickType TimerWaitBusSleep);
 IMPORT void InitExtNodeMonitiring(NetIdType NetId,NodeIdType NodeId,uint8 DeltaInc,uint8 DeltaDec);
 
+
+IMPORT void NM_TxConformation(NetIdType NetId);
 #endif

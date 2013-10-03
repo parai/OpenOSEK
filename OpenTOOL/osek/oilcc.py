@@ -22,7 +22,6 @@ cCodeHead = \
  */
 """
 import sys,os,string,re
-from oilcr import *
 
 # Global Data
 global oilcc_I,oilcc_o,oilcc_S,oilcc_target
