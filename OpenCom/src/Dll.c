@@ -93,3 +93,29 @@ EXPORT void Can_TxConformation(PduIdType TxHandle)
 		}
 	}
 }
+EXPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,uint8* data,uint8 length)
+{
+	if(CAN_CTRL_0 == Controller)
+	{
+		if((DLL_NMWindow[0].IdBase <= canid) && ((DLL_NMWindow[0].IdBase+0xFF) >= canid))
+		{	// This is NM message
+			if(8 == length)
+			{
+				NMPduType nmPdu;
+				uint8 i;
+				nmPdu.Source = canid-DLL_NMWindow[0].IdBase;
+				nmPdu.Destination = data[0];
+				nmPdu.OpCode.b = data[1];
+				for(i=0;i<6;i++)
+				{
+					nmPdu.RingData[i] = data[2+i];
+				}
+				NM_RxIndication(0,&nmPdu);
+			}
+		}
+		else
+		{
+			//may be for com or uds
+		}
+	}
+}

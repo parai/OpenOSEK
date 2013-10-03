@@ -91,6 +91,7 @@ typedef enum
 	NM_stInitReset,
 	NM_stNormal,
 	NM_stNormalPrepSleep,
+	NM_stTwbsNormal,
 	NM_stLimphome,
 	NM_stLimphomePrepSleep
 	// ...  and so on
@@ -163,4 +164,6 @@ IMPORT void InitExtNodeMonitiring(NetIdType NetId,NodeIdType NodeId,uint8 DeltaI
 
 
 IMPORT void NM_TxConformation(NetIdType NetId);
+IMPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU);
+IMPORT void NM_MainTask(void);
 #endif

@@ -27,7 +27,7 @@
 /* ================================ TYPEs     =============================== */
 typedef enum {
 	CAN_CTRL_0,
-	CAN_CTRL_1,
+//	CAN_CTRL_1,
 	//CAN_CTRL_2, If you have this comment it out.
 	//CAN_CTRL_3,
 	//CAN_CTRL_4,

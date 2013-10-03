@@ -69,6 +69,12 @@ EXPORT void knl_force_dispatch(void)
 	{
 		portStartDispatcher();
 		isDispatcherStarted = TRUE;
+		if(knl_schedtsk == INVALID_TASK)
+		{
+			knl_dispatch_disabled=0;    /* Dispatch enable */
+			knl_curtsk = INVALID_TASK;
+			goto first_start_without_task_ready;
+		}
 	}
 	knl_dispatch_disabled=1;    /* Dispatch disable */
 
@@ -94,7 +100,7 @@ EXPORT void knl_force_dispatch(void)
 			knl_tcb_sp[curtsk] = NULL;
 		}
 	}
-
+first_start_without_task_ready:
 	if(FALSE == portProcessSimulatedInterruptsCalled)
 	{
 		portProcessSimulatedInterruptsCalled = TRUE;
@@ -136,7 +142,7 @@ EXPORT void knl_dispatch_entry(void)
 	knl_curtsk = INVALID_TASK;
 
 	l_dispatch0();
-	if(-1 == SuspendThread( knl_tcb_sp[curtsk]))
+	if((curtsk != INVALID_TASK)&&(-1 == SuspendThread( knl_tcb_sp[curtsk])))
 	{
 		printf("Suspend Task %d failed.\n",curtsk);
 	}
@@ -282,7 +288,7 @@ LOCAL void portProcessSimulatedInterrupts( void )
 		ReleaseMutex( portInterruptEventMutex );
 		if((portDispatchInIsrRequested == TRUE) &&(knl_dispatch_disabled == 0))
 		{
-			printf("ISR dispatch!\n");
+			// printf("ISR dispatch!\n");
 			portDispatchInIsrRequested = FALSE;
 			knl_dispatch_entry();
 		}

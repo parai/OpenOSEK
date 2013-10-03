@@ -23,7 +23,8 @@ import socket
 import time
 
 server_startTime = time.time() # in second
-
+server_port =[]
+server_logout = open('CanTrace.log','w')
 def CanBusServerUsage():
     print "Usage:"
     print "\t python CanBusServer.py --server port"
@@ -50,25 +51,34 @@ def CanBusServerTrace(msg):
         else:
             cstr += '.'
     cstr += '] From %s'%(port)
-    cstr += ' at %s '%(round(time.time() - server_startTime,3))
-    #server_startTime = time.time()
+    cstr += ' AT %s ms'%(round(time.time() - server_startTime,4)*1000)
+    server_startTime = time.time()
     print cstr
+    server_logout.write(cstr+'\n')
 
 def CanBusServerForward(msg,port = 8000):
     """Forward msg received from one node to others connected to this server, exclude address."""
     # get Port
     portR = (ord(msg[13])<<24)+(ord(msg[14])<<16)+(ord(msg[15])<<8)+(ord(msg[16]))
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    for p in range(port+1,port+32):
+    flag = False
+    for p in server_port:
         if(p == portR):
-            continue
-        try: # only 31 nodes supported on one can bus.
-            socket.setdefaulttimeout(0.00001); # 10 us
-            sock.connect(('127.0.0.1', p))  
-            sock.send(msg)
-        except:
-            continue  
-    sock.close()
+            flag = True
+    if(flag == False):
+        server_port.append(portR)
+    for p in server_port:
+        if(p != portR):
+            try: 
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect(('127.0.0.1', p))  
+                sock.send(msg)
+                sock.close()
+            except:
+                print "Error when forward to ",p,'!'
+                server_port.remove(p);
+                sock.close()
+                continue  
+    
 
 def CanBusServerHost(port = 8000):  
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
@@ -77,7 +87,7 @@ def CanBusServerHost(port = 8000):
     while True:  
         connection,address = sock.accept()  
         try:  
-            connection.settimeout(0.1)  
+            connection.settimeout(5)  
             msg = connection.recv(1024) 
             CanBusServerTrace(msg)
             CanBusServerForward(msg);           

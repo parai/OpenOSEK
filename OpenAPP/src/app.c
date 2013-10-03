@@ -3,6 +3,6 @@
 #include "Nm.h"
 void StartupHook(void)
 {
-//	Can_Init(NULL);
-//	StartNM(0);
+	Can_Init(NULL);
+	StartNM(0);
 }

@@ -16,6 +16,7 @@ cscope.files
 *.tdt
 *.xpr
 .settings
+*.log
 
 # Libraries
 *.lib

@@ -28,7 +28,7 @@ INCDIR = 	-I$(BD)/OpenRTOS/inc \
 
 MACROS = -DSIMULATE_ON_WIN
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
-LDFLGS = -g -O2 -Wall $(INCDIR) -lwsock32
+LDFLGS = -g $(MACROS) -O2 -Wall $(INCDIR) -lwsock32
 ARFLGS = rv
 RMFLGS = -f	
 
@@ -83,6 +83,7 @@ run:
 	@(start python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000)
 	@(start $(OUT)/$(TARGET) 16)
 	@(start $(OUT)/$(TARGET) 32)
+	@(start $(OUT)/$(TARGET) 48)
 	
 clean:
 	@echo remove $(obj-y) $(OUT)/*

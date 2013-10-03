@@ -59,23 +59,24 @@ LOCAL const Can_ConfigType canCongig =
 			.CanControllerId = CAN_CTRL_0,
 			.CanSocketServerPort = 8000, // 127.0.0.1:8000 CAN-BUS1 server
 		},
-		{
-			.CanControllerId = CAN_CTRL_1,
-			.CanSocketServerPort = 9000, // 127.0.0.1:9000 CAN-BUS2 server
-		}
+//		{
+//			.CanControllerId = CAN_CTRL_1,
+//			.CanSocketServerPort = 9000, // 127.0.0.1:9000 CAN-BUS2 server
+//		}
 	}
 };
 LOCAL const Can_ConfigType* Can_Config_PC = &canCongig;
-LOCAL HANDLE Can_CtrlRxThread[CAN_CONTROLLER_CNT] = {NULL,NULL};
-LOCAL HANDLE Can_CtrlTxThread[CAN_CONTROLLER_CNT] = {NULL,NULL};
-LOCAL HANDLE Can_CtrlTxMutex[CAN_CONTROLLER_CNT] = {NULL,NULL};
-LOCAL HANDLE Can_CtrlTxEvent[CAN_CONTROLLER_CNT] = {NULL,NULL};
+LOCAL HANDLE Can_CtrlRxThread[CAN_CONTROLLER_CNT] = {NULL,};
+LOCAL HANDLE Can_CtrlTxThread[CAN_CONTROLLER_CNT] = {NULL,};
+LOCAL HANDLE Can_CtrlTxMutex[CAN_CONTROLLER_CNT] = {NULL,};
+LOCAL HANDLE Can_CtrlTxEvent[CAN_CONTROLLER_CNT] = {NULL,};
 LOCAL struct sockaddr_in Can_SockAddr[CAN_CONTROLLER_CNT];
 LOCAL Can_PduType2 Can_PduMsg[CAN_CONTROLLER_CNT];
 LOCAL Can_StateTransitionType Can_CtrlState[CAN_CONTROLLER_CNT];
 LOCAL uint32 Can_CtrlServerPort[CAN_CONTROLLER_CNT];
 /* ================================ FUNCTIONs =============================== */
 IMPORT void Can_TxConformation(PduIdType TxHandle);
+IMPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,uint8* data,uint8 length);
 LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* ctrlConfig);
 LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* ctrlConfig);
 // Set-up the simulate environment for CAN communication
@@ -343,19 +344,19 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 		ercd = recv(AcceptSocket, (void*)msg, 64, 0);
 		if ( ercd == 17 )
 		{ // Rx ISR
-			int i;
 			id = (((uint32)msg[0])<<24) + (((uint32)msg[1])<<16) + (((uint32)msg[2])<<8) + msg[3];
-			printf("ID=0x%x, ",(unsigned int)id);
-			printf("DLC=%d, [",(int)msg[4]);
-			for(i=0;i<8;i++)
-			{
-				printf("0x%x, ",(int)msg[5+i]);
-			}
-			printf("] on Controller%d.\n",Controller);
+			Can_RxIndication(Controller,id,&msg[5],msg[4]);
 		}
 		else
 		{
-			printf("ERROR:Invalid CAN message length.\n");
+			if((ercd != -1) && (ercd != 0))
+			{
+				printf("ERROR:Invalid CAN message length : %d.\n",ercd);
+			}
+			else
+			{
+				printf("ERROR: Something Wrong when receive: %d.\n",ercd);
+			}
 		}
 		ercd = closesocket(AcceptSocket);
 		if (ercd == SOCKET_ERROR){

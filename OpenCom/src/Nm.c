@@ -131,9 +131,12 @@ EXPORT NM_ControlBlockType NM_ControlBlock[cfgNM_NET_NUM];
 // See NM_Cfg.c
 IMPORT void NMInit(NetIdType NetId);
 
-LOCAL void NMInitReset(NetIdType NetId);
+LOCAL void nmInitReset(NetIdType NetId);
 LOCAL void nmAddToConfig(NetIdType NetId,ConfigKindName ConfigKind,NodeIdType NodeId);
 LOCAL void nmRemoveFromConfig(NetIdType NetId,ConfigKindName ConfigKind,NodeIdType NodeId);
+LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU);
+LOCAL NodeIdType nmDetermineLS(NodeIdType S,NodeIdType R,NodeIdType L);
+LOCAL boolean nmIsMeSkipped(NodeIdType S,NodeIdType R,NodeIdType D);
 
 EXPORT void InitNMType(NetIdType NetId,NMType nmType)
 {
@@ -275,10 +278,10 @@ EXPORT StatusType StartNM(NetIdType NetId)
 	NM_ControlBlock[NetId].nmRxCount = 0;
 	NM_ControlBlock[NetId].nmTxCount = 0;
 	D_Online(NetId);
-	NMInitReset(NetId);
+	nmInitReset(NetId);
 	return ercd;
 }
-LOCAL void NMInitReset(NetIdType NetId)
+LOCAL void nmInitReset(NetIdType NetId)
 {
 	NM_ControlBlock[NetId].nmState= NM_stInitReset;
 	//config.present = own station
@@ -347,6 +350,178 @@ EXPORT void NM_TxConformation(NetIdType NetId)
 			break;
 	}
 
+}
+EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
+{
+	printf("S=0x%x,D=0x%x,OpCode=0x%x\n",NMPDU->Source,NMPDU->Destination,NMPDU->OpCode.b);
+	switch(NM_ControlBlock[NetId].nmState)
+	{
+		case NM_stNormal:
+		{
+			nmNormalStandard(NetId,NMPDU);
+			if(NMPDU->OpCode.B.SleepAck)
+			{
+				if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep)
+				{ // 2 NMInitBusSleep
+					D_Offline(NetId);
+					nmSetAlarm(TWbs);
+					NM_ControlBlock[NetId].nmState = NM_stTwbsNormal;
+				}
+			}
+			break;
+		}
+		default:
+			break;
+	}
+}
+LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU)
+{
+	NM_ControlBlock[NetId].nmRxCount = 0;
+	if(NMPDU->OpCode.B.Limphome)
+	{
+		// add sender to config.present
+		nmAddToConfig(NetId,NM_ckLimphome,NMPDU->Source);
+		nmRemoveFromConfig(NetId,NM_ckNormal,NMPDU->Source);
+	}
+	else
+	{
+		// add sender to config.present
+		nmAddToConfig(NetId,NM_ckNormal,NMPDU->Source);
+		nmRemoveFromConfig(NetId,NM_ckLimphome,NMPDU->Source);
+		// determine logical successor
+		NM_ControlBlock[NetId].nmTxPdu.Destination = nmDetermineLS(NMPDU->Source,	\
+									NM_ControlBlock[NetId].nmDirectNMParams.NodeId,	\
+										NM_ControlBlock[NetId].nmTxPdu.Destination);
+		if(NMPDU->OpCode.B.Ring)
+		{
+			nmCancelAlarm(TTyp);
+			nmCancelAlarm(TMax);
+			if((NMPDU->Destination == NM_ControlBlock[NetId].nmDirectNMParams.NodeId) // to me
+				|| (NMPDU->Destination == NMPDU->Source)) // or D = S
+			{
+				nmSetAlarm(TTyp);
+			}
+			else
+			{
+				nmSetAlarm(TMax);
+				if(nmIsMeSkipped(NMPDU->Source,NM_ControlBlock[NetId].nmDirectNMParams.NodeId,NMPDU->Destination))
+				{
+					if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
+					{
+						StatusType ercd;
+						NM_ControlBlock[NetId].nmTxPdu.OpCode.b= NM_MaskAlive;
+						NM_ControlBlock[NetId].nmTxPdu.Destination= NM_ControlBlock[NetId].nmDirectNMParams.NodeId;
+						if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep)
+						{
+							NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd = 1;
+						}
+						ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);
+						if(ercd != E_OK)
+						{
+							nmSetAlarm(TTx); // re-Transmit after TTx
+						}
+					}
+				}
+			}
+		}
+	}
+}
+LOCAL NodeIdType nmDetermineLS(NodeIdType S,NodeIdType R,NodeIdType L)
+{
+	NodeIdType newL = L;
+	if(L==R)
+	{
+		newL = S;
+	}
+	else
+	{
+		if(L<R)
+		{
+			if(S<L)
+			{
+				newL = S; // SLR
+			}
+			else
+			{
+				if(S<R)
+				{
+					//LSR
+				}
+				else
+				{
+					newL = S; //LRS
+				}
+			}
+		}
+		else
+		{
+			if(S<L)
+			{
+				if(S<R)
+				{
+					//SRL
+				}
+				else
+				{
+					newL = S; // RSL
+				}
+			}
+			else
+			{
+				//RLS
+			}
+		}
+	}
+	if(L != newL)
+	{
+		printf("Update L = 0x%x \n",newL);
+	}
+	return newL;
+}
+LOCAL boolean nmIsMeSkipped(NodeIdType S,NodeIdType R,NodeIdType D)
+{
+	boolean isSkipped = FALSE;
+	if(D<R)
+	{
+		if(S<D)
+		{
+			// not skipped //SDR
+		}
+		else
+		{
+			if(S<R)
+			{
+				isSkipped = TRUE; // DRS
+			}
+			else
+			{
+				// not skipped //DSR
+			}
+		}
+	}
+	else
+	{
+		if(S<D)
+		{
+			if(S<R)
+			{
+				isSkipped = TRUE; //SRD
+			}
+			else
+			{
+				//RSD
+			}
+		}
+		else
+		{
+			isSkipped = TRUE; // RDS
+		}
+	}
+	if(isSkipped)
+	{
+		printf("skipped \n");
+	}
+	return isSkipped;
 }
 LOCAL void nmAddToConfig(NetIdType NetId,ConfigKindName ConfigKind,NodeIdType NodeId)
 {
@@ -439,12 +614,13 @@ LOCAL void nmNormalMain(NetIdType NetId)
 			}
 		}
 	}
-	else if(nmIsAlarmStarted(TMax))
+
+	if(nmIsAlarmStarted(TMax))
 	{
 		nmSingalAlarm(TMax);
 		if(nmIsAlarmTimeout(TMax))
 		{
-			NMInitReset(NetId);
+			nmInitReset(NetId);
 		}
 	}
 }
@@ -479,12 +655,26 @@ LOCAL void nmLimphomeMain(NetIdType NetId)
 		}
 	}
 }
-TASK(TaskNmMain)
+EXPORT void NM_MainTask(void)
 {
 	NetIdType NetId;
-	printf("In TaskNmMain.\n");
 	for(NetId= 0; NetId < cfgNM_NET_NUM; NetId ++)
 	{
+		if(nmIsAlarmStarted(TTx))
+		{
+			nmSingalAlarm(TTx);
+			if(nmIsAlarmTimeout(TTx))
+			{
+				StatusType ercd;
+				nmCancelAlarm(TTx);
+				ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);
+				if(ercd != E_OK)
+				{
+					nmSetAlarm(TTx); // re-Transmit after TTx
+				}
+				continue; // ship the process of state
+			}
+		}
 		switch(NM_ControlBlock[NetId].nmState)
 		{
 			case NM_stNormal:
@@ -496,7 +686,10 @@ TASK(TaskNmMain)
 			default:
 				break;
 		}
-
 	}
+}
+TASK(TaskNmMain)
+{
+	NM_MainTask();
 	TerminateTask();
 }
