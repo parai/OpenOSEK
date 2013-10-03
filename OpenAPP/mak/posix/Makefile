@@ -59,7 +59,7 @@ gen:
 	(cd $(BD)/OpenAPP/config; make all)
 	
 run:
-	@echo not supported
+	@python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000
 	
 clean:
 	@echo remove $(obj-y) $(OUT)/*

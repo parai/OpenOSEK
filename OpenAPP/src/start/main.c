@@ -19,7 +19,8 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
-#include <windows.h>
+//#include <windows.h>
+#include <unistd.h>
 #include "Os.h"
 #include "Nm.h"
 
@@ -43,7 +44,7 @@ void main(void)
 	for(;;)
 	{
 		NM_MainTask();
-		Sleep(10);
+		usleep(10000);
 	}
 #endif
     /* You can do some-special work here,such as init the system clock and so on... */

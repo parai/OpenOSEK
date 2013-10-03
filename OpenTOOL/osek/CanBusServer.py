@@ -68,7 +68,7 @@ def CanBusServerForward(msg,port = 8000):
         server_port.append(portR)
     for p in server_port:
         if(p != portR):
-            try: 
+            try:  
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.connect(('127.0.0.1', p))  
                 sock.send(msg)
