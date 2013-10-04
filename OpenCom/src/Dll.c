@@ -119,3 +119,11 @@ EXPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,ui
 		}
 	}
 }
+
+EXPORT void Can_WakeupIndication(Can_ControllerIdType Controller)
+{
+	if(CAN_CTRL_0 == Controller)
+	{
+		NM_WakeupIndication(0);
+	}
+}

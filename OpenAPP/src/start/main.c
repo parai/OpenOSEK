@@ -19,7 +19,7 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
-#define NM_TEST_WITHOUT_RTOS
+//#define NM_TEST_WITHOUT_RTOS
 #ifdef NM_TEST_WITHOUT_RTOS
 #include <windows.h>
 #include "Nm.h"
@@ -52,6 +52,7 @@ void main(void)
 		StartupHook();
 		for(;;)
 		{
+			static unsigned long time = 0;
 			NM_MainTask();
 			Sleep(10);
 		}

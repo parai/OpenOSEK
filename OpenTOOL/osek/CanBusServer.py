@@ -42,7 +42,7 @@ def CanBusServerTrace(msg):
     dlc = ord(msg[4])
     cstr = 'ID=%s, DLC=%s: ['%(hex(canid),dlc)
     for i in range(0,8):
-        cstr += '%s, '%(hex(ord(msg[5+i])))
+        cstr += '0x%-2x, '%(ord(msg[5+i]))
     cstr += ']'
     cstr += '<->['
     for i in range(0,8):

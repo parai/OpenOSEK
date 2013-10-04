@@ -76,8 +76,6 @@ LOCAL Can_PduType2 Can_PduMsg[CAN_CONTROLLER_CNT];
 LOCAL Can_StateTransitionType Can_CtrlState[CAN_CONTROLLER_CNT];
 LOCAL uint32 Can_CtrlServerPort[CAN_CONTROLLER_CNT];
 /* ================================ FUNCTIONs =============================== */
-IMPORT void Can_TxConformation(PduIdType TxHandle);
-IMPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,uint8* data,uint8 length);
 LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* ctrlConfig);
 LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* ctrlConfig);
 // Set-up the simulate environment for CAN communication
@@ -166,7 +164,7 @@ EXPORT Can_ReturnType Can_SetControllerMode(uint8 Controller,Can_StateTransition
             break;
 		case CAN_T_SLEEP:  //CAN258, CAN290
 			Can_CtrlState[Controller] = Transition;
-			SuspendThread(Can_CtrlRxThread[Controller]);
+			ResumeThread(Can_CtrlRxThread[Controller]);
 			SuspendThread(Can_CtrlTxThread[Controller]);
             break;
 		case CAN_T_STOP:
@@ -189,6 +187,12 @@ EXPORT Can_ReturnType Can_Write(Can_HwHandleType Hth,const Can_PduType* PduInfo)
 	if(Controller >= CAN_CONTROLLER_CNT)
 	{
 		printf("ERROR:Hth out of range.\n");
+		return CAN_NOT_OK;
+	}
+	if((CAN_T_START != Can_CtrlState[Controller])
+		&& (CAN_T_WAKEUP != Can_CtrlState[Controller]))
+	{
+		printf("ERROR: CAN controller not started or waked up.\n");
 		return CAN_NOT_OK;
 	}
 	WaitForSingleObject( Can_CtrlTxMutex[Controller], INFINITE );
@@ -349,7 +353,14 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 		{ // Rx ISR
 			id = (((uint32)msg[0])<<24) + (((uint32)msg[1])<<16) + (((uint32)msg[2])<<8) + msg[3];
 			SuspendAllInterrupts();
-			Can_RxIndication(Controller,id,&msg[5],msg[4]);
+			if(CAN_T_SLEEP == Can_CtrlState[Controller])
+			{
+				Can_WakeupIndication(Controller);
+			}
+			else
+			{
+				Can_RxIndication(Controller,id,&msg[5],msg[4]);
+			}
 			ResumeAllInterrupts();
 		}
 		else

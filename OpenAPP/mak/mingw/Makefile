@@ -84,6 +84,8 @@ run:
 	@(start $(OUT)/$(TARGET) 16)
 	@(start $(OUT)/$(TARGET) 32)
 	@(start $(OUT)/$(TARGET) 48)
+#	@(start $(OUT)/$(TARGET) 64)
+#	@(start $(OUT)/$(TARGET) 80)
 	
 clean:
 	@echo remove $(obj-y) $(OUT)/*

@@ -43,5 +43,6 @@ IMPORT void D_StatusInd(NetIdType NetId,uint32 status);
 IMPORT void D_WindowDataInd( NetIdType udNetId,uint8* NMPDU,uint8 DataLEngthRx);
 
 // Function needed by DLL
-EXPORT void BusInit(NetIdType NetId);
+IMPORT void BusInit(NetIdType NetId);
+IMPORT void BusSleep(NetIdType NetId);
 #endif  /* DLL_H_H_H_H */

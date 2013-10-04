@@ -72,5 +72,8 @@ IMPORT void Can_DisableControllerInterrupts(uint8 Controller);
 IMPORT Can_ReturnType Can_CheckWakeup(uint8 Controller);
 IMPORT Can_ReturnType Can_Write(Can_HwHandleType Hth,const Can_PduType* PduInfo);
 
+IMPORT void Can_TxConformation(PduIdType TxHandle);
+IMPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,uint8* data,uint8 length);
+IMPORT void Can_WakeupIndication(Can_ControllerIdType Controller);
 #endif /* CAN_H_H_H_H */
 

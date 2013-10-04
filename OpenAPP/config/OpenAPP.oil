@@ -18,3 +18,15 @@ COUNTER SystemTimer
 	MINCYCLE = 1;
 	TYPE = SOFTWARE;
 }
+TASK TaskKeyMonitor  // Idle Task, always in running state
+{
+	PRIORITY = 0;
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	AUTOSTART = TRUE 
+	{
+		APPMODE = OSDEFAULTAPPMODE;
+	};
+	STACK = 256;
+	TYPE = BASIC;
+}
