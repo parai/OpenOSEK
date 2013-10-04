@@ -396,6 +396,9 @@ class OsekCounter(OeskObject):
                 flag = True
         if(flag == False):
             print 'WARNING: Counter %s isn\'t referred by any alarm.'%(self.name)  
+        if(int(self.getValue('MAXALLOWEDVALUE'),16) > (0xFFFFFFFF-1)/2):
+            print 'ERROR: counter %s max allowed value cann\'t be bigger than %s'%(self.name,hex((0xFFFFFFFF-1)/2).upper())
+            sys.exit(-1)
     def genH(self,fp):
         id = 0
         for counter in GetOsekObjects('COUNTER'):

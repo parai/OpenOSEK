@@ -19,17 +19,23 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
-//#include <windows.h>
-#include <unistd.h>
-#include "Os.h"
+#define NM_TEST_WITHOUT_RTOS
+#ifdef NM_TEST_WITHOUT_RTOS
+#include <windows.h>
 #include "Nm.h"
+#endif
+#include "Os.h"
+
 
 /* ================================ MACROs    =============================== */
-#define NM_TEST 1
+
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
-EXPORT uint32 argNMNodeId;
+#ifdef __GNUC__
+IMPORT uint32 argNMNodeId;
+#endif
+
 /* ================================ FUNCTIONs =============================== */
 /* This is a stardard procedure which will start the os by the default app mode */
 #ifdef __GNUC__
@@ -38,13 +44,18 @@ int main(int argc,char* argv[])
 void main(void)
 #endif
 {
-#if(NM_TEST == 1)  // On MinGW, RTOS real-time is a shit
-	argNMNodeId = atoi(argv[1]);
-	StartupHook();
-	for(;;)
+#ifdef __GNUC__
+	if(argc == 2)  // For NM
 	{
-		NM_MainTask();
-		usleep(10000);
+		argNMNodeId = atoi(argv[1]);
+#ifdef NM_TEST_WITHOUT_RTOS
+		StartupHook();
+		for(;;)
+		{
+			NM_MainTask();
+			Sleep(10);
+		}
+#endif
 	}
 #endif
     /* You can do some-special work here,such as init the system clock and so on... */

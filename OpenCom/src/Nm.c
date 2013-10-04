@@ -56,6 +56,8 @@ do												\
 #define nmSendMessage()					\
 do{										\
 	StatusType ercd;					\
+	printf("::S=0x%x,D=0x%x,OpCode=0x%x\n",NM_ControlBlock[NetId].nmTxPdu.Source,	\
+			NM_ControlBlock[NetId].nmTxPdu.Destination,NM_ControlBlock[NetId].nmTxPdu.OpCode.b);	\
 	ercd = D_WindowDataReq(NetId,&(NM_ControlBlock[NetId].nmTxPdu),8);		\
 	if(ercd != E_OK)					\
 	{									\
@@ -63,6 +65,7 @@ do{										\
 	}									\
 }while(0)
 
+#define nmDebug(str) printf(str)
 /* ================================ TYPEs     =============================== */
 typedef struct
 {
@@ -314,17 +317,20 @@ LOCAL void nmInitReset(NetIdType NetId)
 		// Send A alive message
 		NM_ControlBlock[NetId].nmTxPdu.OpCode.b = NM_MaskAlive;
 		nmSendMessage();
+		nmDebug("nmInitReset:Send Alive,");
 	}
 	if((NM_ControlBlock[NetId].nmTxCount <= tx_limit)	&&
 		(NM_ControlBlock[NetId].nmRxCount <= rx_limit))
 	{
 		nmSetAlarm(TTyp);
 		NM_ControlBlock[NetId].nmState = NM_stNormal;
+		nmDebug("Set TTyp, enter Normal state.\n");
 	}
 	else
 	{
 		nmSetAlarm(TError);
 		NM_ControlBlock[NetId].nmState = NM_stLimphome;
+		nmDebug("Set TError, Enter Limphome state.\n");
 	}
 }
 EXPORT void NM_TxConformation(NetIdType NetId)
@@ -339,12 +345,14 @@ EXPORT void NM_TxConformation(NetIdType NetId)
 				nmCancelAlarm(TTyp);
 				nmCancelAlarm(TMax);
 				nmSetAlarm(TMax);
+				printf("TxConform,Cancel TTyp Set TMax.\n");
 				if(NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd)
 				{
 					if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep)
 					{
 						NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepAck = 1;
 						NM_ControlBlock[NetId].nmState = NM_stNormalPrepSleep;
+						nmDebug("sleep.ind=1,set sleep.ack=1 and enter NormalPrepSleep state.\n");
 					}
 				}
 			}
@@ -353,7 +361,6 @@ EXPORT void NM_TxConformation(NetIdType NetId)
 		default:
 			break;
 	}
-
 }
 EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
 {
@@ -370,6 +377,7 @@ EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
 					D_Offline(NetId);
 					nmSetAlarm(TWbs);
 					NM_ControlBlock[NetId].nmState = NM_stTwbsNormal;
+					nmDebug("sleep.ack=1, set TWbs and enter TwbsNormal state.\n");
 				}
 			}
 			break;
@@ -386,6 +394,7 @@ LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU)
 		// add sender to config.present
 		nmAddToConfig(NetId,NM_ckLimphome,NMPDU->Source);
 		nmRemoveFromConfig(NetId,NM_ckNormal,NMPDU->Source);
+		nmDebug("A limphome message received!");
 	}
 	else
 	{
@@ -400,16 +409,20 @@ LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU)
 		{
 			nmCancelAlarm(TTyp);
 			nmCancelAlarm(TMax);
+			nmDebug("RxIndication Ring,Cancel TTyp and TMax, ");
 			if((NMPDU->Destination == NM_ControlBlock[NetId].nmDirectNMParams.NodeId) // to me
 				|| (NMPDU->Destination == NMPDU->Source)) // or D = S
 			{
+				nmDebug("To me, Set TTyp.\n");
 				nmSetAlarm(TTyp);
 			}
 			else
 			{
+				nmDebug("Not to me, Set TMax.\n");
 				nmSetAlarm(TMax);
 				if(nmIsMeSkipped(NMPDU->Source,NM_ControlBlock[NetId].nmDirectNMParams.NodeId,NMPDU->Destination))
 				{
+					nmDebug("Me is skipped, send Alive.\n");
 					if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 					{
 						NM_ControlBlock[NetId].nmTxPdu.OpCode.b= NM_MaskAlive;
@@ -471,10 +484,6 @@ LOCAL NodeIdType nmDetermineLS(NodeIdType S,NodeIdType R,NodeIdType L)
 			}
 		}
 	}
-	if(L != newL)
-	{
-		printf("Update L = 0x%x \n",newL);
-	}
 	return newL;
 }
 LOCAL boolean nmIsMeSkipped(NodeIdType S,NodeIdType R,NodeIdType D)
@@ -515,10 +524,6 @@ LOCAL boolean nmIsMeSkipped(NodeIdType S,NodeIdType R,NodeIdType D)
 		{
 			isSkipped = TRUE; // RDS
 		}
-	}
-	if(isSkipped)
-	{
-		printf("skipped \n");
 	}
 	return isSkipped;
 }
@@ -581,6 +586,7 @@ LOCAL void nmNormalMain(NetIdType NetId)
 			nmCancelAlarm(TTyp);
 			nmCancelAlarm(TMax);
 			nmSetAlarm(TMax);
+			nmDebug("TTyp Timeout, Set TMax,");
 			if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 			{
 				NM_ControlBlock[NetId].nmTxPdu.OpCode.b = NM_MaskRing;
@@ -589,10 +595,16 @@ LOCAL void nmNormalMain(NetIdType NetId)
 					NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd = 1;
 				}
 				NM_ControlBlock[NetId].nmTxCount ++;
+				nmDebug("Send Ring.\n");
 				nmSendMessage();
+			}
+			else
+			{
+				nmDebug("NMactive = False.\n");
 			}
 			if(NM_ControlBlock[NetId].nmTxCount > tx_limit)
 			{
+				nmDebug("TxCounter > tx_limit, enter Limphome state.Set TError.\n");
 				NM_ControlBlock[NetId].nmState = NM_stLimphome;
 				nmSetAlarm(TError);
 			}
@@ -615,6 +627,7 @@ LOCAL void nmNormalMain(NetIdType NetId)
 		nmSingalAlarm(TMax);
 		if(nmIsAlarmTimeout(TMax))
 		{
+			nmDebug("TMax Timeout, Do NmInitReset.\n");
 			nmCancelAlarm(TMax);
 			nmInitReset(NetId);
 		}
@@ -656,6 +669,7 @@ EXPORT void NM_MainTask(void)
 			nmSingalAlarm(TTx);
 			if(nmIsAlarmTimeout(TTx))
 			{
+				printf("X");
 				nmCancelAlarm(TTx);
 				nmSendMessage();
 				continue; // skip the process of state

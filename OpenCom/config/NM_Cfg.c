@@ -35,7 +35,8 @@
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
-IMPORT uint32 argNMNodeId;
+EXPORT uint32 argNMNodeId = NM_PDUID;
+
 /* ================================ FUNCTIONs =============================== */
 // This is an example of how to write NMInit()
 EXPORT void NMInit(NetIdType NetId)

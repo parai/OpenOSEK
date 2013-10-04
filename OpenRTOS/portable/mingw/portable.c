@@ -104,6 +104,7 @@ first_start_without_task_ready:
 	if(FALSE == portProcessSimulatedInterruptsCalled)
 	{
 		portProcessSimulatedInterruptsCalled = TRUE;
+		portInterruptsEnabled = TRUE; // Enable Interrupt.
 		portProcessSimulatedInterrupts();
 	}
 }
@@ -231,19 +232,7 @@ LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter )
 
 		Sleep( 1 ); //sleep 1ms
 
-		WaitForSingleObject( portInterruptEventMutex, INFINITE );
-
-		/* The timer has expired, generate the simulated tick event. */
-		portPendingInterrupts |= ( 1 << portINTERRUPT_TICK );
-
-		/* The interrupt is now pending - notify the simulated interrupt
-		handler thread. */
-		SetEvent( portInterruptEvent ); // WINAPI SetEvent
-			// shit, it is the same with osek.
-
-		/* Give back the mutex so the simulated interrupt handler unblocks
-		and can	access the interrupt handler variables. */
-		ReleaseMutex( portInterruptEventMutex );
+		portGenerateSimulatedInterrupt(portINTERRUPT_TICK);
 	}
 
 	#ifdef __GNUC__
@@ -266,38 +255,41 @@ LOCAL void portProcessSimulatedInterrupts( void )
 
 	for(;;)
 	{
-		WaitForMultipleObjects( sizeof( pvObjectList ) / sizeof( void * ), pvObjectList, TRUE, INFINITE );
+		if(TRUE == portInterruptsEnabled)
+		{
+			WaitForMultipleObjects( sizeof( pvObjectList ) / sizeof( void * ), pvObjectList, TRUE, INFINITE );
 
-		/* For each interrupt we are interested in processing, each of which is
-		represented by a bit in the 32bit ulPendingInterrupts variable. */
-		for( i = 0; i < portMAX_INTERRUPTS; i++ )
-		{
-			/* Is the simulated interrupt pending? */
-			if( portPendingInterrupts & ( 1UL << i ) )
+			/* For each interrupt we are interested in processing, each of which is
+			represented by a bit in the 32bit ulPendingInterrupts variable. */
+			for( i = 0; i < portMAX_INTERRUPTS; i++ )
 			{
-				/* Is a handler installed? */
-				if( portIsrHandler[ i ] != NULL )
+				/* Is the simulated interrupt pending? */
+				if( portPendingInterrupts & ( 1UL << i ) )
 				{
-					/* Run the actual handler. */
-					portIsrHandler[ i ]();
+					/* Is a handler installed? */
+					if( portIsrHandler[ i ] != NULL )
+					{
+						/* Run the actual handler. */
+						portIsrHandler[ i ]();
+					}
+					/* Clear the interrupt pending bit. */
+					portPendingInterrupts &= ~( 1UL << i );
 				}
-				/* Clear the interrupt pending bit. */
-				portPendingInterrupts &= ~( 1UL << i );
 			}
-		}
-		ReleaseMutex( portInterruptEventMutex );
-		if((portDispatchInIsrRequested == TRUE) &&(knl_dispatch_disabled == 0))
-		{
-			// printf("ISR dispatch!\n");
-			portDispatchInIsrRequested = FALSE;
-			knl_dispatch_entry();
+			ReleaseMutex( portInterruptEventMutex );
+			if((portDispatchInIsrRequested == TRUE) &&(knl_dispatch_disabled == 0))
+			{
+				// printf("ISR dispatch!\n");
+				portDispatchInIsrRequested = FALSE;
+				knl_dispatch_entry();
+			}
 		}
 	}
 }
 
 /*-----------------------------------------------------------*/
 
-void portGenerateSimulatedInterrupt( unsigned long ulInterruptNumber )
+EXPORT void portGenerateSimulatedInterrupt( unsigned long ulInterruptNumber )
 {
 
 	if( ( ulInterruptNumber < portMAX_INTERRUPTS ) && ( portInterruptEventMutex != NULL ) )

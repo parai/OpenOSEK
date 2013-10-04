@@ -23,6 +23,7 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <Ws2tcpip.h>
+#include <Os.h>
 // Link with ws2_32.lib
 #ifndef __GNUC__
 #pragma comment(lib, "Ws2_32.lib")
@@ -271,7 +272,9 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 		if (ercd == SOCKET_ERROR){
 			printf("closesocket function failed with error: %d\n", WSAGetLastError());
 		}
+		SuspendAllInterrupts();
 		Can_TxConformation(Can_PduMsg[Controller].swPduHandle);
+		ResumeAllInterrupts();
 		ReleaseMutex( Can_CtrlTxMutex[Controller] );
 	}
 	return NULL;
@@ -345,7 +348,9 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 		if ( ercd == 17 )
 		{ // Rx ISR
 			id = (((uint32)msg[0])<<24) + (((uint32)msg[1])<<16) + (((uint32)msg[2])<<8) + msg[3];
+			SuspendAllInterrupts();
 			Can_RxIndication(Controller,id,&msg[5],msg[4]);
+			ResumeAllInterrupts();
 		}
 		else
 		{
