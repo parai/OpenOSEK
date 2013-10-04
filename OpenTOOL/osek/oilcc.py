@@ -398,7 +398,7 @@ class OsekCounter(OeskObject):
             print 'WARNING: Counter %s isn\'t referred by any alarm.'%(self.name)  
         if(int(self.getValue('MAXALLOWEDVALUE'),16) > (0xFFFFFFFF-1)/2):
             print 'ERROR: counter %s max allowed value cann\'t be bigger than %s'%(self.name,hex((0xFFFFFFFF-1)/2).upper())
-            sys.exit(-1)
+            sys.exit(-1)   
     def genH(self,fp):
         id = 0
         for counter in GetOsekObjects('COUNTER'):
@@ -425,13 +425,13 @@ class OsekAlarm(OeskObject):
         if(flag == False):
             print 'ERROR: Counter <%s> isn\'t defined for Alarm <%s>!'%(self.getValue('COUNTER'),self.name)       
             sys.exit(-1)
-                # step 6: check for AUTOSTART:
+        # step 1: check for AUTOSTART:
         if(self.getValue('AUTOSTART') == 'TRUE' and len(self.getAttribute('APPMODE')) == 0):
             print 'ERROR: No APPMODE for Alarm <%s> as Task is auto-start!'%(self.name)
             sys.exit(-1)
         elif(self.getValue('AUTOSTART') == 'FALSE' and len(self.getAttribute('APPMODE')) > 0):
             print 'ERROR: Has APPMODE for Task <%s> as Alarm is not auto-start!'%(self.name)
-            sys.exit(-1)
+            sys.exit(-1) 
     def genH(self,fp):
         id = 0
         for alarm in GetOsekObjects('ALARM'):
@@ -450,7 +450,7 @@ class OsekAlarm(OeskObject):
         fp.write('#define %s_Action %s\n'%(self.name,self.getValue('ACTION')))
         if(self.getValue('ACTION') == 'ACTIVATETASK'):
             fp.write('#define %s_Task %s\n'%(self.name,self.getValue('TASK')))
-        elif(self.getValue('ACTION') == 'SetEvent'):
+        elif(self.getValue('ACTION') == 'SETEVENT'):
             fp.write('#define %s_Task %s\n'%(self.name,self.getValue('TASK')))
             fp.write('#define %s_Event %s\n'%(self.name,self.getValue('EVENT')))
         else:
@@ -573,10 +573,16 @@ def PrepareCompile(file):
             else: # special process for include
                 inc = GetIt('include',el)
                 if(inc != None): #include file
+                    flag_inc = False
                     for I in oilcc_I:
                         finc = I + '/' + inc[0]
                         if(os.path.exists(finc)):
+                            print 'INFO:parse include file <%s> in the path <%s>'%(inc[0],I)
                             PrepareCompile(finc);
+                            flag_inc = True;
+                    if(flag_inc == False):
+                        print 'ERROR:cann\'t find out the file %s!'%(inc[0])
+                        sys.exit(-1)
         #}
         else:
         #{
@@ -595,6 +601,18 @@ def PrepareCompile(file):
     fp.close()
 
 def osekObjPostProcess():
+    # special process for Counter
+    flag = False
+    for counter in GetOsekObjects('COUNTER'):
+        if(counter.name == 'SystemTimer'):
+            flag = True;
+    if(flag == False):
+        print 'WARNING:No OpenOSEK default counter <SystenTimer> configured,OILCC will add it with default value.'
+        counter = OsekCounter([[('COUNTER','SystemTimer'),[('MAXALLOWEDVALUE','0x7FFFFFFF'),('TICKSPERBASE','1'),('MINCYCLE',1),('TYPE','SOFTWARE')]]])
+        oilcc_osekObjs.insert(0,counter)
+    else:
+        oilcc_osekObjs.remove(counter)
+        oilcc_osekObjs.insert(0,counter) 
     for obj in oilcc_osekObjs:
         obj.postProcess()
 def GenerateOsCfgH():
@@ -632,6 +650,7 @@ class GenerateOsCfgC():
         fp = open('%s/oscfg.c'%(oilcc_o),'w')
         fp.write(cCodeHead)
         fp.write('#include "osek_os.h"\n')
+        fp.write('\n#ifdef SIMULATE_ON_WIN\n#define SetEvent osekSetEvent\n#endif\n')
         # Gen Tasks
         self.genTasks(fp);
         # Gen Counters
@@ -821,6 +840,10 @@ def Compile(file = ''):
     global oilcc_I,oilcc_o,oilcc_S,oilcc_target
     if(file == ''):
         file = oilcc_target
+    if(os.path.exists(file)):
+        print 'INFO:parse Main file <%s>.'%(file)
+    else:
+        print 'ERROR: file <%s> isn\'t existed'
     PrepareCompile(file)
     textToItems()
     itemsToOsekObj()

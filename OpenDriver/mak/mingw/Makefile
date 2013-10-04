@@ -17,8 +17,12 @@ RM = rm
 
 #common flags
 ASFLGS = 
-INCDIR = -I$(BD)/OpenRTOS/inc -I$(BD)/OpenDriver/inc -I$(BD)/OpenCom/inc -I$(BD)/OpenAPP
-MACROS = 
+INCDIR = 	-I$(BD)/OpenRTOS/inc 	\
+			-I$(BD)/OpenDriver/inc 	\
+			-I$(BD)/OpenCom/inc 	\
+			-I$(BD)/OpenAPP			\
+			-I$(BD)/OpenAPP/out
+MACROS = -DSIMULATE_ON_WIN
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
 LDFLGS = -g -O2 -Wall $(INCDIR) -L$(OUT) -l$(TARGET)  -lwsock32
 ARFLGS = rv

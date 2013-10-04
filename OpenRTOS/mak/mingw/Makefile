@@ -17,8 +17,11 @@ RM = rm
 
 #common flags
 ASFLGS = 
-INCDIR = -I$(BD)/OpenRTOS/inc -I$(BD)/OpenRTOS/src -I$(BD)/OpenRTOS/portable/mingw	\
-		-I$(BD)/OpenAPP/out	-I$(BD)/OpenAPP
+INCDIR = 	-I$(BD)/OpenRTOS/inc \
+			-I$(BD)/OpenRTOS/src \
+			-I$(BD)/OpenRTOS/portable/mingw	\
+			-I$(BD)/OpenAPP/out	\
+			-I$(BD)/OpenAPP
 MACROS = -DSIMULATE_ON_WIN
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
 LDFLGS = -g -O2 -Wall $(INCDIR)
@@ -31,8 +34,6 @@ dir-y =	$(BD)/OpenRTOS/src	\
 src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))	\
 		$(BD)/OpenAPP/out/oscfg.c
 obj-y = $(subst .c,.o,$(src-y))
-
-OBJS += $(obj-y)
 
 #common rules
 %.o:%.c
@@ -50,5 +51,4 @@ $(TARGET): $(obj-y)
 clean:
 	@echo remove $(obj-y) $(OUT)/*
 	@$(RM) $(RMFLGS) $(obj-y) $(OUT)/*
-	@echo ">>>>>>>>>>>>>>>>>  CLEAN $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"
-
+	@echo ">>>>>>>>>>>>>>>>>  CLEAN $(TARGET) DONE   <<<<<<<<<<<<<<<<<<<<<<"	

@@ -1,4 +1,4 @@
-#include "../../OpenCom/config/OpenCom.oil"
+#include "OpenCom.oil"
 
 OS	ExampleOS {
 	STATUS = EXTENDED;

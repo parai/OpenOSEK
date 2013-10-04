@@ -14,7 +14,9 @@ CC = gcc
 LD = gcc
 AR = ar
 RM = rm
+OILCC = python $(BD)/OpenTOOL/osek/oilcc.py
 
+OILCC-I = -I$(BD)/OpenCom/config
 #common flags
 ASFLGS = 
 INCDIR = 	-I$(BD)/OpenRTOS/inc \
@@ -74,10 +76,8 @@ $(BD)/OpenCom/out/libOpenCom.a:
 $(TARGET): $(obj-y)
 
 gen:
-	(cd $(BD)/OpenAPP/config; make all)
-
-test-gen:
-	(cd $(BD)/OpenAPP/config; make test)
+	@($(OILCC) $(OILCC-I) -S $(OUT)/OpenAPP.csv -o $(OUT) $(BD)/OpenAPP/config/OpenAPP.oil)
+	@echo ">>>>>>>>>>  OILCC BUILD DONE <<<<<<<<<<<<<<<< "
 	
 run:
 	@(start python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000)

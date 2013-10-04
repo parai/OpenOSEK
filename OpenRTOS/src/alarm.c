@@ -171,7 +171,7 @@ StatusType SetRelAlarm ( AlarmType AlarmID , TickType Increment ,TickType Cycle 
 	counter = knl_acb_counter[AlarmID];
 	OS_EXT_VALIDATE((knl_ccb_max[counter] >= Increment),E_OS_VALUE);
 	OS_EXT_VALIDATE((knl_ccb_max[counter] >= Cycle),E_OS_VALUE);
-	OS_EXT_VALIDATE(((knl_ccb_min[counter] <= Cycle)),E_OS_VALUE);
+	OS_EXT_VALIDATE(((0u == Cycle)||(knl_ccb_min[counter] <= Cycle)),E_OS_VALUE);
 	BEGIN_DISABLE_INTERRUPT();
 	knl_acb_value[AlarmID] = knl_add_ticks(knl_ccb_value[counter],Increment,knl_ccb_max[counter]*2);
 	knl_acb_period[AlarmID] = Cycle;
@@ -238,7 +238,7 @@ StatusType SetAbsAlarm ( AlarmType AlarmID , TickType Start ,TickType Cycle )
 	counter = knl_acb_counter[AlarmID];
 	OS_EXT_VALIDATE((knl_ccb_max[counter] >= Start),E_OS_VALUE);
 	OS_EXT_VALIDATE((knl_ccb_max[counter] >= Cycle),E_OS_VALUE);
-	OS_EXT_VALIDATE(((knl_ccb_min[counter] <= Cycle)),E_OS_VALUE);
+	OS_EXT_VALIDATE(((0u == Cycle)||(knl_ccb_min[counter] <= Cycle)),E_OS_VALUE);
 	BEGIN_DISABLE_INTERRUPT();
 	knl_acb_value[AlarmID] = Start;
 	knl_acb_period[AlarmID] = Cycle;
