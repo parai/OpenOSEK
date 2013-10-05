@@ -124,6 +124,7 @@ LOCAL void l_dispatch0(void)
 	portInterruptsEnabled = TRUE; //enable interrupt
 	while(INVALID_TASK == knl_schedtsk)
 	{
+		Sleep(0); // release CPU give the right to other thread
 	}
 	knl_curtsk = knl_schedtsk;
 	knl_dispatch_disabled=0;    /* Dispatch enable */
