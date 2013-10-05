@@ -183,7 +183,9 @@ interrupt 7 void portSystemTimer(void)
 {
     CRGFLG &=0xEF;			// clear the interrupt flag
     EnterISR();
+#if(cfgOS_ALARM_NUM > 0)    
 	(void)SignalCounter(SystemTimer);
+#endif	
     LeaveISR();
 }
 #pragma CODE_SEG DEFAULT

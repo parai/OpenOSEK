@@ -36,3 +36,4 @@ TASK(TaskKeyMonitor)
 	}
 	TerminateTask();
 }
+

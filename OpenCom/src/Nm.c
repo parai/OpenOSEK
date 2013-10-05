@@ -22,6 +22,11 @@
 /* ================================ INCLUDEs  =============================== */
 #include "Nm.h"
 #include "Dll.h"
+
+#ifdef SIMULATE_ON_WIN
+#define SetEvent osekSetEvent
+#endif
+
 /* ================================ MACROs    =============================== */
 #define rx_limit 4
 #define tx_limit 8
@@ -65,6 +70,7 @@ do{										\
 
 #define nmDebug(str) //printf(str)
 /* ================================ TYPEs     =============================== */
+// OK we could see terrible thing here, too big the struct is.
 typedef struct
 {
 	NMType nmType;
@@ -106,6 +112,11 @@ typedef struct
 		TaskType TaskId;
 		EventMaskType EMask;
 	}nmStatus;
+	struct{
+		SignallingMode SMode;
+		TaskType TaskId;
+		EventMaskType EMask;
+	}nmRingDataInd;
 	union
 	{
 		uint32 w;
@@ -297,6 +308,21 @@ EXPORT StatusType StartNM(NetIdType NetId)
 	return ercd;
 }
 
+EXPORT void InitIndRingData(NetIdType NetId,SignallingMode SMode,TaskType TaskId,EventMaskType EMask)
+{
+	NM_ControlBlock[NetId].nmRingDataInd.SMode = SMode;
+	NM_ControlBlock[NetId].nmRingDataInd.TaskId = TaskId;
+	NM_ControlBlock[NetId].nmRingDataInd.EMask = EMask;
+}
+
+EXPORT void ReadRingData(NetIdType NetId,RingDataRefType RingData)
+{
+	memcpy(RingData,NM_ControlBlock[NetId].nmTxPdu.RingData,sizeof(RingDataType));
+}
+EXPORT void TransmitRingData(NetIdType NetId,RingDataRefType RingData)
+{
+	memcpy(NM_ControlBlock[NetId].nmTxPdu.RingData,RingData,sizeof(RingDataType));
+}
 EXPORT StatusType GotoMode(NetIdType NetId,NMModeName NewMode)
 {
 	if(NewMode == NM_BusSleep)
@@ -392,14 +418,12 @@ EXPORT void NM_TxConformation(NetIdType NetId)
 				nmCancelAlarm(TTyp);
 				nmCancelAlarm(TMax);
 				nmSetAlarm(TMax);
-				nmDebug("TxConform,Cancel TTyp Set TMax.\n");
 				if(NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd)
 				{
 					if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep)
 					{
 						NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepAck = 1;
 						NM_ControlBlock[NetId].nmState = NM_stNormalPrepSleep;
-						nmDebug("sleep.ind=1,set sleep.ack=1 and enter NormalPrepSleep state.\n");
 					}
 				}
 			}
@@ -412,7 +436,6 @@ EXPORT void NM_TxConformation(NetIdType NetId)
 				D_Offline(NetId);
 				nmSetAlarm(TWbs);
 				NM_ControlBlock[NetId].nmState = NM_stTwbsNormal;
-				nmDebug("sleep.ack=1, set TWbs and enter TwbsNormal state.\n");
 			}
 			break;
 		}
@@ -430,7 +453,6 @@ EXPORT void NM_TxConformation(NetIdType NetId)
 }
 EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
 {
-//	printf("S=0x%x,D=0x%x,OpCode=0x%x\n",NMPDU->Source,NMPDU->Destination,NMPDU->OpCode.b);
 	switch(NM_ControlBlock[NetId].nmState)
 	{
 		case NM_stNormal:
@@ -444,7 +466,6 @@ EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
 					D_Offline(NetId);
 					nmSetAlarm(TWbs);
 					NM_ControlBlock[NetId].nmState = NM_stTwbsNormal;
-					nmDebug("sleep.ack=1, set TWbs and enter TwbsNormal state.\n");
 				}
 			}
 			// Special process for NM_stNormalPrepSleep only
@@ -635,7 +656,6 @@ LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU)
 	{
 		// add sender to config.limphome
 		nmAddtoLimphome(NetId,NMPDU->Source);
-		nmDebug("A limphome message received!");
 	}
 	else
 	{
@@ -649,20 +669,32 @@ LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU)
 		{
 			nmCancelAlarm(TTyp);
 			nmCancelAlarm(TMax);
-			nmDebug("RxIndication Ring,Cancel TTyp and TMax, ");
+			// see nm253 Figure 4 Mechanism to transfer application data via the logical ring
+			memcpy(NM_ControlBlock[NetId].nmTxPdu.RingData,NMPDU->RingData,sizeof(RingDataType));
 			if((NMPDU->Destination == NM_ControlBlock[NetId].nmDirectNMParams.NodeId) // to me
 				|| (NMPDU->Destination == NMPDU->Source)) // or D = S
 			{
-				nmDebug("To me, Set TTyp.\n");
 				nmSetAlarm(TTyp);
+				// Do Ring Data indication
+				if(NM_ControlBlock[NetId].nmRingDataInd.SMode == SignalEvent)
+				{
+					(void)SetEvent(NM_ControlBlock[NetId].nmRingDataInd.TaskId,NM_ControlBlock[NetId].nmRingDataInd.EMask);
+				}
+				else if(NM_ControlBlock[NetId].nmRingDataInd.SMode == SignalActivation)
+				{
+					(void)ActivateTask(NM_ControlBlock[NetId].nmRingDataInd.TaskId);
+				}
+				else
+				{
+					// invalid as InitIndRingData hasn't been called before.
+				}
+
 			}
 			else
 			{
-				nmDebug("Not to me, Set TMax.\n");
 				nmSetAlarm(TMax);
 				if(nmIsMeSkipped(NMPDU->Source,NM_ControlBlock[NetId].nmDirectNMParams.NodeId,NMPDU->Destination))
 				{
-					nmDebug("Me is skipped, send Alive.\n");
 					if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 					{
 						NM_ControlBlock[NetId].nmTxPdu.OpCode.b= NM_MaskAlive;
@@ -826,7 +858,6 @@ LOCAL void nmNormalMain(NetIdType NetId)
 			nmCancelAlarm(TTyp);
 			nmCancelAlarm(TMax);
 			nmSetAlarm(TMax);
-			nmDebug("TTyp Timeout, Set TMax,");
 			if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 			{
 				NM_ControlBlock[NetId].nmTxPdu.OpCode.b = NM_MaskRing;
@@ -835,16 +866,13 @@ LOCAL void nmNormalMain(NetIdType NetId)
 					NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd = 1;
 				}
 				NM_ControlBlock[NetId].nmTxCount ++;
-				nmDebug("Send Ring.\n");
 				nmSendMessage();
 			}
 			else
 			{
-				nmDebug("NMactive = False.\n");
 			}
 			if(NM_ControlBlock[NetId].nmTxCount > tx_limit)
 			{
-				nmDebug("TxCounter > tx_limit, enter Limphome state.Set TError.\n");
 				NM_ControlBlock[NetId].nmState = NM_stLimphome;
 				nmSetAlarm(TError);
 			}
@@ -867,7 +895,6 @@ LOCAL void nmNormalMain(NetIdType NetId)
 		nmSingalAlarm(TMax);
 		if(nmIsAlarmTimeout(TMax))
 		{
-			nmDebug("TMax Timeout, Do nmInitReset6.\n");
 			nmCancelAlarm(TMax);
 			nmInitReset6(NetId);
 		}
@@ -1002,6 +1029,7 @@ EXPORT void NM_MainTask(void)
 		}
 	}
 }
+
 TASK(TaskNmMain)
 {
 	NM_MainTask();

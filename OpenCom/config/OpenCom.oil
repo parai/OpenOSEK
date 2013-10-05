@@ -5,10 +5,6 @@ TASK TaskNmMain
 	SCHEDULE = FULL;
 	ACTIVATION = 1;
 	AUTOSTART = FALSE;
-//	AUTOSTART = TRUE 
-//	{
-//		APPMODE = OSDEFAULTAPPMODE;
-//	};
 	STACK = 256;
 	TYPE = BASIC;
 }
@@ -16,15 +12,15 @@ TASK TaskNmMain
 TASK TaskNmInd{
 	PRIORITY = 5;
 	SCHEDULE = FULL;
-	ACTIVATION = 3;
-	AUTOSTART = FALSE;
-//	AUTOSTART = TRUE 
-//	{
-//		APPMODE = OSDEFAULTAPPMODE;
-//	};
+	ACTIVATION = 1;
+	AUTOSTART = TRUE 
+	{
+		APPMODE = OSDEFAULTAPPMODE;
+	};
 	EVENT = EventNmNormal;
 	EVENT = EventNmLimphome;
 	EVENT = EventNmStatus;
+	EVENT = EventRingData;
 	STACK = 256;
 	TYPE = EXTENDED;
 }
@@ -43,6 +39,10 @@ EVENT EventNmStatus
 	MASK = AUTO;
 };
 
+EVENT EventRingData
+{
+	MASK = AUTO;
+}
 ALARM AlarmNmMain {
 	COUNTER = SystemTimer;
 	ACTION = ACTIVATETASK {

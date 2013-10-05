@@ -47,6 +47,7 @@ typedef uint8 NetIdType;
 typedef void (*RoutineRefType)(NetIdType NetId);
 // import EventMaskType from OS
 typedef enum{
+	SignalInvalid = 0,
 	SignalActivation,
 	SignalEvent
 }SignallingMode;

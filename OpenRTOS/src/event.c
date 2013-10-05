@@ -194,7 +194,7 @@ EXPORT StatusType WaitEvent ( EventMaskType Mask )
 	StatusType ercd = E_OK;
     uint8 flgid;
     OS_EXT_VALIDATE((0 == knl_taskindp),E_OS_CALLEVEL);
-    // OS_EXT_VALIDATE(,E_OS_RESOURCE);
+    OS_EXT_VALIDATE((INVALID_RESOURCE == knl_tcb_resque[knl_curtsk]),E_OS_RESOURCE);
     flgid = knl_tcb_flgid[knl_curtsk];
     OS_EXT_VALIDATE((flgid != INVALID_FLAG),E_OS_ACCESS);
 

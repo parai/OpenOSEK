@@ -153,7 +153,9 @@ EXPORT void knl_dispatch_entry(void)
 LOCAL void knl_system_timer(void)
 {
 	EnterISR();
+#if(cfgOS_ALARM_NUM > 0)
 	(void)SignalCounter(SystemTimer);
+#endif
 	LeaveISR();
 }
 LOCAL void portStartDispatcher(void)

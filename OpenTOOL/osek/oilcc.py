@@ -215,12 +215,13 @@ class OsekOS(OeskObject):
         for obj in oilcc_osekObjs:
             if(obj.category == 'TASK'):
                 task += 1
+                for ee in obj.getAttribute('EVENT'):
+                    event += 1
+                    break
             elif(obj.category == 'ALARM'):
                 alarm += 1
             elif(obj.category == 'COUNTER'):
                 counter += 1
-            elif(obj.category == 'EVENT'):
-                event += 1
             elif(obj.category == 'RESOURCE'):
                 RESOURCEPROPERTY = obj.getValue('RESOURCEPROPERTY')      
                 if(RESOURCEPROPERTY == 'STANDARD'):
@@ -347,6 +348,14 @@ class OsekTask(OeskObject):
             sys.exit(-1)
         elif(self.getValue('AUTOSTART') == 'FALSE' and len(self.getAttribute('APPMODE')) > 0):
             print 'ERROR: Has APPMODE for Task <%s> as Task is not auto-start!'%(self.name)
+            sys.exit(-1)
+        # if has Event,Activation must be 1
+        for event in self.getAttribute('EVENT'):
+            if(int(self.getValue('ACTIVATION'),16) != 1):
+                print 'ERROR: Task %s has EVENTs, ACTIVATION must be 1.'%(self.name)
+                sys.exit(-1);
+        if(int(self.getValue('ACTIVATION'),16) == 0):
+            print 'ERROR: Task %s\'s ACTIVATION must be bigger than 0.'%(self.name)
             sys.exit(-1)
     def genH(self,fp):
         global oilcc_eventHandle

@@ -61,6 +61,7 @@ EXPORT void NMInit(NetIdType NetId)
 		InitTargetStatusTable(NetId,&status);
 		InitIndDeltaStatus(NetId,SignalEvent,TaskNmInd,EventNmStatus);
 		InitDirectNMParams(NetId,argNMNodeId /* LocalNodeId */,tTyp,tMax,tError,tWBS,tTx);
+		InitIndRingData(NetId,SignalEvent,TaskNmInd,EventRingData);
 	}
 }
 
@@ -68,24 +69,34 @@ TASK(TaskNmInd)
 {
 	StatusType ercd;
 	EventMaskType mask;
-	ercd = WaitEvent(EventNmNormal|EventNmLimphome|EventNmStatus);
-	if(E_OK == ercd)
+	printf("In TaskNmInd().\n");
+	for(;;)
 	{
-		mask = GetEvent(TaskNmInd,&mask);
-		if((mask&EventNmNormal) != 0)
+		ercd = WaitEvent(EventNmNormal|EventNmLimphome|EventNmStatus|EventRingData);
+		if(E_OK == ercd)
 		{
-			printf("In NM normal state,config changed.\n");
-			(void)ClearEvent(EventNmNormal);
+			GetEvent(TaskNmInd,&mask);
+			if((mask&EventNmNormal) != 0)
+			{
+				printf("In NM normal state,config changed.\n");
+			}
+			if((mask&EventNmLimphome) != 0)
+			{
+				printf("In NM limphome state,config changed.\n");
+			}
+			if((mask&EventNmStatus) != 0)
+			{
+				printf("NM network status changed.\n");
+			}
+			if((mask&EventRingData) != 0)
+			{
+				printf("NM Ring Data ind.\n");
+			}
+			(void)ClearEvent(EventNmNormal|EventNmLimphome|EventNmStatus|EventRingData);
 		}
-		if((mask&EventNmLimphome) != 0)
+		else
 		{
-			printf("In NM limphome state,config changed.\n");
-			(void)ClearEvent(EventNmLimphome);
-		}
-		if((mask&EventNmStatus) != 0)
-		{
-			printf("NM network status changed.\n");
-			(void)ClearEvent(EventNmStatus);
+			printf("Error when Wait!\n");
 		}
 	}
 	TerminateTask();
