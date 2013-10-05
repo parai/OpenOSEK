@@ -46,7 +46,6 @@ EXPORT void NMInit(NetIdType NetId)
 	(void)memset(config,0,32);
 	if(NetId == 0)
 	{
-		D_Init(NetId,BusInit);
 		D_DefineWindow(NetId,0x4FF,0x400,/* SourceId = TODO: */ NM_PDUID,8,8);
 		InitNMType(NetId,NM_DIRECT);
 		InitNMScaling(NetId,0xFF); // TODO:

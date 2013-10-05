@@ -96,6 +96,7 @@ typedef enum
 	NM_stBusSleep,
 	NM_stLimphome,
 	NM_stLimphomePrepSleep,
+	NM_stTwbsLimphome,
 	NM_stOn // in fact if not Off then ON.
 	// ...  and so on
 }NMStateType;
@@ -169,6 +170,7 @@ IMPORT void InitExtNodeMonitiring(NetIdType NetId,NodeIdType NodeId,uint8 DeltaI
 IMPORT void NM_TxConformation(NetIdType NetId);
 IMPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU);
 IMPORT void NM_WakeupIndication(NetIdType NetId);
+EXPORT void NM_BusErrorIndication(NetIdType NetId);
 
 IMPORT void NM_MainTask(void);
 #endif

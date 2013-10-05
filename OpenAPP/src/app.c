@@ -23,6 +23,16 @@ TASK(TaskKeyMonitor)
 			GotoMode(0,NM_Awake);
 			printf("Goto Awake.\n");
 		}
+		else if('T' == chr)
+		{
+			TalkNM(0);
+			printf("TalkNM(0).\n");
+		}
+		else if('S' == chr)
+		{
+			SilentNM(0);
+			printf("SilentNM(0).\n");
+		}
 	}
 	TerminateTask();
 }

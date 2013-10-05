@@ -105,15 +105,16 @@ typedef struct
 		SignallingMode SMode;
 		TaskType TaskId;
 		EventMaskType EMask;
-		union
-		{
-			uint32 w;
-			struct
-			{
-				unsigned stable : 1;
-			}W;
-		}nmMerker; // TODO: what's the meaning?
 	}nmStatus;
+	union
+	{
+		uint32 w;
+		struct
+		{
+			unsigned stable : 1;
+			unsigned limphome : 1;
+		}W;
+	}nmMerker; // TODO: what's the meaning?
 	NMStateType nmState;
 	struct
 	{
@@ -126,7 +127,6 @@ typedef struct
 	}nmDirectNMParams;
 	uint8 nmRxCount;
 	uint8 nmTxCount;
-	uint8 nmActive;
 	struct{
 		TickType _TTx;
 		TickType _TTyp;
@@ -141,8 +141,11 @@ EXPORT NM_ControlBlockType NM_ControlBlock[cfgNM_NET_NUM];
 /* ================================ FUNCTIONs =============================== */
 // See NM_Cfg.c
 IMPORT void NMInit(NetIdType NetId);
-
-LOCAL void nmInitReset(NetIdType NetId);
+LOCAL void nmInit3(NetIdType NetId);
+LOCAL void nmAddtoPresent(NetIdType NetId,NodeIdType NodeId);
+LOCAL void nmAddtoLimphome(NetIdType NetId,NodeIdType NodeId);
+LOCAL void nmInitReset5(NetIdType NetId);
+LOCAL void nmInitReset6(NetIdType NetId);
 LOCAL void nmAddToConfig(NetIdType NetId,ConfigKindName ConfigKind,NodeIdType NodeId);
 LOCAL void nmRemoveFromConfig(NetIdType NetId,ConfigKindName ConfigKind,NodeIdType NodeId);
 LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU);
@@ -152,7 +155,9 @@ LOCAL void nmBusSleep(NetIdType NetId);
 LOCAL void nmNormalTwbsMain(NetIdType NetId);
 LOCAL void nmNormalPrepSleepMain(NetIdType NetId);
 LOCAL void nmLimphomeMain(NetIdType NetId);
+LOCAL void nmLimphomePrepSleepMain(NetIdType NetId);
 LOCAL void nmNormalMain(NetIdType NetId);
+LOCAL void nmTwbsLimphomeMain(NetIdType NetId);
 
 EXPORT void InitNMType(NetIdType NetId,NMType nmType)
 {
@@ -230,7 +235,7 @@ EXPORT void InitSMaskTable(NetIdType NetId,StatusRefType SMask)
 }
 EXPORT void InitTargetStatusTable(NetIdType NetId,StatusRefType TargetStatus)
 {
-	NM_ControlBlock[NetId].nmStatus.nmMerker.w = 0;
+	NM_ControlBlock[NetId].nmMerker.w = 0;
 	NM_ControlBlock[NetId].nmStatus.NetworkStatus = *TargetStatus;
 }
 EXPORT void InitIndDeltaStatus(NetIdType NetId,SignallingMode SMode,TaskType TaskId,EventMaskType EMask)
@@ -274,6 +279,7 @@ EXPORT void InitDirectNMParams(NetIdType NetId,NodeIdType NodeId,TickType TimerT
 	NM_ControlBlock[NetId].nmDirectNMParams._TError = TimerError;
 	NM_ControlBlock[NetId].nmDirectNMParams._TWbs = TimerWaitBusSleep;
 	NM_ControlBlock[NetId].nmDirectNMParams._TTx = TimerTx;
+	NM_ControlBlock[NetId].nmTxPdu.Source = NodeId;
 }
 
 // see nm253.pdf Figure 30 Start-up of the network
@@ -286,21 +292,13 @@ EXPORT StatusType StartNM(NetIdType NetId)
 	// step 2: enter NMInit
 	NM_ControlBlock[NetId].nmState= NM_stInit;
 	NMInit(NetId);
-	NM_ControlBlock[NetId].nmTxPdu.Source = NM_ControlBlock[NetId].nmDirectNMParams.NodeId;
-	NM_ControlBlock[NetId].nmActive = TRUE;
-	// step 3: config.limphome  := 0
-	nmRemoveFromConfig(NetId,NM_ckLimphome,NM_ControlBlock[NetId].nmDirectNMParams.NodeId);
-	// step 4:
-	NM_ControlBlock[NetId].nmRxCount = 0;
-	NM_ControlBlock[NetId].nmTxCount = 0;
-	D_Online(NetId);
-	nmInitReset(NetId);
+	D_Init(NetId,BusInit);
+	nmInit3(NetId);
 	return ercd;
 }
 
 EXPORT StatusType GotoMode(NetIdType NetId,NMModeName NewMode)
 {
-	StatusType ercd = E_OK;
 	if(NewMode == NM_BusSleep)
 	{
 		NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep = 1;
@@ -319,11 +317,7 @@ EXPORT StatusType GotoMode(NetIdType NetId,NMModeName NewMode)
 				}
 				break;
 			}
-			case NM_stNormalPrepSleep:
-				NM_ControlBlock[NetId].nmState = NM_stNormal;
-				break;
 			default:
-				ercd = E_NOT_OK; // Wrong transition requirement during this state
 				break;
 		}
 	}
@@ -332,18 +326,59 @@ EXPORT StatusType GotoMode(NetIdType NetId,NMModeName NewMode)
 		NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep = 0;
 		switch(NM_ControlBlock[NetId].nmState)
 		{
+			case NM_stNormalPrepSleep:
+			{
+				NM_ControlBlock[NetId].nmState = NM_stNormal;
+				break;
+			}
 			case NM_stTwbsNormal:
 			{
-				nmInitReset(NetId);
+				nmCancelAlarm(TWbs);
+				nmInitReset6(NetId);
+				break;
+			}
+			case NM_stBusSleep:
+			{
+				D_Init(NetId,BusAwake);
+				nmInit3(NetId);
+				break;
+			}
+			case NM_stLimphomePrepSleep:
+			{
+				NM_ControlBlock[NetId].nmState = NM_stLimphome;
+				nmSetAlarm(TError);
+				break;
+			}
+			case NM_stTwbsLimphome:
+			{
+				nmCancelAlarm(TWbs);
+				NM_ControlBlock[NetId].nmState = NM_stLimphome;
+				nmSetAlarm(TError);
 				break;
 			}
 			default:
-				ercd = E_NOT_OK;
 				break;
 		}
 	}
 
-	return ercd;
+	return E_OK;
+}
+EXPORT StatusType SilentNM(NetIdType NetId)
+{
+	NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive = 0;
+	return E_OK;
+}
+EXPORT StatusType TalkNM(NetIdType NetId)
+{
+	NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive = 1;
+	return E_OK;
+}
+EXPORT void NM_BusErrorIndication(NetIdType NetId)
+{
+	D_Offline(NetId);
+	D_Init(NetId,BusRestart);
+	nmSetAlarm(TError);
+	NM_ControlBlock[NetId].nmState = NM_stLimphome;
 }
 EXPORT void NM_TxConformation(NetIdType NetId)
 {
@@ -378,6 +413,14 @@ EXPORT void NM_TxConformation(NetIdType NetId)
 				nmSetAlarm(TWbs);
 				NM_ControlBlock[NetId].nmState = NM_stTwbsNormal;
 				nmDebug("sleep.ack=1, set TWbs and enter TwbsNormal state.\n");
+			}
+			break;
+		}
+		case NM_stLimphome:
+		{
+			if(NM_ControlBlock[NetId].nmTxPdu.OpCode.B.Limphome)
+			{
+				NM_ControlBlock[NetId].nmMerker.W.limphome = 1;
 			}
 			break;
 		}
@@ -425,7 +468,79 @@ EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
 			else
 			{	// = 0
 				nmCancelAlarm(TWbs);
-				nmInitReset(NetId);
+				nmInitReset6(NetId);
+			}
+			break;
+		}
+		case NM_stLimphome:
+		{
+			if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
+			{
+				if(NM_ControlBlock[NetId].nmMerker.W.limphome)
+				{
+					if( (NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep) && (NMPDU->OpCode.B.SleepAck))
+					{
+						D_Offline(NetId);
+						nmSetAlarm(TWbs);
+						NM_ControlBlock[NetId].nmState = NM_stTwbsLimphome;
+					}
+					else
+					{
+						nmInitReset5(NetId);
+					}
+				}
+			}
+			else
+			{
+				if(NM_ControlBlock[NetId].nmMerker.W.limphome)
+				{
+					if( (NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep) && (NMPDU->OpCode.B.SleepAck))
+					{
+						D_Offline(NetId);
+						nmSetAlarm(TWbs);
+						NM_ControlBlock[NetId].nmState = NM_stTwbsLimphome;
+					}
+					else
+					{
+						nmInitReset5(NetId);
+					}
+				}
+				else
+				{
+					if(NMPDU->OpCode.B.SleepAck)
+					{
+						D_Offline(NetId);
+						nmSetAlarm(TWbs);
+						NM_ControlBlock[NetId].nmState = NM_stTwbsLimphome;
+					}
+					else
+					{
+						nmInitReset5(NetId);
+					}
+				}
+			}
+			break;
+		}
+		case NM_stLimphomePrepSleep:
+		{
+			if(0 == NMPDU->OpCode.B.SleepInd)
+			{
+			}
+			else
+			{
+				NM_ControlBlock[NetId].nmState = NM_stLimphome;
+			}
+			break;
+		}
+		case NM_stTwbsLimphome:
+		{
+			if(0 == NMPDU->OpCode.B.SleepInd)
+			{
+				nmCancelAlarm(TWbs);
+				NM_ControlBlock[NetId].nmState = NM_stLimphome;
+			}
+			else
+			{
 			}
 			break;
 		}
@@ -436,17 +551,49 @@ EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
 EXPORT void NM_WakeupIndication(NetIdType NetId)
 {
 	if(NM_stBusSleep == NM_ControlBlock[NetId].nmState)
-	{
+	{  // 3 NMInit
 		//OK Wakeup
-		StartNM(NetId);
+		D_Init(NetId,BusAwake);
+		nmInit3(NetId);
 	}
 }
 
-LOCAL void nmInitReset(NetIdType NetId)
+// nmInit3 is special doesn't mean all the operation of "Leave NMBusSleep"
+LOCAL void nmInit3(NetIdType NetId)
+{
+	// step 3: config.limphome  := 0
+	memset(NM_ControlBlock[NetId].nmConfig.limphome,0,32);
+	// step 4:
+	NM_ControlBlock[NetId].nmRxCount = 0;
+	NM_ControlBlock[NetId].nmTxCount = 0;
+	D_Online(NetId);
+	nmInitReset6(NetId);
+}
+LOCAL void nmAddtoPresent(NetIdType NetId,NodeIdType NodeId)
+{
+	nmAddToConfig(NetId,NM_ckNormal,NodeId);
+	nmRemoveFromConfig(NetId,NM_ckLimphome,NodeId);
+}
+LOCAL void nmAddtoLimphome(NetIdType NetId,NodeIdType NodeId)
+{
+	nmAddToConfig(NetId,NM_ckLimphome,NodeId);
+}
+LOCAL void nmInitReset5(NetIdType NetId)
+{
+	nmCancelAlarm(TError);
+	NM_ControlBlock[NetId].nmMerker.W.limphome = 0;
+
+	NM_ControlBlock[NetId].nmRxCount = 0;
+	NM_ControlBlock[NetId].nmTxCount = 0;
+	D_Online(NetId);
+	nmInitReset6(NetId);
+}
+LOCAL void nmInitReset6(NetIdType NetId)
 {
 	NM_ControlBlock[NetId].nmState= NM_stInitReset;
 	//config.present = own station
-	nmAddToConfig(NetId,NM_ckNormal,NM_ControlBlock[NetId].nmDirectNMParams.NodeId);
+	memset(NM_ControlBlock[NetId].nmConfig.normal,0,32);
+	nmAddtoPresent(NetId,NM_ControlBlock[NetId].nmDirectNMParams.NodeId);
 	//logical successor := own station
 	NM_ControlBlock[NetId].nmTxPdu.Destination = NM_ControlBlock[NetId].nmDirectNMParams.NodeId;
 	NM_ControlBlock[NetId].nmRxCount += 1;
@@ -465,7 +612,7 @@ LOCAL void nmInitReset(NetIdType NetId)
 		// Send A alive message
 		NM_ControlBlock[NetId].nmTxPdu.OpCode.b = NM_MaskAlive;
 		nmSendMessage();
-		nmDebug("nmInitReset:Send Alive,");
+		nmDebug("nmInitReset6:Send Alive,");
 	}
 	if((NM_ControlBlock[NetId].nmTxCount <= tx_limit)	&&
 		(NM_ControlBlock[NetId].nmRxCount <= rx_limit))
@@ -486,16 +633,14 @@ LOCAL void nmNormalStandard(NetIdType NetId,NMPduType* NMPDU)
 	NM_ControlBlock[NetId].nmRxCount = 0;
 	if(NMPDU->OpCode.B.Limphome)
 	{
-		// add sender to config.present
-		nmAddToConfig(NetId,NM_ckLimphome,NMPDU->Source);
-		nmRemoveFromConfig(NetId,NM_ckNormal,NMPDU->Source);
+		// add sender to config.limphome
+		nmAddtoLimphome(NetId,NMPDU->Source);
 		nmDebug("A limphome message received!");
 	}
 	else
 	{
 		// add sender to config.present
-		nmAddToConfig(NetId,NM_ckNormal,NMPDU->Source);
-		nmRemoveFromConfig(NetId,NM_ckLimphome,NMPDU->Source);
+		nmAddtoPresent(NetId,NMPDU->Source);
 		// determine logical successor
 		NM_ControlBlock[NetId].nmTxPdu.Destination = nmDetermineLS(NMPDU->Source,	\
 									NM_ControlBlock[NetId].nmDirectNMParams.NodeId,	\
@@ -705,13 +850,13 @@ LOCAL void nmNormalMain(NetIdType NetId)
 			}
 			else
 			{
-				if(NM_ControlBlock[NetId].nmStatus.nmMerker.W.stable)
+				if(NM_ControlBlock[NetId].nmMerker.W.stable)
 				{
 					NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.configurationstable = 1;
 				}
 				else
 				{
-					NM_ControlBlock[NetId].nmStatus.nmMerker.W.stable = 1;
+					NM_ControlBlock[NetId].nmMerker.W.stable = 1;
 				}
 			}
 		}
@@ -722,9 +867,9 @@ LOCAL void nmNormalMain(NetIdType NetId)
 		nmSingalAlarm(TMax);
 		if(nmIsAlarmTimeout(TMax))
 		{
-			nmDebug("TMax Timeout, Do NmInitReset.\n");
+			nmDebug("TMax Timeout, Do nmInitReset6.\n");
 			nmCancelAlarm(TMax);
-			nmInitReset(NetId);
+			nmInitReset6(NetId);
 		}
 	}
 }
@@ -735,6 +880,7 @@ LOCAL void nmLimphomeMain(NetIdType NetId)
 		nmSingalAlarm(TError);
 		if(nmIsAlarmTimeout(TError))
 		{
+			nmCancelAlarm(TError);
 			D_Online(NetId);
 			NM_ControlBlock[NetId].nmTxPdu.OpCode.b = NM_MaskLimphome;
 			if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.bussleep)
@@ -749,6 +895,7 @@ LOCAL void nmLimphomeMain(NetIdType NetId)
 			}
 			if(NM_ControlBlock[NetId].nmStatus.NetworkStatus.W.NMactive)
 			{
+				//NM_ControlBlock[NetId].nmTxPdu.Destination = NM_ControlBlock[NetId].nmDirectNMParams.NodeId;
 				nmSendMessage();
 			}
 		}
@@ -788,6 +935,33 @@ LOCAL void nmNormalTwbsMain(NetIdType NetId)
 		}
 	}
 }
+LOCAL void nmLimphomePrepSleepMain(NetIdType NetId)
+{
+	if(nmIsAlarmStarted(TMax))
+	{
+		nmSingalAlarm(TMax);
+		if(nmIsAlarmTimeout(TMax))
+		{
+			nmCancelAlarm(TMax);
+			// 7 NMInitBusSleep
+			D_Offline(NetId);
+			nmSetAlarm(TWbs);
+			NM_ControlBlock[NetId].nmState = NM_stTwbsLimphome;
+		}
+	}
+}
+LOCAL void nmTwbsLimphomeMain(NetIdType NetId)
+{
+	if(nmIsAlarmStarted(TWbs))
+	{
+		nmSingalAlarm(TWbs);
+		if(nmIsAlarmTimeout(TWbs))
+		{
+			nmCancelAlarm(TWbs);
+			nmBusSleep(NetId);
+		}
+	}
+}
 EXPORT void NM_MainTask(void)
 {
 	NetIdType NetId;
@@ -816,6 +990,12 @@ EXPORT void NM_MainTask(void)
 				break;
 			case NM_stTwbsNormal:
 				nmNormalTwbsMain(NetId);
+				break;
+			case NM_stLimphomePrepSleep:
+				nmLimphomePrepSleepMain(NetId);
+				break;
+			case NM_stTwbsLimphome:
+				nmTwbsLimphomeMain(NetId);
 				break;
 			default:
 				break;
