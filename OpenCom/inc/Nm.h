@@ -55,16 +55,17 @@ typedef enum{
 // -- Private Types
 typedef enum
 {
-	NM_DIRECT,
+	NM_DIRECT = 0,
 	NM_INDIRECT
 }NMType;
-typedef uint8 ScalingParamType; // 8 bit is enough
+
+typedef uint8 ScalingParamType; // 8 bit is enough // TODO: not used
 
 /* @ nm253.pdf 4.4.2 P92 */
 typedef uint8* ConfigRefType;
 typedef enum
 {
-	NM_ckNormal,                  // supported by direct and indirect NM
+	NM_ckNormal = 1,                  // supported by direct and indirect NM
 	NM_ckNormalExtended,          // only supported by indirect NM
 	NM_ckLimphome                 // only supported by direct NM
 }ConfigKindName;
@@ -83,12 +84,12 @@ typedef NetworkStatusType* StatusRefType;
 /* @ nm253.pdf 4.4.3.1 P98 */
 typedef enum
 {
-	NM_BusSleep,
+	NM_BusSleep = 1,
 	NM_Awake
 }NMModeName;
 typedef enum
 {
-	NM_stOff,
+	NM_stOff = 0,
 	NM_stInit,
 	NM_stInitReset,
 	NM_stNormal,

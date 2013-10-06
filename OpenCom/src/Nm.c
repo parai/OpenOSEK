@@ -74,7 +74,7 @@ do{										\
 typedef struct
 {
 	NMType nmType;
-	ScalingParamType nmScalingParams;
+	ScalingParamType nmScalingParams; // not used
 	struct
 	{
 		uint8 normal[32];
@@ -280,6 +280,24 @@ EXPORT StatusType GetConfig(NetIdType NetId,ConfigRefType Config,ConfigKindName 
 	return E_OK;
 }
 
+EXPORT StatusType CmpConfig(NetIdType NetId,ConfigRefType TestConfig,ConfigRefType RefConfig,ConfigRefType CMask)
+{
+	StatusType ercd = E_OK;
+	uint8 i;
+	uint8 result;
+	for(i=0;i<32;i++)
+	{
+		result = TestConfig[i]^RefConfig[i];
+		result &= CMask[i];
+		result = ~result;
+		if(result != 0xFFU)
+		{
+			ercd = E_NOT_OK; // TestConfig != RefConfig,
+			break;
+		}
+	}
+	return ercd;
+}
 
 EXPORT void InitDirectNMParams(NetIdType NetId,NodeIdType NodeId,TickType TimerTyp,TickType TimerMax, 	\
 								TickType TimerError,TickType TimerWaitBusSleep,TickType TimerTx)
@@ -297,6 +315,8 @@ EXPORT void InitDirectNMParams(NetIdType NetId,NodeIdType NodeId,TickType TimerT
 EXPORT StatusType StartNM(NetIdType NetId)
 {
 	StatusType ercd = E_OK;
+	// Reset Control block, value 0 = invalid or initialize value
+	memset(&NM_ControlBlock[NetId],0,sizeof(NM_ControlBlockType));
 	// step 1:
 	NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepInd = 0;
 	NM_ControlBlock[NetId].nmTxPdu.OpCode.B.SleepAck = 0;
@@ -592,12 +612,57 @@ LOCAL void nmInit3(NetIdType NetId)
 }
 LOCAL void nmAddtoPresent(NetIdType NetId,NodeIdType NodeId)
 {
+	uint8 RefConfig[32]; // old config
+	if(NM_ControlBlock[NetId].nmIndDeltaConfig.normal.SMode != SignalInvalid)
+	{
+		memcpy(RefConfig,NM_ControlBlock[NetId].nmConfig.normal,32);
+	}
 	nmAddToConfig(NetId,NM_ckNormal,NodeId);
 	nmRemoveFromConfig(NetId,NM_ckLimphome,NodeId);
+	// If enable do Indication
+	if(NM_ControlBlock[NetId].nmIndDeltaConfig.normal.SMode != SignalInvalid)
+	{
+		StatusType ercd;
+		ercd = CmpConfig(NetId,NM_ControlBlock[NetId].nmConfig.normal,RefConfig,NM_ControlBlock[NetId].nmCMask.normal);
+		if(ercd != E_OK)
+		{ // do ind
+			printf("Node = 0x%x\n",NodeId);
+			if(NM_ControlBlock[NetId].nmIndDeltaConfig.normal.SMode == SignalActivation)
+			{
+				(void)ActivateTask(NM_ControlBlock[NetId].nmIndDeltaConfig.normal.TaskId);
+			}
+			else
+			{
+				(void)SetEvent(NM_ControlBlock[NetId].nmIndDeltaConfig.normal.TaskId,NM_ControlBlock[NetId].nmIndDeltaConfig.normal.EMask);
+			}
+		}
+	}
 }
 LOCAL void nmAddtoLimphome(NetIdType NetId,NodeIdType NodeId)
 {
+	uint8 RefConfig[32]; // old config
+	if(NM_ControlBlock[NetId].nmIndDeltaConfig.limphome.SMode != SignalInvalid)
+	{
+		memcpy(RefConfig,NM_ControlBlock[NetId].nmConfig.limphome,32);
+	}
 	nmAddToConfig(NetId,NM_ckLimphome,NodeId);
+	// If enable do Indication
+	if(NM_ControlBlock[NetId].nmIndDeltaConfig.limphome.SMode != SignalInvalid)
+	{
+		StatusType ercd;
+		ercd = CmpConfig(NetId,NM_ControlBlock[NetId].nmConfig.limphome,RefConfig,NM_ControlBlock[NetId].nmCMask.limphome);
+		if(ercd != E_OK)
+		{ // do ind
+			if(NM_ControlBlock[NetId].nmIndDeltaConfig.limphome.SMode == SignalActivation)
+			{
+				(void)ActivateTask(NM_ControlBlock[NetId].nmIndDeltaConfig.limphome.TaskId);
+			}
+			else
+			{
+				(void)SetEvent(NM_ControlBlock[NetId].nmIndDeltaConfig.limphome.TaskId,NM_ControlBlock[NetId].nmIndDeltaConfig.limphome.EMask);
+			}
+		}
+	}
 }
 LOCAL void nmInitReset5(NetIdType NetId)
 {

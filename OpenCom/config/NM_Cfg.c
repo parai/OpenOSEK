@@ -43,21 +43,19 @@ EXPORT void NMInit(NetIdType NetId)
 {
 	uint8 config[32];
 	NetworkStatusType status;
-	(void)memset(config,0,32);
+	(void)memset(config,0x01,32); //care node :0,8,16,24,32,...
 	if(NetId == 0)
 	{
-		D_DefineWindow(NetId,0x4FF,0x400,/* SourceId = TODO: */ NM_PDUID,8,8);
+		D_DefineWindow(NetId,0x4FF,0x400, NM_PDUID,8,8);
 		InitNMType(NetId,NM_DIRECT);
-		InitNMScaling(NetId,0xFF); // TODO:
+		InitNMScaling(NetId,0xFF); // TODO: not used
 		InitCMaskTable(NetId,NM_ckNormal,config);
 		InitCMaskTable(NetId,NM_ckLimphome,config);
-		InitTargetConfigTable(NetId,NM_ckNormal,config);
-		InitTargetConfigTable(NetId,NM_ckLimphome,config);
 		InitIndDeltaConfig(NetId,NM_ckNormal,SignalEvent,TaskNmInd,EventNmNormal);
 		InitIndDeltaConfig(NetId,NM_ckLimphome,SignalEvent,TaskNmInd,EventNmLimphome);
 		memset(&status,0,sizeof(NetworkStatusType));
 		status.W.NMactive = 1;
-		InitSMaskTable(NetId,&status);
+		InitSMaskTable(NetId,&status); // TODO : not implemented for indication
 		InitTargetStatusTable(NetId,&status);
 		InitIndDeltaStatus(NetId,SignalEvent,TaskNmInd,EventNmStatus);
 		InitDirectNMParams(NetId,argNMNodeId /* LocalNodeId */,tTyp,tMax,tError,tWBS,tTx);
@@ -90,7 +88,7 @@ TASK(TaskNmInd)
 			}
 			if((mask&EventRingData) != 0)
 			{
-				printf("NM Ring Data ind.\n");
+				// printf("NM Ring Data ind.\n");
 			}
 			(void)ClearEvent(EventNmNormal|EventNmLimphome|EventNmStatus|EventRingData);
 		}
