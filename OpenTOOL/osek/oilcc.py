@@ -49,13 +49,12 @@ oilcc_getIt = {
     # used to get the include file name
     'include':re.compile(r'\s*#include\s+["<]([^\s]+)[">]'),
     'name':re.compile(r'^\s*(\w+)\s*(\w+)'),
-    'attribute':re.compile(r'(\w+)\s*=\s*(\w+)\s*')
+    'attribute':re.compile(r'(\w+)\s*=\s*["]*(\w+)["]*\s*')
 }
 
 oilcc_isIt = {
     # used to judge whether it is a start of osek object <TASK, ALARM ....> 
-    'osekObj':re.compile(r'^\s*OS|^\s*TASK|^\s*ALARM|^\s*COUNTER|^\s*RESOURCE|^\s*EVENT'),
-    'TASK':re.compile(r'^\s*(TASK)\s*(\w+)')
+    'osekObj':re.compile(r'^\s*OS|^\s*TASK|^\s*ALARM|^\s*COUNTER|^\s*RESOURCE|^\s*EVENT|^\s*NM|^\s*IPDU'),
 }
 
 def GetIt(rule,cstr):
@@ -515,13 +514,65 @@ class OsekResource(OeskObject):
                 id += 1
         fp.write('\n\n#define %s %s /* property = %s */\n'%(self.name,id,self.getValue('RESOURCEPROPERTY')))
         fp.write('#define %s_priority %s\n'%(self.name,self.getValue('PRIORITY')))
+
+class OsekNM(OeskObject):           
+    def __init__(self,NMs):
+        OeskObject.__init__(self,NMs[0][0][0],NMs[0][0][1])
+        self.checkAndParse(NMs) 
+    def postProcess(self):
+        return
+    def genH(self,fp):
+        """fp must be a comcfg.h file"""
+        id = 0
+        for nm in GetOsekObjects('NM'):
+            if(self == nm):
+                break
+            else:
+                id += 1
+        fp.write('\n#define %s %s\n'%(self.name,id))
+        fp.write('#define %s_TYPE NM_%s\n'%(self.name,self.getValue('TYPE')))
+        fp.write('#define %s_tTyp %s\n'%(self.name,self.getValue('TTYP')))
+        fp.write('#define %s_tMax %s\n'%(self.name,self.getValue('TMAX')))
+        fp.write('#define %s_tError %s\n'%(self.name,self.getValue('TERROR')))
+        fp.write('#define %s_tTx %s\n'%(self.name,self.getValue('TTX')))
+        fp.write('#define %s_IDBASE %s\n'%(self.name,self.getValue('IDBASE')))
+        fp.write('#define %s_WINDOWMASK %s\n'%(self.name,self.getValue('WINDOWMASK')))
+        fp.write('#define %s_CONTROLLER %s\n'%(self.name,self.getValue('CONTROLLER')))
+
+class OsekIPDU(OeskObject):           
+    def __init__(self,IPDUs):
+        OeskObject.__init__(self,IPDUs[0][0][0],IPDUs[0][0][1])
+        self.checkAndParse(IPDUs) 
+    def postProcess(self):
+        return
+    def genH(self,fp):  
+        id = 0
+        for nm in GetOsekObjects('IPDU'):
+            if(self == nm):
+                break
+            else:
+                if(self.getValue('IPDUPROPERTY') == nm.getValue('IPDUPROPERTY')):
+                    id += 1
+        fp.write('\n#define %s %s\n'%(self.name,id))
+        fp.write('#define %s_SIZEINBITS %s\n'%(self.name,self.getValue('SIZEINBITS')))
+        fp.write('#define %s_IPDUPROPERTY IPDU_%s\n'%(self.name,self.getValue('IPDUPROPERTY')))
+        fp.write('#define %s_ID %s\n'%(self.name,self.getValue('ID')))
+        CONTROLLER = ''
+        for nm in GetOsekObjects('NM'):
+            if(self.getValue('LAYERUSED') == nm.name):
+                CONTROLLER = nm.getValue('CONTROLLER')
+                break
+        fp.write('#define %s_LAYERUSED %s\t/* %s */\n'%(self.name,CONTROLLER,self.getValue('LAYERUSED')))
+     
 OsekObjDict={
     'OS':OsekOS,
     'TASK':OsekTask,
     'COUNTER':OsekCounter,
     'ALARM':OsekAlarm,
     'EVENT':OsekEvent,
-    'RESOURCE':OsekResource
+    'RESOURCE':OsekResource,
+    'NM':OsekNM,
+    'IPDU':OsekIPDU
 }  
           
 class itemsToOsekObj():
@@ -840,10 +891,68 @@ class GenerateOsCfgC():
             if(res.getValue('RESOURCEPROPERTY') == 'STANDARD'):
                 cstr += '\t%s_priority,\n'%(res.name)
         cstr += '};\n'
-        fp.write(cstr);        
+        fp.write(cstr); 
+def GenerateComCfgH():
+    global oilcc_o
+    fp = open('%s/comcfg.h'%(oilcc_o),'w')
+    fp.write(cCodeHead)
+    fp.write('\n#ifndef COMCFG_H_H\n#define COMCFG_H_H\n\n')  
+    # NM
+    fp.write('#define cfgNM_NET_NUM %s\n'%(len(GetOsekObjects('NM'))))
+    for nm in GetOsekObjects('NM'):
+        nm.genH(fp)
+    # IPDU
+    fp.write('\n#define cfgCOM_IPDU_NUM %s\n'%(len(GetOsekObjects('IPDU'))))
+    rx = tx = 0
+    for pdu in GetOsekObjects('IPDU'):
+        if(pdu.getValue('IPDUPROPERTY') == 'SENT'):
+            tx += 1
+        else:
+            rx += 1
+    fp.write('#define cfgCOM_RxIPDU_NUM %s\n'%(rx))
+    fp.write('#define cfgCOM_TxIPDU_NUM %s\n'%(tx))
+    for pdu in GetOsekObjects('IPDU'):
+        pdu.genH(fp)
+    fp.write('\n#endif\n\n') 
+    fp.close() 
+
+class GenerateComCfgC():
+    def __init__(self):
+        global oilcc_o
+        fp = open('%s/comcfg.c'%(oilcc_o),'w')
+        fp.write(cCodeHead)
+        fp.write('#include "Com.h"\n')
+        # IPDU
+        self.genIPDU(fp);
+        fp.close()
+    def genIPDU(self,fp):
+        # Gen Buffer
+        for pdu in GetOsekObjects('IPDU'):
+            fp.write('LOCAL uint8 %s_buffer[%s];\n'%(pdu.name,(int(pdu.getValue('SIZEINBITS'))+7)/8))
+        fp.write('\n')
+        cstrT = 'EXPORT const Com_IPDUConfigType ComTxIPDUConfig[] = \n{\n'
+        cstrR = 'EXPORT const Com_IPDUConfigType ComRxIPDUConfig[] = \n{\n'
+        for pdu in  GetOsekObjects('IPDU'):
+            if(pdu.getValue('IPDUPROPERTY') == 'SENT'):
+                cstrT += '\t{\n'
+                cstrT += '\t\t{%s_buffer,\tsizeof(%s_buffer)},\n'%(pdu.name,pdu.name)
+                cstrT += '\t\t%s_LAYERUSED,\n'%(pdu.name)
+                cstrT += '\t\t%s_ID,\n'%(pdu.name)
+                cstrT += '\t},\n'
+            else:
+                cstrR += '\t{\n'
+                cstrR += '\t\t{%s_buffer,\tsizeof(%s_buffer)},\n'%(pdu.name,pdu.name)
+                cstrR += '\t\t%s_LAYERUSED,\n'%(pdu.name)
+                cstrR += '\t\t%s_ID,\n'%(pdu.name)
+                cstrR += '\t},\n'
+        cstrT += '};\n\n'
+        cstrR += '};\n\n'
+        fp.write(cstrT+cstrR)
 def GenerateCode():
     GenerateOsCfgH()
     GenerateOsCfgC()
+    GenerateComCfgH()
+    GenerateComCfgC()
 def Compile(file = ''):
     "Start to Compile the oilcc_target OIL file."
     global oilcc_I,oilcc_o,oilcc_S,oilcc_target

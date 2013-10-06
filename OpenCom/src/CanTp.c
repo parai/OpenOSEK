@@ -18,12 +18,11 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
-#ifndef NM_CFG_H_H_H_H
-#define NM_CFG_H_H_H_H
-/* ================================ INCLUDEs  =============================== */
 
+/* ================================ INCLUDEs  =============================== */
+#include "CanTp.h"
 /* ================================ MACROs    =============================== */
-#define cfgNM_NET_NUM 1
+
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
@@ -31,4 +30,7 @@
 /* ================================ FUNCTIONs =============================== */
 
 
-#endif /* NM_CFG_H_H_H_H */
+EXPORT void CanTp_RxIndication( PduIdType CanTpRxPduId, const PduInfoType *CanTpRxPduPtr )
+{
+	printf("In CanTp_RxIndication\n");
+}

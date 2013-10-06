@@ -54,3 +54,46 @@ ALARM AlarmNmMain {
 		APPMODE = OSDEFAULTAPPMODE;
 	}
 };
+
+// No Standard NM definition, So now Define by OpenOSEK
+// Only Direct NM was suported
+NM Network1
+{
+	TYPE = DIRECT;
+	// Time parameter for Direct NM
+	tTyp = 100;  
+	tMax = 260;
+	tError = 1000;
+	tWBS = 5000;
+	tTx  = 20;
+	IDBASE = 0x400;
+	WINDOWMASK = 0x4FF;
+	CONTROLLER = CAN_CTRL_0;
+};
+ 
+
+IPDU udsRxPDU
+{
+	SIZEINBITS = 2048; // 256 Byte
+	IPDUPROPERTY = RECEIVED { 
+		TIMEOUT = 250; 
+		FIRSTTIMEOUT = 100; 
+	}; 
+	IPDUCALLOUT = ""; 
+	LAYERUSED = "Network1"; 
+	ID = 0x731;
+};
+IPDU udsTxPDU
+{
+	SIZEINBITS = 2048; // 256 Byte
+	IPDUPROPERTY = SENT { 
+		TRANSMISSIONMODE = PERIODIC { 
+			TIMEPERIOD = 2; 
+			TIMEOFFSET = 100; 
+		};   
+		TIMEOUT = 250; 
+	};  
+	IPDUCALLOUT = ""; 
+	LAYERUSED = "Network1"; 
+	ID = 0x732;
+}
