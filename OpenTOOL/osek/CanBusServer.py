@@ -90,7 +90,7 @@ def CanBusServerHost(port = 8000):
             connection.settimeout(5)  
             msg = connection.recv(1024) 
             CanBusServerTrace(msg)
-            CanBusServerForward(msg);           
+            CanBusServerForward(msg,port);           
         except socket.timeout:  
             continue  
         connection.close()

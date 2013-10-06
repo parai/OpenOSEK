@@ -20,8 +20,7 @@
  */
 
 /* ================================ INCLUDEs  =============================== */
-#include "Nm.h"
-#include "Dll.h"
+#include "Com.h"
 
 #ifdef SIMULATE_ON_WIN
 #define SetEvent osekSetEvent
@@ -326,6 +325,12 @@ EXPORT StatusType StartNM(NetIdType NetId)
 	D_Init(NetId,BusInit);
 	nmInit3(NetId);
 	return ercd;
+}
+
+EXPORT StatusType StopNM(NetIdType NetId)
+{
+	NM_ControlBlock[NetId].nmState= NM_stOff;
+	return E_OK;
 }
 
 EXPORT void InitIndRingData(NetIdType NetId,SignallingMode SMode,TaskType TaskId,EventMaskType EMask)

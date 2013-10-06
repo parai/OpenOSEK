@@ -20,8 +20,8 @@
  */
 
 /* ================================ INCLUDEs  =============================== */
-#include "Dll.h"
-#include "Can.h"
+#include "Com.h"
+
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
@@ -93,6 +93,7 @@ EXPORT void Can_TxConformation(PduIdType TxHandle)
 		}
 	}
 }
+IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
 EXPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,uint8* data,uint8 length)
 {
 	if(CAN_CTRL_0 == Controller)
@@ -113,9 +114,31 @@ EXPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,ui
 				NM_RxIndication(0,&nmPdu);
 			}
 		}
-		else
+		else if(TRUE == DLL_NetOnline[0])
 		{
 			//may be for com or uds
+			PduIdType i;
+			PduInfoType pdu;
+			for(i=0;i<cfgCOM_RxIPDU_NUM;i++)
+			{
+				if(ComRxIPDUConfig[i].id == canid)
+				{
+					pdu.SduDataPtr = data;
+					pdu.SduLength = length;
+					if(ComRxIPDUConfig[i].pdu.SduLength > 8)
+					{
+						CanTp_RxIndication(i,&pdu);
+					}
+					else
+					{
+						//Com Rx
+					}
+				}
+			}
+		}
+		else
+		{
+			// Offline
 		}
 	}
 }

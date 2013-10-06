@@ -1,5 +1,4 @@
-#include "Dll.h"
-#include "Can.h"
+#include "Com.h"
 
 EXPORT void BusInit(NetIdType NetId)
 {

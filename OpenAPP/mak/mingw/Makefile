@@ -81,11 +81,12 @@ gen:
 	
 run:
 	@(start python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000)
+	@(start python $(BD)/OpenTOOL/osek/uds.py --port 8999)
 	@(start $(OUT)/$(TARGET) 16)
-	@(start $(OUT)/$(TARGET) 32)
-	@(start $(OUT)/$(TARGET) 48)
-	@(start $(OUT)/$(TARGET) 64)
-	@(start $(OUT)/$(TARGET) 81)
+#	@(start $(OUT)/$(TARGET) 32)
+#	@(start $(OUT)/$(TARGET) 48)
+#	@(start $(OUT)/$(TARGET) 64)
+#	@(start $(OUT)/$(TARGET) 81)
 	
 clean:
 	@echo remove $(obj-y) $(OUT)/*

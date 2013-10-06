@@ -21,9 +21,7 @@
 #ifndef NM_H_H_H_H
 #define NM_H_H_H_H
 /* ================================ INCLUDEs  =============================== */
-#include "Os.h"
-#include "ComStack_Types.h"
-#include "NM_Cfg.h"
+
 /* ================================ MACROs    =============================== */
 // Mask bit for ScalingParamType
 // If 1 the function is supported, 0 not

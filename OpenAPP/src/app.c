@@ -33,6 +33,16 @@ TASK(TaskKeyMonitor)
 			SilentNM(0);
 			printf("SilentNM(0).\n");
 		}
+		else if('k' == chr)
+		{
+			StopNM(0);
+			printf("StopNM\n");
+		}
+		else if('r' == chr)
+		{
+			StartNM(0);
+			printf("StartNM\n");
+		}
 	}
 	TerminateTask();
 }

@@ -20,8 +20,7 @@
  */
 
 /* ================================ INCLUDEs  =============================== */
-#include "Nm.h"
-#include "Dll.h"
+#include "Com.h"
 /* ================================ MACROs    =============================== */
 #define LocalNodeId 0x5A
 // NM Main Task Tick = 10 ms
@@ -67,7 +66,6 @@ TASK(TaskNmInd)
 {
 	StatusType ercd;
 	EventMaskType mask;
-	printf("In TaskNmInd().\n");
 	for(;;)
 	{
 		ercd = WaitEvent(EventNmNormal|EventNmLimphome|EventNmStatus|EventRingData);
