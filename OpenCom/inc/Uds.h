@@ -18,28 +18,17 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
-#ifndef COM_H_H_H_H
-#define COM_H_H_H_H
+#ifndef UDS_H_H_HH_
+#define UDS_H_H_HH_
 /* ================================ INCLUDEs  =============================== */
-#include "Os.h"
-#include "ComStack_Types.h"
-#include "Nm.h"
-#include "Can.h"
-#include "Dll.h"
-#include "comcfg.h"
-#include "CanTp.h"
-#include "Uds.h"
+
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
-typedef struct
-{
-	PduInfoType pdu;
-	Can_ControllerIdType controller;
-	Can_IdType id;
-}Com_IPDUConfigType;
+
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
+IMPORT void Uds_RxIndication(PduIdType handle,PduLengthType length);
 
 #endif

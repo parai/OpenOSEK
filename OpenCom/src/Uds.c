@@ -18,28 +18,26 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
-#ifndef COM_H_H_H_H
-#define COM_H_H_H_H
+
 /* ================================ INCLUDEs  =============================== */
-#include "Os.h"
-#include "ComStack_Types.h"
-#include "Nm.h"
-#include "Can.h"
-#include "Dll.h"
-#include "comcfg.h"
-#include "CanTp.h"
-#include "Uds.h"
+#include "Com.h"
+
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
-typedef struct
-{
-	PduInfoType pdu;
-	Can_ControllerIdType controller;
-	Can_IdType id;
-}Com_IPDUConfigType;
+
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
-
-#endif
+IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
+EXPORT void Uds_RxIndication(PduIdType handle,PduLengthType length)
+{
+	uint8 i;
+	printf("handle = %d,[",handle);
+	for(i=0;i<length;i++)
+	{
+		printf("0x%x,",(unsigned int)ComRxIPDUConfig[handle].pdu.SduDataPtr[i]);
+	}
+	printf("]\n");
+	CanTp_ReleaseRxBuffer(handle);
+}

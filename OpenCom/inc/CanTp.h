@@ -36,4 +36,5 @@ IMPORT Std_ReturnType CanTp_Transmit( PduIdType CanTpTxSduId, const PduInfoType 
 IMPORT void CanTp_MainFunction(void);
 IMPORT void CanTp_RxIndication( PduIdType CanTpRxPduId, const PduInfoType *CanTpRxPduPtr );
 IMPORT void CanTp_TxConfirmation( PduIdType CanTpTxPduId );
+IMPORT void CanTp_ReleaseRxBuffer(PduIdType CanTpRxPduId);
 #endif

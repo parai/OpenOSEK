@@ -56,7 +56,9 @@ def CanTransmit(port,canid,data,length):
 #         print 'ERROR: CanBusServer isn\'t started.'
 
 def CanTpTransmit(port,canid,data,length):
-    CanTransmit(port,canid,data,length)
+    if(length <= 7): # Send SF
+        data = [0x00+length] + data
+        CanTransmit(port,canid,data,length+1)
 
 def UdsConfig():
     global uds_tx_id, uds_rx_id
@@ -71,13 +73,18 @@ def UdsConfig():
     
 def UdsOnCanClient(port = 8999):
     global uds_tx_id, uds_rx_id
-    UdsConfig()
+    #UdsConfig()
     while True:
         data = []
         value = raw_input("uds send [ 3E 00 ]:")
         if(value != ''):
             for chr in value.split(' '):
-                data.append(int(chr,16))
+                try:
+                    data.append(int(chr,16))
+                except:
+                    print 'Error input!'
+                    data = [0x3e,00]
+                    break
         else:
             data = [0x3e,00]
         CanTpTransmit(port,uds_tx_id,data,len(data))

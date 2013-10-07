@@ -55,6 +55,26 @@ ALARM AlarmNmMain {
 	}
 };
 
+TASK TaskCanTpMain
+{
+	PRIORITY = 2;
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	AUTOSTART = FALSE;
+	STACK = 256;
+	TYPE = BASIC;
+}
+ALARM AlarmCanTpMain {
+	COUNTER = SystemTimer;
+	ACTION = ACTIVATETASK {
+		TASK = TaskCanTpMain;
+	};
+	AUTOSTART = TRUE {
+		ALARMTIME = 10;
+		CYCLETIME = 10;  //10 ms
+		APPMODE = OSDEFAULTAPPMODE;
+	}
+};
 // No Standard NM definition, So now Define by OpenOSEK
 // Only Direct NM was suported
 NM Network1

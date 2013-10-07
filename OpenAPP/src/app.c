@@ -1,10 +1,10 @@
 #include "Os.h"
-#include "Can.h"
-#include "Nm.h"
+#include "Com.h"
 void StartupHook(void)
 {
 	Can_Init(NULL);
 	StartNM(0);
+	CanTp_Init();
 }
 
 TASK(TaskKeyMonitor)
