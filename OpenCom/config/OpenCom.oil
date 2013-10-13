@@ -75,6 +75,27 @@ ALARM AlarmCanTpMain {
 		APPMODE = OSDEFAULTAPPMODE;
 	}
 };
+
+TASK TaskUdsMain
+{
+	PRIORITY = 2;
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	AUTOSTART = FALSE;
+	STACK = 256;
+	TYPE = BASIC;
+}
+ALARM AlarmUdsMain {
+	COUNTER = SystemTimer;
+	ACTION = ACTIVATETASK {
+		TASK = TaskUdsMain;
+	};
+	AUTOSTART = TRUE {
+		ALARMTIME = 10;
+		CYCLETIME = 10;  //10 ms
+		APPMODE = OSDEFAULTAPPMODE;
+	}
+};
 // No Standard NM definition, So now Define by OpenOSEK
 // Only Direct NM was suported
 NM Network1
@@ -91,8 +112,34 @@ NM Network1
 	CONTROLLER = CAN_CTRL_0;
 };
  
+IPDU ComMessage0
+{
+	SIZEINBITS = 64; // 8 Byte
+	IPDUPROPERTY = RECEIVED { 
+		TIMEOUT = 250; 
+		FIRSTTIMEOUT = 100; 
+	}; 
+	IPDUCALLOUT = ""; 
+	LAYERUSED = "Network1"; 
+	ID = 0x300;
+};
 
-IPDU udsRxPDU
+IPDU ComMessage1
+{
+	SIZEINBITS = 64; // 8 Byte
+	IPDUPROPERTY = SENT { 
+		TRANSMISSIONMODE = PERIODIC { 
+			TIMEPERIOD = 2; 
+			TIMEOFFSET = 100; 
+		};   
+		TIMEOUT = 250; 
+	};  
+	IPDUCALLOUT = ""; 
+	LAYERUSED = "Network1"; 
+	ID = 0x301;
+}
+
+IPDU UDSDiag_RX
 {
 	SIZEINBITS = 2048; // 256 Byte
 	IPDUPROPERTY = RECEIVED { 
@@ -103,7 +150,8 @@ IPDU udsRxPDU
 	LAYERUSED = "Network1"; 
 	ID = 0x731;
 };
-IPDU udsTxPDU
+
+IPDU UDSDiag_TX
 {
 	SIZEINBITS = 2048; // 256 Byte
 	IPDUPROPERTY = SENT { 

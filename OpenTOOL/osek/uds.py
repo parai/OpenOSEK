@@ -21,6 +21,8 @@
 """
 import socket
 import UserString
+import time
+
 uds_tx_id = 0x731
 uds_rx_id = 0x732
 def UdsOnCanUsage():
@@ -47,18 +49,61 @@ def CanTransmit(port,canid,data,length):
     msg[14] = '%c'%((port>>16)&0xFF)
     msg[15] = '%c'%((port>>8)&0xFF)
     msg[16] = '%c'%((port)&0xFF)
-    #    try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(('127.0.0.1', p))  
-    sock.send(msg.data)
-    sock.close()
-#     except:
-#         print 'ERROR: CanBusServer isn\'t started.'
-
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(('127.0.0.1', p))  
+        sock.send(msg.data)
+        sock.close()
+    except:
+        print 'ERROR: CanBusServer isn\'t started.'
+def CanTpSendSF(port,canid,data,length):
+    data = [0x00+length] + data
+    CanTransmit(port,canid,data,length+1)
+    msg = CanTpRxIndication(port)
+    if msg == None:
+        return
+    length = ord(msg[5])
+    response = []
+    for i in range(0,length):
+        response.append(msg[6+i])
+    UdsClientTrace(response)
 def CanTpTransmit(port,canid,data,length):
     if(length <= 7): # Send SF
-        data = [0x00+length] + data
-        CanTransmit(port,canid,data,length+1)
+        CanTpSendSF(port,canid,data,length)
+
+def UdsClientTrace(msg):
+    cstr = '\tResponse: \n\t['
+    for i in range(0,len(msg)):
+        cstr += '0x%-2x, '%(ord(msg[i]))
+        if(i != 0 and i%8 == 0):
+            cstr += '\n\t'
+    cstr += ']'
+    print cstr
+
+def CanTpRxIndication(port = 8999):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+    sock.bind(('127.0.0.1', port))  
+    sock.listen(32) 
+    startT = time.time()
+    msg = None
+    while True:  
+        if((time.time()-startT)*1000 > 1000): # Timeout
+            break 
+        try:  
+            sock.settimeout(1)
+            connection,address = sock.accept() 
+            connection.settimeout(1)
+            msg = connection.recv(1024)  
+            connection.close()
+            if(len(msg) == 17):
+                canid =  (ord(msg[0])<<24)+(ord(msg[1])<<16)+(ord(msg[2])<<8)+(ord(msg[3]))
+                if(canid == uds_rx_id):
+                    break
+        except socket.timeout:  
+            continue  
+        connection.close()
+    sock.close()
+    return msg
 
 def UdsConfig():
     global uds_tx_id, uds_rx_id

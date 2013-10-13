@@ -41,6 +41,8 @@
 #define N_PCI_FC    0x00
 #define N_PCI_SF_DL 0x07
 
+#define N_SF_MAX_LENGTH   7
+
 //
 /* ================================ TYPEs     =============================== */
 typedef struct
@@ -59,108 +61,178 @@ typedef struct
 typedef struct
 {
 	CanTp_QueueType Q; // For Rx only
-	PduLengthType index;
+	PduLengthType index;  // For Rx and Tx
+	PduLengthType txLength;
 	TickType timer;
-	PduIdType handle;
 	volatile enum
 	{
 		CanTp_stIdle = 0,
-		CanTp_stReceiving, // For Rx
-		CanTp_stSenting,   // For Tx
-		CanTp_stBusy       // To say the rx buffer of handle is in used by UDS,locked
+		CanTp_stReceiving,     // For Rx
+		CanTp_stBusy,           // To say the rx buffer of handle is in used by UDS,locked
+		CanTp_stStartToSent,   // For Tx
+		CanTp_stSenting,
+		CanTp_stSentFinished,  // Wait For TxConform
 	}state;
-}CanTp_RTEType; // RTE
+}cantpRteType; // RTE
 
 /* ================================ DATAs     =============================== */
-LOCAL CanTp_RTEType CanTp_RTE;
+IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
+IMPORT const Com_IPDUConfigType ComTxIPDUConfig[];
+LOCAL cantpRteType cantpRte[cfgCOM_TPIPDU_NUM];
 /* ================================ FUNCTIONs =============================== */
-
-LOCAL void CanTp_ReceivingMain(void);
+LOCAL void canTpReceiveSF(PduIdType RxPduId,uint8 pos);
+LOCAL void CanTp_ReceivingMain(PduIdType RxPduId);
+LOCAL void canTpSendSF(PduIdType RxPduId);
+LOCAL void CanTp_StartToSendMain(PduIdType TxPduId);
 
 EXPORT void CanTp_Init(void)
 {
-	uint8 i;
-	memset(&CanTp_RTE,0,sizeof(CanTp_RTEType));
-	CanTp_RTE.handle = INVALID_PDU_ID;
+	memset(&cantpRte,0,sizeof(cantpRte));
 }
-EXPORT void CanTp_ReleaseRxBuffer(PduIdType CanTpRxPduId)
+EXPORT void CanTp_ReleaseRxBuffer(PduIdType RxPduId)
 {
-	if((CanTp_stBusy == CanTp_RTE.state) && (CanTp_RTE.handle == CanTpRxPduId))
+	if(CanTp_stBusy == cantpRte[RxPduId].state)
 	{
-		CanTp_RTE.state = CanTp_stIdle;
-		CanTp_RTE.handle = INVALID_PDU_ID;
-	}
-}
-IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
-EXPORT void CanTp_RxIndication( PduIdType CanTpRxPduId, const PduInfoType *CanTpRxPduPtr )
-{
-	uint8 index = CanTp_RTE.Q.counter;
-	if( index < N_BS)
-	{
-		memcpy(CanTp_RTE.Q.queue[index].data,CanTpRxPduPtr->SduDataPtr,CanTpRxPduPtr->SduLength);
-		CanTp_RTE.Q.queue[index].length = CanTpRxPduPtr->SduLength;
-		CanTp_RTE.Q.counter = index + 1;
-	}
-}
-LOCAL void canTpReceiveSF(uint8 pos)
-{
-	uint8 length = CanTp_RTE.Q.queue[pos].data[0]&N_PCI_SF_DL;
-	memcpy(ComRxIPDUConfig[CanTp_RTE.handle].pdu.SduDataPtr,&(CanTp_RTE.Q.queue[pos].data[1]),length);
-	CanTp_RTE.state = CanTp_stBusy;
-	Uds_RxIndication(CanTp_RTE.handle,length);
-}
-LOCAL void CanTp_ReceivingMain(void)
-{
-	uint8 i;
-	for(i=0;(i<CanTp_RTE.Q.counter)&&(CanTp_stReceiving == CanTp_RTE.state);i++)
-	{
-		if(CanTp_RTE.handle != CanTp_RTE.Q.queue[i].handle)
-		{ //TODO: this is a shit, I just want to implement an easy TP for UDS only.
-		  // So Really Sorry. Only One RX PDU's size is allowed to be bigger than 8 bytes.
-			CanTp_RTE.handle = CanTp_RTE.Q.queue[i].handle; // New Request
-			CanTp_RTE.index = 0;
-		}
-		if( N_PCI_SF == (CanTp_RTE.Q.queue[i].data[i]&N_PCI_MASK))
-		{
-			canTpReceiveSF(i);
-		}
-	}
-	if(i < CanTp_RTE.Q.counter)  // as in busy state
-	{
-		CanTp_RTE.Q.counter -= i;
-		memcpy(CanTp_RTE.Q.queue,&(CanTp_RTE.Q.queue[i]),sizeof(CanTp_QItemType)*(CanTp_RTE.Q.counter));
+		cantpRte[RxPduId].state = CanTp_stIdle;
 	}
 	else
 	{
-		CanTp_RTE.Q.counter = 0; // Empty it
+		devTrace(tlError,"Error In CanTp_ReleaseRxBuffer state[%d] = %d.\n",RxPduId,cantpRte[RxPduId].state);
+	}
+}
+EXPORT void CanTp_TxConformation(PduIdType TxPduId)
+{
+	if(CanTp_stSentFinished == cantpRte[TxPduId].state )
+	{
+		cantpRte[TxPduId].state = CanTp_stIdle;
+		Uds_TxConformation(TxPduId);
+	}
+	else
+	{
+		devTrace(tlError,"Error In CanTp_TxConformation state[%d] = %d\n",TxPduId,cantpRte[TxPduId].state);
+	}
+}
+EXPORT void CanTp_RxIndication( PduIdType RxPduId, const PduInfoType *CanTpRxPduPtr )
+{
+	uint8 index = cantpRte[RxPduId].Q.counter;
+	if( index < N_BS)
+	{
+		memcpy(cantpRte[RxPduId].Q.queue[index].data,CanTpRxPduPtr->SduDataPtr,CanTpRxPduPtr->SduLength);
+		cantpRte[RxPduId].Q.queue[index].length = CanTpRxPduPtr->SduLength;
+		cantpRte[RxPduId].Q.counter = index + 1;
+	}
+}
+
+EXPORT Std_ReturnType CanTp_Transmit( PduIdType TxSduId, PduLengthType Length)
+{
+	Std_ReturnType ercd = E_OK;
+	if(CanTp_stBusy == cantpRte[TxSduId].state)
+	{
+		cantpRte[TxSduId].state = CanTp_stStartToSent;
+		cantpRte[TxSduId].txLength = Length;
+	}
+	else
+	{
+		ercd = E_NOT_OK;
+	}
+	return ercd;
+}
+
+LOCAL void canTpReceiveSF(PduIdType RxPduId,uint8 pos)
+{
+	uint8 length = cantpRte[RxPduId].Q.queue[pos].data[0]&N_PCI_SF_DL;
+	memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(cantpRte[RxPduId].Q.queue[pos].data[1]),length);
+	cantpRte[RxPduId].state = CanTp_stBusy;
+	Uds_RxIndication(RxPduId,length);
+}
+
+LOCAL void CanTp_ReceivingMain(PduIdType RxPduId)
+{
+	uint8 i;
+	for(i=0;(i<cantpRte[RxPduId].Q.counter)&&(CanTp_stReceiving == cantpRte[RxPduId].state);i++)
+	{
+		if( N_PCI_SF == (cantpRte[RxPduId].Q.queue[i].data[i]&N_PCI_MASK))
+		{
+			canTpReceiveSF(RxPduId,i);
+		}
+	}
+	if(i < cantpRte[RxPduId].Q.counter)  // as in busy state
+	{
+		cantpRte[RxPduId].Q.counter -= i;
+		memcpy(cantpRte[RxPduId].Q.queue,&(cantpRte[RxPduId].Q.queue[i]),sizeof(CanTp_QItemType)*(cantpRte[RxPduId].Q.counter));
+		devTrace(tlCanTp,'Info:CanTp[%d] Q is not empty but transit to state Busy.\n',RxPduId);
+	}
+	else
+	{
+		cantpRte[RxPduId].Q.counter = 0; // Empty it
+	}
+}
+LOCAL void canTpSendSF(PduIdType TxPduId)
+{
+	Can_ReturnType ercd;
+	Can_PduType pdu;
+	uint8 data[8];
+	uint8 i;
+	pdu.id  = ComTxIPDUConfig[TxPduId].id;
+	data[0] = N_PCI_SF|cantpRte[TxPduId].txLength;
+	for(i=0;i<cantpRte[TxPduId].txLength;i++)
+	{
+		data[1+i] = ComTxIPDUConfig[TxPduId].pdu.SduDataPtr[i];
+	}
+	pdu.sdu = data;
+	pdu.length = cantpRte[TxPduId].txLength+1;
+	pdu.swPduHandle = TxPduId;
+
+	// Note, Can_Write will push the data to Transmit CAN message box, and return.
+	// It always do a Can_TxConformation after the return from Can_Write,
+	// otherwise, Your CAN controller speed is too fast.
+	ercd = Can_Write(ComTxIPDUConfig[TxPduId].controller,&pdu);
+	if(CAN_OK == ercd)
+	{
+		cantpRte[TxPduId].state = CanTp_stSentFinished;
+	}
+	else
+	{
+		// Failed, Redo
+	}
+}
+LOCAL void CanTp_StartToSendMain(PduIdType TxPduId)
+{
+	if(cantpRte[TxPduId].txLength <= N_SF_MAX_LENGTH)
+	{
+		canTpSendSF(TxPduId);
 	}
 }
 void CanTp_TaskMain(void)
 {
 	uint8 i;
 	SuspendAllInterrupts();
-	switch(CanTp_RTE.state)
+	for(i=0;i<cfgCOM_TPIPDU_NUM;i++)
 	{
-		case CanTp_stIdle:
+		switch(cantpRte[i].state)
 		{
-			if(0 != CanTp_RTE.Q.counter)  // has data in queue
+			case CanTp_stIdle:
 			{
-				CanTp_RTE.state = CanTp_stReceiving;
-				CanTp_ReceivingMain();
+				if(0 != cantpRte[i].Q.counter)  // has data in queue
+				{
+					cantpRte[i].state = CanTp_stReceiving;
+					CanTp_ReceivingMain(i);
+				}
+				break;
 			}
-			break;
+			case CanTp_stReceiving:
+			{
+				CanTp_ReceivingMain(i);
+				break;
+			}
+			case CanTp_stStartToSent:
+			{
+				CanTp_StartToSendMain(i);
+				break;
+			}
+			default:
+				break;
 		}
-		case CanTp_stReceiving:
-		{
-			CanTp_ReceivingMain();
-			break;
-		}
-		case CanTp_stSenting:
-		{
-			break;
-		}
-		default:
-			break;
 	}
 	ResumeAllInterrupts();
 }

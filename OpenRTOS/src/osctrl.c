@@ -31,6 +31,10 @@ EXPORT AppModeType knl_appmode = INVALID_APPMODE;
 EXPORT uint8    knl_taskindp = 0u;   /* task in independent part nested level */
 EXPORT uint8    knl_dispatch_disabled = 0u; /* os dispatch state:enabled(0) or disabled(1) */
 
+#if(cfgOS_ERRORHOOK == 1)
+EXPORT OSServiceIdType	_errorhook_svcid;
+EXPORT _ErrorHook_Par	_errorhook_par1, _errorhook_par2, _errorhook_par3;
+#endif
 /* ================================ FUNCTIONs =============================== */
 /* |------------------+------------------------------------------------------| */
 /* | Syntax:          | void StartOS ( AppModeType <Mode> )                  | */
@@ -64,7 +68,7 @@ EXPORT void StartOS ( AppModeType AppMode )
 	knl_alarm_counter_init();
 #endif
 	knl_resource_init();
-#if(cfgOS_STARTUPHOOK == TRUE)
+#if(cfgOS_STARTUPHOOK == 1)
 	StartupHook();
 #endif
     knl_force_dispatch();
@@ -107,7 +111,7 @@ EXPORT void StartOS ( AppModeType AppMode )
 EXPORT void ShutdownOS( StatusType Error )
 {
     DISABLE_INTERRUPT();
-#if (cfgOS_SHUTDOWNHOOK == STD_ON)
+#if (cfgOS_SHUTDOWNHOOK == 1)
 	ShutdownHook(Error);
 #endif
     /* @req OS425: If ShutdownOS() is called and ShutdownHook() returns then the operating

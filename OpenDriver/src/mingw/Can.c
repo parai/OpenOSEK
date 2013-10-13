@@ -236,6 +236,7 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 	for(;;)
 	{
 		WaitForMultipleObjects( sizeof( pvObjectList ) / sizeof( void * ), pvObjectList, TRUE, INFINITE );
+		Sleep(1); // Slow it down, let looks more like the True Controller.
 		// Create a SOCKET for connecting to server
 		ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (ConnectSocket == INVALID_SOCKET) {
@@ -265,7 +266,7 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 		}
 		for(;i<8;i++)
 		{
-			msg[5+i] = 0;
+			msg[5+i] = 0x55;  // PADDING
 		}
 		msg[13] = (uint8)(Can_CtrlServerPort[Controller]>>24);
 		msg[14] = (uint8)(Can_CtrlServerPort[Controller]>>16);
@@ -277,7 +278,7 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 			printf("closesocket function failed with error: %d\n", WSAGetLastError());
 		}
 		SuspendAllInterrupts();
-		Can_TxConformation(Can_PduMsg[Controller].swPduHandle);
+		Can_TxConformation(Controller,Can_PduMsg[Controller].swPduHandle);
 		ResumeAllInterrupts();
 		ReleaseMutex( Can_CtrlTxMutex[Controller] );
 	}

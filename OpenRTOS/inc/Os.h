@@ -24,6 +24,7 @@
 /* ================================ INCLUDEs  =============================== */
 #include "Std_Types.h"
 #include "oscfg.h"
+#include "Debug.h"
 
 /* ================================ MACROs    =============================== */
 /* Conformance Class */
@@ -183,8 +184,8 @@ typedef union {
 		CounterType			_cntid;
 	} _ErrorHook_Par;
 
-extern OSServiceIdType	_errorhook_svcid;
-extern _ErrorHook_Par	_errorhook_par1, _errorhook_par2, _errorhook_par3;
+IMPORT OSServiceIdType	_errorhook_svcid;
+IMPORT _ErrorHook_Par	_errorhook_par1, _errorhook_par2, _errorhook_par3;
 
 /* ================================ DATAs     =============================== */
 

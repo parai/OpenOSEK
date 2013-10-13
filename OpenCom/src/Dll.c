@@ -34,6 +34,8 @@ typedef struct
 	uint8 DataLengthRx;
 }DLL_NMWindowType;
 /* ================================ DATAs     =============================== */
+IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
+IMPORT const Com_IPDUConfigType ComTxIPDUConfig[];
 LOCAL DLL_NMWindowType DLL_NMWindow[cfgNM_NET_NUM];
 LOCAL uint8 DLL_NetOnline[cfgNM_NET_NUM];
 /* ================================ FUNCTIONs =============================== */
@@ -82,64 +84,87 @@ EXPORT StatusType D_WindowDataReq(NetIdType NetId,NMPduType* NMPDU,uint8 DataLen
 }
 
 
-EXPORT void Can_TxConformation(PduIdType TxHandle)
+EXPORT void Can_TxConformation(Can_ControllerIdType Controller,PduIdType TxHandle)
 {
-	uint8 NetId;
-	for(NetId=0;NetId<cfgNM_NET_NUM;NetId++)
-	{
-		if(DLL_NMWindow[NetId].SourceId == TxHandle)
-		{
-			NM_TxConformation(0);
-		}
-	}
-}
-IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
-EXPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,uint8* data,uint8 length)
-{
+	NetIdType NetId;
 	if(CAN_CTRL_0 == Controller)
 	{
-		if((DLL_NMWindow[0].IdBase <= canid) && ((DLL_NMWindow[0].IdBase+0xFF) >= canid))
-		{	// This is NM message
-			if(8 == length)
-			{
-				NMPduType nmPdu;
-				uint8 i;
-				nmPdu.Source = canid-DLL_NMWindow[0].IdBase;
-				nmPdu.Destination = data[0];
-				nmPdu.OpCode.b = data[1];
-				for(i=0;i<6;i++)
-				{
-					nmPdu.RingData[i] = data[2+i];
-				}
-				NM_RxIndication(0,&nmPdu);
-			}
-		}
-		else if(TRUE == DLL_NetOnline[0])
+		NetId = 0;
+	}
+	else
+	{
+		return;
+	}
+	if(DLL_NMWindow[NetId].SourceId == TxHandle)
+	{
+		NM_TxConformation(NetId);
+	}
+	else if(TRUE == DLL_NetOnline[NetId])
+	{
+		if((ComTxIPDUConfig[TxHandle].controller == Controller) && (ComTxIPDUConfig[TxHandle].pdu.SduLength > 8))
 		{
-			//may be for com or uds
-			PduIdType i;
-			PduInfoType pdu;
-			for(i=0;i<cfgCOM_RxIPDU_NUM;i++)
-			{
-				if(ComRxIPDUConfig[i].id == canid)
-				{
-					pdu.SduDataPtr = data;
-					pdu.SduLength = length;
-					if(ComRxIPDUConfig[i].pdu.SduLength > 8)
-					{
-						CanTp_RxIndication(i,&pdu);
-					}
-					else
-					{
-						//Com Rx
-					}
-				}
-			}
+			CanTp_TxConformation(TxHandle);
 		}
 		else
 		{
-			// Offline
+			//Com
 		}
+	}
+}
+
+EXPORT void Can_RxIndication(Can_ControllerIdType Controller,Can_IdType canid,uint8* data,uint8 length)
+{
+	NetIdType NetId;
+	if(CAN_CTRL_0 == Controller)
+	{
+		NetId = 0;
+	}
+	else
+	{
+		return;
+	}
+
+	if((DLL_NMWindow[NetId].IdBase <= canid) && ((DLL_NMWindow[NetId].IdBase+0xFF) >= canid))
+	{	// This is NM message
+		if(8 == length)
+		{
+			NMPduType nmPdu;
+			uint8 i;
+			nmPdu.Source = canid-DLL_NMWindow[NetId].IdBase;
+			nmPdu.Destination = data[0];
+			nmPdu.OpCode.b = data[1];
+			for(i=0;i<6;i++)
+			{
+				nmPdu.RingData[i] = data[2+i];
+			}
+			NM_RxIndication(NetId,&nmPdu);
+		}
+	}
+	else if(TRUE == DLL_NetOnline[NetId])
+	{
+		//may be for com or uds
+		PduIdType i;
+		PduInfoType pdu;
+		for(i=0;i<cfgCOM_RxIPDU_NUM;i++)
+		{
+			if((ComRxIPDUConfig[i].id == canid) && (ComRxIPDUConfig[i].controller == Controller))
+			{
+				pdu.SduDataPtr = data;
+				pdu.SduLength = length;
+				if(ComRxIPDUConfig[i].pdu.SduLength > 8)
+				{
+					CanTp_RxIndication(i,&pdu);
+				}
+				else
+				{
+					//Com Rx
+				}
+			}
+		}
+	}
+	else
+	{
+		// Offline
 	}
 }
 

@@ -18,23 +18,32 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
-#ifndef CANTP_H_H_H_H
-#define CANTP_H_H_H_H
+#ifndef _DEBUG_H__H_H_H
+#define _DEBUG_H__H_H_H
+
 /* ================================ INCLUDEs  =============================== */
-#include "Os.h"
-#include "ComStack_Types.h"
+
 /* ================================ MACROs    =============================== */
+#define cfgDEV_TRACE_ON     1
+// the bigger value has higher level
+#define cfgDEV_TRACE_LEVEL  0
+// Suggest Level
+#define tlError      100
+#define tlWarning    90
+
+// Component
+#define tlCanTp      30
+#define tlUds        40
+#if	defined( __GNUC__ ) && (cfgDEV_TRACE_ON == 1)
+#define devTrace(__level,...) 	\
+	if(__level >= cfgDEV_TRACE_LEVEL)	printf(__VA_ARGS__)
+#else
+#define devTrace(__level,...)
+#endif
 
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
 
 /* ================================ FUNCTIONs =============================== */
-IMPORT void CanTp_Init(void);
-IMPORT void CanTp_Shutdown(void);
-IMPORT Std_ReturnType CanTp_Transmit( PduIdType TxSduId, PduLengthType Length);
-IMPORT void CanTp_MainFunction(void);
-IMPORT void CanTp_RxIndication( PduIdType CanTpRxPduId, const PduInfoType *CanTpRxPduPtr );
-IMPORT void CanTp_TxConformation(PduIdType CanTpTxPduId);
-IMPORT void CanTp_ReleaseRxBuffer(PduIdType CanTpRxPduId);
 #endif

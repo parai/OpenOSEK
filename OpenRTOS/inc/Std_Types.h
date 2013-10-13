@@ -48,6 +48,16 @@
 #define FALSE 0
 #endif
 
+#ifndef True
+#define True  1
+#endif
+
+#ifndef False
+#define False 0
+#endif
+
+
+
 #define EXPORT
 #define IMPORT extern
 #define LOCAL  static

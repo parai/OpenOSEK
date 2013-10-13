@@ -253,14 +253,19 @@ class OsekOS(OeskObject):
                     cc2 = cc + '2'
                     break
         self.modifyAttribute('CC', cc2)
+    def getHookValue(self,value):
+        if(self.getValue(value) == 'TRUE'):
+            return 1
+        else:
+            return 0
     def genH(self,fp):
         fp.write("\n/* ====================== General ======================= */\n")
         fp.write("#define cfgOS_STATUS %s\n"%(self.getValue('STATUS')))
-        fp.write("#define cfgOS_ERRORHOOK %s\n"%(self.getValue('ERRORHOOK')))
-        fp.write("#define cfgOS_PRETASKHOOK %s\n"%(self.getValue('PRETASKHOOK')))
-        fp.write("#define cfgOS_POSTTASKHOOK %s\n"%(self.getValue('POSTTASKHOOK')))
-        fp.write("#define cfgOS_SHUTDOWNHOOK %s\n"%(self.getValue('SHUTDOWNHOOK')))
-        fp.write("#define cfgOS_STARTUPHOOK %s\n\n"%(self.getValue('STARTUPHOOK')))
+        fp.write("#define cfgOS_ERRORHOOK %s\n"%(self.getHookValue('ERRORHOOK')))
+        fp.write("#define cfgOS_PRETASKHOOK %s\n"%(self.getHookValue('PRETASKHOOK')))
+        fp.write("#define cfgOS_POSTTASKHOOK %s\n"%(self.getHookValue('POSTTASKHOOK')))
+        fp.write("#define cfgOS_SHUTDOWNHOOK %s\n"%(self.getHookValue('SHUTDOWNHOOK')))
+        fp.write("#define cfgOS_STARTUPHOOK %s\n\n"%(self.getHookValue('STARTUPHOOK')))
         fp.write('#define cfgOS_TASK_NUM %s\n'%(self.getValue('TASK_NUM')))
         fp.write('#define cfgOS_FLAG_NUM %s\n'%(self.getValue('EVENT_NUM')))
         fp.write('#define cfgOS_S_RES_NUM %s\n'%(self.getValue('STD_RES_NUM')))
@@ -544,7 +549,34 @@ class OsekIPDU(OeskObject):
         OeskObject.__init__(self,IPDUs[0][0][0],IPDUs[0][0][1])
         self.checkAndParse(IPDUs) 
     def postProcess(self):
-        return
+        """ Rule: When sizeInBits > 64, It must has the suffix "_RX" or "_TX"
+          and It must has a partner in name,For Example:
+            UDSDiag_RX and UDSDiag_TX."""
+        length = int(self.getValue('SIZEINBITS'),10)
+        if(length > 64):
+            if(   (self.getValue('IPDUPROPERTY') == 'RECEIVED' and self.name[-3:] != '_RX') 
+               or (self.getValue('IPDUPROPERTY') == 'SENT'     and self.name[-3:] != '_TX')  ):
+                print 'ERROR: IPDU <%s> SizeInBit > 64, So its name must with the suffix "_RX" for RECEIVED and "_TX" for SENT.'%(self.name)
+                sys.exit(-1)
+            else:
+                # check that it has a partner
+                flag = False
+                if(self.getValue('IPDUPROPERTY') == 'RECEIVED'):
+                    for pdu in GetOsekObjects('IPDU'):
+                        if(pdu != self and pdu.getValue('IPDUPROPERTY') == 'SENT' and pdu.name[:-3] == self.name[:-3]):
+                            flag = True
+                elif(self.getValue('IPDUPROPERTY') == 'SENT'):
+                    for pdu in GetOsekObjects('IPDU'):
+                        if(pdu != self and pdu.getValue('IPDUPROPERTY') == 'RECEIVED' and pdu.name[:-3] == self.name[:-3]):
+                            flag = True  
+                else:
+                    print 'ERROR:IPDU <%s> invalid IPDUPROPERTY %s.'%(self.name,self.getValue('IPDUPROPERTY')) 
+                    sys.exit(-1) 
+                if(flag == False):
+                    if(self.getValue('IPDUPROPERTY') == 'RECEIVED'):
+                        print 'ERROR:IPDU <%s> has no partner with the name "%s_TX"'%(self.name,self.name[:-3])  
+                    else:
+                        print 'ERROR:IPDU <%s> has no partner with the name "%s_RX"'%(self.name,self.name[:-3])
     def genH(self,fp):  
         id = 0
         for nm in GetOsekObjects('IPDU'):
@@ -660,6 +692,19 @@ def PrepareCompile(file):
         #}
     fp.close()
 
+def  osekComObjPostProcess():
+    """ Move IPDU(size in bits > 64) to ahead."""
+    for pdu in GetOsekObjects('IPDU'):
+        if(int(pdu.getValue('SIZEINBITS'),10) > 64):
+            if pdu.getValue('IPDUPROPERTY') == 'RECEIVED':
+                for pdu2 in GetOsekObjects('IPDU'):
+                    if(pdu != pdu2 and pdu.name[:-3] == pdu2.name[:-3]):
+                        #move both pdu and pdu2 to head
+                        oilcc_osekObjs.remove(pdu)
+                        oilcc_osekObjs.remove(pdu2)
+                        oilcc_osekObjs.insert(0,pdu)
+                        oilcc_osekObjs.insert(0,pdu2)
+            
 def osekObjPostProcess():
     # special process for Counter
     flag = False
@@ -675,6 +720,7 @@ def osekObjPostProcess():
         oilcc_osekObjs.insert(0,counter) 
     for obj in oilcc_osekObjs:
         obj.postProcess()
+    osekComObjPostProcess()
 def GenerateOsCfgH():
     global oilcc_o
     fp = open('%s/oscfg.h'%(oilcc_o),'w')
@@ -904,15 +950,23 @@ def GenerateComCfgH():
     # IPDU
     fp.write('\n#define cfgCOM_IPDU_NUM %s\n'%(len(GetOsekObjects('IPDU'))))
     rx = tx = 0
+    tpTx = 0
     for pdu in GetOsekObjects('IPDU'):
         if(pdu.getValue('IPDUPROPERTY') == 'SENT'):
+            if(int(pdu.getValue('SIZEINBITS'),10) > 64):
+                tpTx += 1;
             tx += 1
         else:
             rx += 1
-    fp.write('#define cfgCOM_RxIPDU_NUM %s\n'%(rx))
+    fp.write('#define cfgCOM_TPIPDU_NUM %s /* IPDU should be processed by Transport Layer */\n'%(tpTx))
     fp.write('#define cfgCOM_TxIPDU_NUM %s\n'%(tx))
+    fp.write('#define cfgCOM_RxIPDU_NUM %s\n'%(rx))
     for pdu in GetOsekObjects('IPDU'):
-        pdu.genH(fp)
+        if(pdu.getValue('IPDUPROPERTY') == 'SENT'):
+            pdu.genH(fp)
+    for pdu in GetOsekObjects('IPDU'):
+        if(pdu.getValue('IPDUPROPERTY') == 'RECEIVED'):
+            pdu.genH(fp)
     fp.write('\n#endif\n\n') 
     fp.close() 
 
