@@ -32,8 +32,10 @@ RMFLGS = -f
 
 #common objectives		
 dir-y =	$(BD)/OpenCom/src $(BD)/OpenCom/config
-src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))
-obj-y = $(subst .c,.o,$(src-y))
+src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))	\
+		$(BD)/OpenAPP/out/comcfg.c
+obj-y = $(subst .c,.o,$(src-y))	
+	
 
 #common rules
 %.o:%.c
