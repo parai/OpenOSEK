@@ -216,6 +216,9 @@ class ooCanTpController(threading.Thread):
     __rxIndication = None
     __rxCanId = 0
     __txCanId = 0
+    __BS = 0
+    __STMin = 10
+    __SN = 0
     def __init__(self,rxIndication,rxCanId = 0x732,txCanId = 0x731):
         """ must be of the type void Function(uint8* data,uint8 length) """
         self.__rxIndication = rxIndication
@@ -241,13 +244,19 @@ class ooCanTpController(threading.Thread):
         self.__rxIndication(datar)
 
     def receiveFC(self,data,length):
-        SetEvent(self.__Event)
+        if(data[0]&0x0F == 0x00): #CTS
+            self.__BS = data[1]
+            self.__STMin = data[2]
+            SetEvent(self.__Event)
+        elif(data[0]&0x0F == 0x02):
+            print 'Server Buffer size overflow.'
+        
 
     def indication(self,data,length):
         if(data[0]&0xF0 == 0x00): #SF
             self.receiveSF(data,length)
         elif(data[0]&0xF0 == 0x30): # FC
-            self.receiveCF(data,length)
+            self.receiveFC(data,length)
 
     def transmit(self,data,length=None):
         if(CanTp_stIdle == self.__state):
@@ -270,8 +279,32 @@ class ooCanTpController(threading.Thread):
             data.append(self.__LocalData[i])
         self.__counter = 6
         Can_Write(self.__txCanId,data)
-        self.__state = CanTp_stWaitFC          
-        
+        self.__state = CanTp_stWaitFC   
+        self.__SN = 0       
+    def sendCF(self):
+        data = [] 
+        self.__SN += 1
+        if(self.__SN > 15):
+            self.__SN = 0
+        data.append(0x20|self.__SN) # CF
+        if(len(self.__LocalData) >= self.__counter + 7):
+            size = 7
+        else:
+            size = len(self.__LocalData) - self.__counter
+        for i in range(0,size):
+            data.append(self.__LocalData[self.__counter + i])
+        self.__counter += size
+        Can_Write(self.__txCanId,data)
+        if(self.__counter >= len(self.__LocalData)):
+            """ Finshed """
+            self.__state = CanTp_stIdle
+            print "    Segmented Message Transmission Done!"
+        else:
+            self.__BS -= 1
+            if(self.__BS == 0):
+                self.__state = CanTp_stWaitFC
+            else:
+                self.__state = CanTp_stSentCF
     def run(self):
         while True:
             if(CanTp_stStartToSent == self.__state):
@@ -280,13 +313,17 @@ class ooCanTpController(threading.Thread):
                 else:
                     self.sendFF()
             elif(CanTp_stWaitFC == self.__state):
-                if(True == WaitEvent(self.__Event,200)):
+                if(True == WaitEvent(self.__Event,1000)):
                     ClearEvent(self.__Event)
                     self.__state = CanTp_stSentCF
                     continue
                 else: # Time-out abort
                     self.__state = CanTp_stIdle  
                     print '    Timeout for  Waiting the Flow Control.'
+            elif(CanTp_stSentCF == self.__state):
+                self.sendCF()
+                Sleep(self.__STMin)
+                continue
             Sleep(10)
 
 __CanTpController = None

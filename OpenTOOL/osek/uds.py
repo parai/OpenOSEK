@@ -68,7 +68,7 @@ def UdsOnCanClient(port = 8999):
         else:
             data = [0x3e,00]
         CanTp_Transmit(data)
-        if(True == WaitEvent(UdsAckEvent,1000)): 
+        if(True == WaitEvent(UdsAckEvent,5000)): 
             ClearEvent(UdsAckEvent)
         else:
             print "    No Response, Time-out."

@@ -43,13 +43,6 @@ def CanBusServerTrace(msg):
     cstr = 'ID=%s, DLC=%s: ['%(hex(canid),dlc)
     for i in range(0,8):
         cstr += '0x%-2x, '%(ord(msg[5+i]))
-    cstr += ']'
-    cstr += '<->['
-    for i in range(0,8):
-        if(i<dlc and msg[5+i] != '\n' and msg[5+i] != '\t'):
-            cstr += '%s'%(msg[5+i])
-        else:
-            cstr += '.'
     cstr += '] From %s'%(port)
     cstr += ' AT %s ms'%(round(time.time() - server_startTime,4)*1000)
     server_startTime = time.time()
