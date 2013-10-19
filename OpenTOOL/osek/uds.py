@@ -19,91 +19,16 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 """
-import socket
-import UserString
-import time
+from Osek import *
 
 uds_tx_id = 0x731
 uds_rx_id = 0x732
+UdsAckEvent = DeclareEvent()
+
 def UdsOnCanUsage():
     print "Usage:"
     print "\t python uds.py --port port"
     print "Example: python uds.py --port 8999"
-
-def CanTransmit(port,canid,data,length):
-    if(port < 9000):
-        p = 8000
-    else:
-        p = 9000
-    msg = UserString.MutableString("c" * 17)
-    msg[0] = '%c'%((canid>>24)&0xFF)
-    msg[1] = '%c'%((canid>>16)&0xFF)
-    msg[2] = '%c'%((canid>>8)&0xFF)
-    msg[3] = '%c'%(canid&0xFF)
-    msg[4] = '%c'%(length) #DLC
-    for i in range(0,length):
-        msg[5+i] = '%c'%((data[i])&0xFF)
-    for i in range(length,8):
-        msg[5+i] = '%c'%(0x55)
-    msg[13] = '%c'%((port>>24)&0xFF)
-    msg[14] = '%c'%((port>>16)&0xFF)
-    msg[15] = '%c'%((port>>8)&0xFF)
-    msg[16] = '%c'%((port)&0xFF)
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(('127.0.0.1', p))  
-        sock.send(msg.data)
-        sock.close()
-    except:
-        print 'ERROR: CanBusServer isn\'t started.'
-def CanTpSendSF(port,canid,data,length):
-    data = [0x00+length] + data
-    CanTransmit(port,canid,data,length+1)
-    msg = CanTpRxIndication(port)
-    if msg == None:
-        return
-    length = ord(msg[5])
-    response = []
-    for i in range(0,length):
-        response.append(msg[6+i])
-    UdsClientTrace(response)
-def CanTpTransmit(port,canid,data,length):
-    if(length <= 7): # Send SF
-        CanTpSendSF(port,canid,data,length)
-
-def UdsClientTrace(msg):
-    cstr = '\tResponse: \n\t['
-    for i in range(0,len(msg)):
-        cstr += '0x%-2x, '%(ord(msg[i]))
-        if(i != 0 and i%8 == 0):
-            cstr += '\n\t'
-    cstr += ']'
-    print cstr
-
-def CanTpRxIndication(port = 8999):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
-    sock.bind(('127.0.0.1', port))  
-    sock.listen(32) 
-    startT = time.time()
-    msg = None
-    while True:  
-        if((time.time()-startT)*1000 > 1000): # Timeout
-            break 
-        try:  
-            sock.settimeout(1)
-            connection,address = sock.accept() 
-            connection.settimeout(1)
-            msg = connection.recv(1024)  
-            connection.close()
-            if(len(msg) == 17):
-                canid =  (ord(msg[0])<<24)+(ord(msg[1])<<16)+(ord(msg[2])<<8)+(ord(msg[3]))
-                if(canid == uds_rx_id):
-                    break
-        except socket.timeout:  
-            continue  
-        connection.close()
-    sock.close()
-    return msg
 
 def UdsConfig():
     global uds_tx_id, uds_rx_id
@@ -115,10 +40,20 @@ def UdsConfig():
     if('' != value):
         uds_rx_id = int(value,16)
     print 'Tx = %s, Rx = %s.'%(hex(uds_tx_id),hex(uds_rx_id))
-    
+
+def Uds_RxIndication(data):
+    cstr = '    Responce: ['
+    for i in range(0,len(data)):
+        cstr += '0x%-2x,'%(data[i])
+    cstr += ']'
+    print cstr
+    SetEvent(UdsAckEvent)
+ 
 def UdsOnCanClient(port = 8999):
     global uds_tx_id, uds_rx_id
     #UdsConfig()
+    Can_Init(None,port,port-port%1000)
+    CanTp_Init(Uds_RxIndication,uds_rx_id,uds_tx_id)
     while True:
         data = []
         value = raw_input("uds send [ 3E 00 ]:")
@@ -132,7 +67,11 @@ def UdsOnCanClient(port = 8999):
                     break
         else:
             data = [0x3e,00]
-        CanTpTransmit(port,uds_tx_id,data,len(data))
+        CanTp_Transmit(data)
+        if(True == WaitEvent(UdsAckEvent,1000)): 
+            ClearEvent(UdsAckEvent)
+        else:
+            print "    No Response, Time-out."
    
 def main(argc,argv):
     if(argc != 3):
