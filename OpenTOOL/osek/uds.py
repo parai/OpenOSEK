@@ -20,6 +20,7 @@
  */
 """
 from Osek import *
+import re
 
 uds_tx_id = 0x731
 uds_rx_id = 0x732
@@ -42,13 +43,18 @@ def UdsConfig():
     print 'Tx = %s, Rx = %s.'%(hex(uds_tx_id),hex(uds_rx_id))
 
 def Uds_RxIndication(data):
-    cstr = '    Responce: ['
+    cstr = '    Response: ['
     for i in range(0,len(data)):
         cstr += '0x%-2x,'%(data[i])
+    cstr += ']..['
+    for i in range(0,len(data)):
+        if re.match(r'[^\s]','%c'%(data[i])):
+            cstr += '%c'%(data[i])
+        else:
+            cstr += '.'
     cstr += ']'
     print cstr
     SetEvent(UdsAckEvent)
- 
 def UdsOnCanClient(port = 8999):
     global uds_tx_id, uds_rx_id
     #UdsConfig()
@@ -56,15 +62,32 @@ def UdsOnCanClient(port = 8999):
     CanTp_Init(Uds_RxIndication,uds_rx_id,uds_tx_id)
     while True:
         data = []
-        value = raw_input("uds send [ 3E 00 ]:")
-        if(value != ''):
-            for chr in value.split(' '):
+        value = raw_input("UDS Send [ 3E 00 ]:")
+        if(value.find('$') != -1): # a commend
+            fnc = re.compile(r'\s+').split(value)[0]
+            if(fnc[0] != '$'):
+                continue
+            fnc = fnc[1:]
+            if len(re.compile(r'\s+').split(value)) > 1:
+                argv = re.compile(r'\s+').split(value)[1:]
+            else:
+                argv = None
+            try:
+                UdsBuildIn[fnc](argv)
+                if WaitEvent(UdsAckEvent,5000):
+                    ClearEvent(UdsAckEvent)
+            except:
+                print 'Function <%s> is not build-in supported.'%(fnc)
+            continue
+        elif(value != ''):
+            for chr in re.compile(r'\s+').split(value):
                 try:
-                    data.append(int(chr,16))
+                    if(chr != ''):
+                        data.append(int(chr,16))
                 except:
                     print 'Error input!'
                     data = [0x3e,00]
-                    break
+                    break         
         else:
             data = [0x3e,00]
         CanTp_Transmit(data)
@@ -72,14 +95,48 @@ def UdsOnCanClient(port = 8999):
             ClearEvent(UdsAckEvent)
         else:
             print "    No Response, Time-out."
-   
+""" ----------------------- Function Tanble ------------------------"""   
+def biSession(argv):
+    data = [0x10]
+    if(len(argv) == 1):
+        try:
+            data.append(int(argv[0]))
+        except:
+            print 'Session Argument Error!'
+            return
+    else:
+        data.append(0x01) #default session
+    CanTp_Transmit(data)
+def biSecurity(argv):
+    data = [0x27]
+    pass
+def biSendFF(argv):
+    data = [0x10,0x00,0x55,0x55,0x55,0x55,0x55,0x55]
+    try:
+        size = int(argv[0],16)
+        data[0] = 0x10|((size>>8)&0x0F)
+        data[1] = size&0xFF
+        size = len(argv) -1
+        if size > 6:
+            size = 6
+        for i in range(0,size):
+            data[i+2] = int(argv[i],16)
+        Can_Write(uds_tx_id,data)
+    except:
+        print 'SendFF Argument Error!'
+        
+UdsBuildIn = {
+    'Session':biSession,
+    'Security':biSecurity,
+    'SendFF':biSendFF
+}
 def main(argc,argv):
     if(argc != 3):
         UdsOnCanUsage()
         return
     if(argv[1] == '--port'):
         UdsOnCanClient(int(argv[2]))
-        
+       
 if __name__ == '__main__': 
     import sys 
     main(len(sys.argv),sys.argv);

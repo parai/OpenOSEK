@@ -26,6 +26,29 @@
 /* ================================ MACROs    =============================== */
 #define cfgUDS_Q_NUM 2
 #define cfgUDS_Q_TIMEOUT 100  // ms
+#define cfgUdsMainTaskTick   10 //ms
+#define msToUdsTick(time) ((time + cfgUdsMainTaskTick - 1)/cfgUdsMainTaskTick)
+
+#define udsGetSerivceData(__i) (ComRxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i])
+#define udsSetResponseCode(__i,__v) {ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i] = (uint8)(__v);}
+#define udsGetResponseBuffer(__i) (&ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i])
+
+#define cfgP2Server   5000  //ms
+
+#define udsSetAlarm(__tick)			\
+do{										\
+	udsRte.timer = __tick + 1;	\
+}while(0)
+#define udsSignalAlarm()				\
+do{										\
+	if(udsRte.timer > 1)		\
+	{									\
+		udsRte.timer --;		\
+	}									\
+}while(0)
+#define udsCancelAlarm()	{ udsRte.timer = 0;}
+#define udsIsAlarmTimeout() ( 1u == udsRte.timer )
+#define udsIsAlarmStarted() ( 0u != udsRte.timer )
 
 #define UDS_E_GENERALREJECT								((Uds_NrcType)0x10)
 #define UDS_E_BUSYREPEATREQUEST							((Uds_NrcType)0x21)
@@ -86,8 +109,9 @@ typedef struct
 	Uds_SessionType   session;
 	Uds_ServiceIdType currentSid;
 	uint8             sidIndex;           // sid index to refer UdsConfig.sidList[]
-	Uds_SecurityLevelType securityLevel;  // if 0, unsecured, all service can be serviced.
+	Uds_SecurityLevelMaskType securityLevel;
 	boolean           suppressPosRspMsg;
+	TickType      	  timer;
 	volatile enum
 	{
 		Uds_stIdle = 0,
@@ -113,20 +137,23 @@ LOCAL boolean udsCheckSessionLevel(void);
 LOCAL boolean udsIsNewSessionValid(Uds_SessionType Session);
 LOCAL Uds_SessionType udsSessionMap(Uds_SessionType Session);
 LOCAL void udsSessionControlFnc(void);
+LOCAL void udsSecurityAccessFnc(void);
 LOCAL void udsSelectServiceFunction(void);
+LOCAL uint8 udsPrepareSeed(uint8* seed);
 
 EXPORT void Uds_Init(void)
 {
 	memset(&udsRte,0,sizeof(udsRte));
 }
-EXPORT void Uds_TxConformation(PduIdType RxPduId)
+EXPORT void Uds_TxConformation(PduIdType RxPduId,StatusType status)
 {
-	if(Uds_stSentingResponse == udsRte.state)
+	if((Uds_stSentingResponse == udsRte.state) && (E_OK == status))
 	{
 		udsRte.state = Uds_stIdle;
 	}
 	else
 	{
+		Uds_Init();  // Reset as Error
 		devTrace(tlError,"Error In Uds_TxConformation state = %d\n",udsRte.state);// UDS state machine error
 	}
 }
@@ -140,7 +167,7 @@ EXPORT void Uds_RxIndication(PduIdType RxPduId,PduLengthType Length)
 	}
 	else
 	{
-		// Something Wrong.
+		// TODO:Something Wrong.
 		// For example, 2 client access the server concurrently.
 		if(udsRte.Q.counter < cfgUDS_Q_NUM)
 		{
@@ -169,9 +196,9 @@ LOCAL void udsCreateAndSendNrc(Uds_NrcType Nrc)
 	if ( (Nrc == UDS_E_SERVICENOTSUPPORTED) ||
 		 (Nrc == UDS_E_SUBFUNCTIONNOTSUPPORTED) ||
 		 (Nrc == UDS_E_REQUESTOUTOFRANGE) ) {   /** @req DCM001 */
-		ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[0] = SID_NEGATIVE_RESPONSE;
-		ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[1] = udsRte.currentSid;
-		ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[2] = Nrc;
+		udsSetResponseCode(0,SID_NEGATIVE_RESPONSE);
+		udsSetResponseCode(1,udsRte.currentSid);
+		udsSetResponseCode(2,Nrc);
 		udsRte.txLength = 3;
 		udsSendResponse(TRUE);
 	}
@@ -185,7 +212,7 @@ LOCAL void udsProcessingDone(Uds_NrcType Ncr)
 	if (UDS_E_POSITIVERESPONSE == Ncr) {
 		if (False == udsRte.suppressPosRspMsg) {	/** @req DCM200 */ /** @req DCM231 */
 			/** @req DCM222 */
-			ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[0] = udsRte.currentSid | SID_RESPONSE_BIT;	/** @req DCM223 */ /** @req DCM224 */
+			udsSetResponseCode(0,udsRte.currentSid | SID_RESPONSE_BIT)
 			udsSendResponse(True);
 		}
 		else {
@@ -195,7 +222,6 @@ LOCAL void udsProcessingDone(Uds_NrcType Ncr)
 	else {
 		udsCreateAndSendNrc(Ncr);	/** @req DCM228 */
 	}
-
 }
 LOCAL boolean udsLookupSid(void)
 {
@@ -229,7 +255,7 @@ LOCAL boolean udsCheckSecurityLevel(void)
 	{	// This sid is unsecured
 		return True;
 	}
-	else if( (UdsConfig.sidList[udsRte.sidIndex].securityLevelMask&(1<<udsRte.securityLevel)) != 0u )
+	else if( (UdsConfig.sidList[udsRte.sidIndex].securityLevelMask&(udsRte.securityLevel)) != 0u )
 	{
 		return True;
 	}
@@ -293,14 +319,14 @@ LOCAL void udsSessionControlFnc(void)
 {
 	if(2u == udsRte.rxLength)
 	{
-		Uds_SessionType session = ComRxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[1];
+		Uds_SessionType session = udsGetSerivceData(1);
 		devTrace(tlUds,"Info:Session Control %2x.\n",session);
 		if(True == udsIsNewSessionValid(session))
 		{
 			// TODO: here should askApplicationForSessionPermission
 			udsRte.session = udsSessionMap(session);
 			// Create Response
-			ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[1] = session;
+			udsSetResponseCode(1,session);
 			udsRte.txLength = 2;
 			udsProcessingDone(UDS_E_POSITIVERESPONSE);
 		}
@@ -311,9 +337,64 @@ LOCAL void udsSessionControlFnc(void)
 	}
 	else
 	{
-		devTrace(tlUds,"Info:Session Control Invalid Length.\n");
 		udsProcessingDone(UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT);
 	}
+}
+LOCAL uint8 udsPrepareSeed(uint8* seed)
+{
+	int i;
+	// TODO: implement safety algorithm here
+	for(i=0;i<128;i++)
+	{
+		seed[i] = i;
+	}
+ 	return 128;
+}
+LOCAL void udsSecurityAccessFnc(void)
+{
+	static boolean isSeedRequested = False;
+	static Uds_SecurityLevelType securityLevelRequested = 0u;
+	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
+	if(2u <= udsRte.rxLength)
+	{
+		if(0x01u == udsGetSerivceData(1))	// Request Seed
+		{
+			if(3u == udsRte.rxLength)
+			{
+				isSeedRequested = True;
+				securityLevelRequested = udsGetSerivceData(2);
+				// Create Response
+				udsSetResponseCode(1u,0x01);
+				udsRte.txLength = 2 + udsPrepareSeed(udsGetResponseBuffer(2));
+				nrc = UDS_E_POSITIVERESPONSE;
+			}
+			else
+			{
+				nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
+			}
+		}
+		else if(0x02u == udsGetSerivceData(1)) // Send key
+		{
+			if(True == isSeedRequested)
+			{
+			}
+			else
+			{
+				nrc = UDS_E_REQUESTSEQUENCEERROR;
+			}
+
+		}
+		else
+		{
+			// TODO: many sub - function not supported by me. add the process here
+			nrc = UDS_E_SUBFUNCTIONNOTSUPPORTED;
+		}
+	}
+	else
+	{
+		nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
+	}
+	udsProcessingDone(nrc);
 }
 LOCAL void udsSelectServiceFunction(void)
 {
@@ -322,13 +403,16 @@ LOCAL void udsSelectServiceFunction(void)
 		case SID_DIAGNOSTIC_SESSION_CONTROL:
 			udsSessionControlFnc();
 			break;
+		case SID_SECURITY_ACCESS:
+			udsSecurityAccessFnc();
+			break;
 		default:
 			break;
 	}
 }
 LOCAL void udsHandleServiceRequest(void)
 {
-	udsRte.currentSid = ComRxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[0];
+	udsRte.currentSid = udsGetSerivceData(0);
 	if(TRUE == udsLookupSid())
 	{	// Start to Process it
 		if(TRUE == udsCheckSessionLevel())
@@ -358,12 +442,24 @@ EXPORT void Uds_MainTask(void)
 	switch(udsRte.state)
 	{
 		case Uds_stServiceRequested:
-		{
+		{   // Easy the implementation, don't care the request is valid or not. maybe not safe.
+			udsSetAlarm(msToUdsTick(cfgP2Server));
 			udsHandleServiceRequest();
 			break;
 		}
 		default:
+		{
+			if(udsIsAlarmStarted())
+			{
+				udsSignalAlarm();
+				if(udsIsAlarmTimeout())
+				{
+					Uds_Init();  // Reset As P2Server Time-out
+					devTrace(tlUds,"Info:Uds P2Server Time out.\n");
+				}
+			}
 			break;
+		}
 	}
 }
 

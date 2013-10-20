@@ -6,7 +6,12 @@ LOCAL const Uds_ServiceType UdsServiceTable[] =
 	{
 		SID_DIAGNOSTIC_SESSION_CONTROL,
 		0xFFFFU,	// all Session available
-		UdsUnSecurityLevel,
+		UdsUnSecurityLevel
+	},
+	{
+		SID_SECURITY_ACCESS,
+		0xFFFFU,
+		UdsUnSecurityLevel
 	}
 };
 

@@ -21,6 +21,7 @@
 """
 import socket
 import time
+import re
 
 server_startTime = time.time() # in second
 server_port =[]
@@ -44,7 +45,13 @@ def CanBusServerTrace(msg):
     for i in range(0,8):
         cstr += '0x%-2x, '%(ord(msg[5+i]))
     cstr += '] From %s'%(port)
-    cstr += ' AT %s ms'%(round(time.time() - server_startTime,4)*1000)
+    cstr += ' AT %-6s ms .. ['%(round(time.time() - server_startTime,4)*1000)
+    for i in range(0,8):
+        if re.match(r'[^\s]','%c'%(msg[5+i])):
+            cstr += '%c'%(msg[5+i])
+        else:
+            cstr += '.'
+    cstr += ']'
     server_startTime = time.time()
     print cstr
     server_logout.write(cstr+'\n')

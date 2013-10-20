@@ -122,6 +122,6 @@ typedef uint8 Uds_NrcType;
 
 /* ================================ FUNCTIONs =============================== */
 IMPORT void Uds_RxIndication(PduIdType RxPduId,PduLengthType Length);
-IMPORT void Uds_TxConformation(PduIdType TxPduId);
+IMPORT void Uds_TxConformation(PduIdType RxPduId,StatusType status);
 
 #endif
