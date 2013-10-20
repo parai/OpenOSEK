@@ -255,9 +255,14 @@ class ooCanTpController(threading.Thread):
             print 'Server Buffer size overflow.'
 
     def sendFC(self):
-        data = [0x30,8,10] # CTS, BS=8, STmin = 10
+        cfgSTmin = 10
+        cfgBS = 8
+        data = [0x30,cfgBS,cfgSTmin]
         Can_Write(self.__txCanId,data)
-        self.__BS = 8 + 1
+        if cfgBS is 0:
+            self.__BS = 0
+        else:
+            self.__BS = cfgBS + 1
     
     def receiveFF(self,data,length):
         self.__LocalData = []
@@ -287,7 +292,7 @@ class ooCanTpController(threading.Thread):
                     self.sendFC()             
         else:
             self.__state = CanTp_stIdle;
-            print 'Error of the Sequence Number for Receiving.'
+            print 'Error of the Sequence Number for Receiving.','RSN = 0x%x'%(data[0]),'LSN = 0x%x'%(self.__SN)
         SetEvent(self.__Event)
 
     def indication(self,data,length):

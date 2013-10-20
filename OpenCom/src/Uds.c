@@ -85,9 +85,9 @@ do{										\
 #define UDS_E_SERVICENOTSUPPORTEDINACTIVESESSION		((Uds_NrcType)0x7F)
 
 // Misc definitions
-#define SUPPRESS_POS_RESP_BIT		(uint8)0x80
-#define SID_RESPONSE_BIT			(uint8)0x40
-#define VALUE_IS_NOT_USED			(uint8)0x00
+#define SUPPRESS_POS_RESP_BIT		((uint8)0x80)
+#define SID_RESPONSE_BIT			((uint8)0x40)
+#define VALUE_IS_NOT_USED			((uint8)0x00)
 
 /* ================================ TYPEs     =============================== */
 typedef struct
@@ -103,15 +103,15 @@ typedef struct
 }Uds_RequestQueueType;
 typedef struct
 {
-	PduIdType         pduId;
-	PduLengthType     rxLength;
-	PduLengthType     txLength;
-	Uds_SessionType   session;
-	Uds_ServiceIdType currentSid;
-	uint8             sidIndex;           // sid index to refer UdsConfig.sidList[]
-	Uds_SecurityLevelMaskType securityLevel;
-	boolean           suppressPosRspMsg;
-	TickType      	  timer;
+	PduIdType         pduId;   		/* used to refer the request service data */
+	PduLengthType     rxLength;		/* record the length of the PDU <pduId> */
+	PduLengthType     txLength;		/* record the length of the response for the service <pduId> */
+	Uds_SessionType   session;		/* record current session */
+	Uds_ServiceIdType currentSid;	/* record current service id */
+	uint8             sidIndex;		/* sid index to refer UdsConfig.sidList[] */
+	Uds_SecurityLevelMaskType securityLevel;	/* record current unsecured level, each bit is a special level.*/
+	boolean           suppressPosRspMsg;		/* TODO: */
+	TickType      	  timer;		/* Timer used for error recover or P2Server */
 	volatile enum
 	{
 		Uds_stIdle = 0,
@@ -119,8 +119,8 @@ typedef struct
 		Uds_stServiceInProcess,
 		Uds_stSentingResponse,
 		Uds_stServiceFinshed
-	}state;
-	Uds_RequestQueueType Q;
+	}state;						/* UDS State Machine */
+	// Uds_RequestQueueType Q;		/* TODO: Queue to cache the consecutive request service in case that UDS State is not Idle */
 }Uds_RTEType;
 /* ================================ DATAs     =============================== */
 IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
@@ -153,8 +153,8 @@ EXPORT void Uds_TxConformation(PduIdType RxPduId,StatusType status)
 	}
 	else
 	{
-		Uds_Init();  // Reset as Error
 		devTrace(tlError,"Error In Uds_TxConformation state = %d\n",udsRte.state);// UDS state machine error
+		Uds_Init();  // Reset as Error
 	}
 }
 EXPORT void Uds_RxIndication(PduIdType RxPduId,PduLengthType Length)
@@ -167,15 +167,14 @@ EXPORT void Uds_RxIndication(PduIdType RxPduId,PduLengthType Length)
 	}
 	else
 	{
-		// TODO:Something Wrong.
-		// For example, 2 client access the server concurrently.
-		if(udsRte.Q.counter < cfgUDS_Q_NUM)
-		{
-			udsRte.Q.queue[udsRte.Q.counter].pduId = RxPduId;
-			udsRte.Q.queue[udsRte.Q.counter].rxLength = Length;
-			udsRte.Q.queue[udsRte.Q.counter].timer  = msToUdsTick(cfgUDS_Q_TIMEOUT);
-			udsRte.Q.counter ++;
-		}
+		// TODO:
+//		if(udsRte.Q.counter < cfgUDS_Q_NUM)
+//		{
+//			udsRte.Q.queue[udsRte.Q.counter].pduId = RxPduId;
+//			udsRte.Q.queue[udsRte.Q.counter].rxLength = Length;
+//			udsRte.Q.queue[udsRte.Q.counter].timer  = msToUdsTick(cfgUDS_Q_TIMEOUT);
+//			udsRte.Q.counter ++;
+//		}
 	}
 }
 LOCAL void udsSendResponse(boolean send)
@@ -315,6 +314,7 @@ LOCAL Uds_SessionType udsSessionMap(Uds_SessionType Session)
 	}
 	return newS;
 }
+/* @UDS Service: 0x10 */
 LOCAL void udsSessionControlFnc(void)
 {
 	if(2u == udsRte.rxLength)
@@ -340,16 +340,29 @@ LOCAL void udsSessionControlFnc(void)
 		udsProcessingDone(UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT);
 	}
 }
+/* This Service is an example, it should be re-implemented
+ * according to the requirement of Application
+ * @In: seed buffer
+ * @Return: the length of the seed */
 LOCAL uint8 udsPrepareSeed(uint8* seed)
 {
-	int i;
-	// TODO: implement safety algorithm here
-	for(i=0;i<128;i++)
-	{
-		seed[i] = i;
-	}
+#if 0
+	seed[0] = 0xDE; // Example key 0xDEADBEEF
+	seed[1] = 0xAD;
+	seed[2] = 0xBE;
+	seed[3] = 0xEF;
+ 	return 4;
+#else
+ 	int i;
+ 	for(i=0;i<128;i++)
+ 	{
+ 		seed[i] = i;
+ 	}
  	return 128;
+#endif
 }
+
+/* @UDS Service: 0x27 */
 LOCAL void udsSecurityAccessFnc(void)
 {
 	static boolean isSeedRequested = False;
@@ -396,6 +409,7 @@ LOCAL void udsSecurityAccessFnc(void)
 	}
 	udsProcessingDone(nrc);
 }
+
 LOCAL void udsSelectServiceFunction(void)
 {
 	switch(udsRte.currentSid)
@@ -410,6 +424,7 @@ LOCAL void udsSelectServiceFunction(void)
 			break;
 	}
 }
+
 LOCAL void udsHandleServiceRequest(void)
 {
 	udsRte.currentSid = udsGetSerivceData(0);
@@ -437,6 +452,7 @@ LOCAL void udsHandleServiceRequest(void)
 		udsCreateAndSendNrc(UDS_E_SERVICENOTSUPPORTED);	/** @req DCM197 */
 	}
 }
+
 EXPORT void Uds_MainTask(void)
 {
 	switch(udsRte.state)

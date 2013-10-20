@@ -84,21 +84,21 @@ typedef struct
 
 typedef struct
 {
-	CanTp_QueueType Q; // For Rx only
-	PduLengthType index;  // For Rx and Tx
-	PduLengthType length; // For Rx and Tx
+	CanTp_QueueType Q; 		// For Rx only
+	PduLengthType index;  	// For Rx and Tx
+	PduLengthType length; 	// For Rx and Tx
 	TickType timer;
-	uint8 BS;		//Block Size
-	uint8 SN;		//Sequence Number
+	uint8 BS;				//Block Size
+	uint8 SN;				//Sequence Number
 	uint8 STmin;
 	volatile enum
 	{
 		CanTp_stIdle = 0,
-		CanTp_stReceiving,     // For Rx
+		CanTp_stReceiving,
 		CanTp_stSendFC,
 		CanTp_stWaitTxConformSinceSendFC,
 		CanTp_stBusy,          // To say the rx buffer of handle is in used by UDS,locked
-		CanTp_stStartToSend,   // For Tx
+		CanTp_stStartToSend,
 		CanTp_stSending,
 		CanTp_stWaitFC,
 		CanTp_stSendFinished,  // Wait For TxConform
@@ -125,6 +125,7 @@ EXPORT void CanTp_Init(void)
 {
 	memset(&cantpRte,0,sizeof(cantpRte));
 }
+
 EXPORT void CanTp_ReleaseRxBuffer(PduIdType RxPduId)
 {
 	if(CanTp_stBusy == cantpRte[RxPduId].state)
@@ -136,6 +137,7 @@ EXPORT void CanTp_ReleaseRxBuffer(PduIdType RxPduId)
 		devTrace(tlError,"Error In CanTp_ReleaseRxBuffer state[%d] = %d.\n",RxPduId,cantpRte[RxPduId].state);
 	}
 }
+
 EXPORT void CanTp_TxConformation(PduIdType TxPduId)
 {
 	switch(cantpRte[TxPduId].state)
@@ -151,9 +153,16 @@ EXPORT void CanTp_TxConformation(PduIdType TxPduId)
 			cantpRte[TxPduId].state = CanTp_stReceiving;
 			break;
 		}
-		case CanTp_stWaitFC:	//nothing as has just send the First Frame or BS count down to 0
 		case CanTp_stSending:
-			break; // Do nothing
+		{
+			if(0u == cantpRte[TxPduId].STmin)
+			{
+				canTpSendCF(TxPduId);
+			}
+			break;
+		}
+		case CanTp_stWaitFC:	//nothing as has just send the First Frame or BS count down to 0
+			break;
 		default:
 		{
 			devTrace(tlError,"Error In CanTp_TxConformation state[%d] = %d\n",TxPduId,cantpRte[TxPduId].state);
@@ -164,6 +173,17 @@ EXPORT void CanTp_TxConformation(PduIdType TxPduId)
 EXPORT void CanTp_RxIndication( PduIdType RxPduId, const PduInfoType *CanTpRxPduPtr )
 {
 	uint8 index = cantpRte[RxPduId].Q.counter;
+#if 0
+	{
+		int i;
+		printf("CANID = 0x%x,[",ComRxIPDUConfig[RxPduId].id);
+		for(i=0;i<CanTpRxPduPtr->SduLength;i++)
+		{
+			printf("0x%x,",(unsigned int)CanTpRxPduPtr->SduDataPtr[i]);
+		}
+		printf("]\n");
+	}
+#endif
 	if(CanTp_stWaitFC == cantpRte[RxPduId].state) // Special process
 	{
 		if((CanTpRxPduPtr->SduDataPtr[0]&N_PCI_MASK) == N_PCI_FC)
@@ -402,6 +422,7 @@ LOCAL void canTpSendFF(PduIdType TxPduId)
 		cantpRte[TxPduId].index = 6;
 		cantpRte[TxPduId].SN = 1;
 		cantpRte[TxPduId].state = CanTp_stWaitFC;
+		tpCancelAlarm(TxPduId);
 	}
 	else
 	{
@@ -419,6 +440,7 @@ LOCAL void CanTp_StartToSendMain(PduIdType TxPduId)
 		canTpSendFF(TxPduId);
 	}
 }
+
 LOCAL void canTpSendCF(PduIdType TxPduId)
 {
 	Can_ReturnType ercd;
@@ -458,14 +480,25 @@ LOCAL void canTpSendCF(PduIdType TxPduId)
 			if(1u == cantpRte[TxPduId].BS)
 			{
 				cantpRte[TxPduId].state = CanTp_stWaitFC;
+				tpCancelAlarm(TxPduId);
 			}
+			else
+			{
+				tpSetAlarm(TxPduId,msToCanTpTick(cantpRte[TxPduId].STmin)); // Reset the Alarm for CF
+			}
+		}
+		else // BS = 0
+		{
+			tpSetAlarm(TxPduId,msToCanTpTick(cantpRte[TxPduId].STmin)); // Reset the Alarm for CF
 		}
 	}
 	else
 	{
 		// Failed, Redo
+		devTrace(tlCanTp,"Re-Transmit CF as Error.\n");
 	}
 }
+
 LOCAL void CanTp_SendingMain(PduIdType RxPduId)
 {
 	if(tpIsAlarmStarted(RxPduId))
@@ -473,6 +506,7 @@ LOCAL void CanTp_SendingMain(PduIdType RxPduId)
 		tpSignalAlarm(RxPduId);
 		if(tpIsAlarmTimeout(RxPduId))
 		{
+			tpCancelAlarm(RxPduId);
 			canTpSendCF(RxPduId);
 		}
 	}
@@ -483,6 +517,7 @@ LOCAL void CanTp_SendingMain(PduIdType RxPduId)
 
 	}
 }
+
 void CanTp_TaskMain(void)
 {
 	uint8 i;
@@ -529,9 +564,9 @@ void CanTp_TaskMain(void)
 					tpSignalAlarm(i);
 					if(tpIsAlarmTimeout(i))
 					{
+						devTrace(tlError,"Error: CanTp[%d] Timeout in the state %d.\n",(int)i,cantpRte[i].state);
 						cantpRte[i].state = CanTp_stIdle;
 						Uds_TxConformation(i,E_NOT_OK);
-						devTrace(tlError,"Error: CanTp[%d] Timeout in the state %d.\n",(int)i,cantpRte[i].state);
 					}
 				}
 				else
