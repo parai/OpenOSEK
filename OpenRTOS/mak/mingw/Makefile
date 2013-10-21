@@ -18,8 +18,8 @@ RM = rm
 #common flags
 ASFLGS = 
 INCDIR = 	-I$(BD)/OpenRTOS/inc \
-			-I$(BD)/OpenRTOS/src/$(OSCC) \
-			-I$(BD)/OpenRTOS/src/$(OSCC)/portable/mingw	\
+			-I$(BD)/OpenRTOS/src \
+			-I$(BD)/OpenRTOS/src/portable/mingw	\
 			-I$(BD)/OpenAPP/out	\
 			-I$(BD)/OpenAPP
 MACROS = -DSIMULATE_ON_WIN
@@ -29,8 +29,8 @@ ARFLGS = rv
 RMFLGS = -f
 		
 #common objectives		
-dir-y =	$(BD)/OpenRTOS/src/$(OSCC)	\
-		$(BD)/OpenRTOS/src/$(OSCC)/portable/mingw
+dir-y =	$(BD)/OpenRTOS/src	\
+		$(BD)/OpenRTOS/src/portable/mingw
 src-y = $(foreach x,$(dir-y),$(wildcard $(addprefix $(x)/*,.c)))	\
 		$(BD)/OpenAPP/out/oscfg.c
 obj-y = $(subst .c,.o,$(src-y))

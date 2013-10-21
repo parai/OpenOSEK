@@ -255,8 +255,8 @@ class ooCanTpController(threading.Thread):
             print 'Server Buffer size overflow.'
 
     def sendFC(self):
-        cfgSTmin = 10
-        cfgBS = 8
+        cfgSTmin = 0
+        cfgBS = 0
         data = [0x30,cfgBS,cfgSTmin]
         Can_Write(self.__txCanId,data)
         if cfgBS is 0:

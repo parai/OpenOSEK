@@ -51,6 +51,10 @@ typedef struct
 	uint8		length;
 	uint8 		sdu[8];
 	PduIdType   swPduHandle;
+	enum{
+		canMsgBoxIdle = 0,
+		canMsgBoxBusy
+	}state;
 }Can_PduType2;
 /* ================================ DATAs     =============================== */
 LOCAL const Can_ConfigType canCongig =
@@ -98,6 +102,7 @@ EXPORT void Can_Init(const void* Config)
 	{
 		Can_InitController(i,&(Can_Config_PC->CanControllerConfig[i]));
 	}
+	memset(Can_PduMsg,0,sizeof(Can_PduMsg));
 }
 
 EXPORT void Can_InitController(uint8 Controller,const void* Config)
@@ -206,6 +211,10 @@ EXPORT Can_ReturnType Can_Write(Can_HwHandleType Hth,const Can_PduType* PduInfo)
 		printf("ERROR: CAN controller not started or waked up.\n");
 		return CAN_NOT_OK;
 	}
+	if(canMsgBoxBusy == Can_PduMsg[Controller].state)
+	{
+		return CAN_BUSY;
+	}
 	WaitForSingleObject( Can_CtrlTxMutex[Controller], INFINITE );
 
 	Can_PduMsg[Controller].swPduHandle = PduInfo->swPduHandle;
@@ -215,6 +224,7 @@ EXPORT Can_ReturnType Can_Write(Can_HwHandleType Hth,const Can_PduType* PduInfo)
 	{
 		Can_PduMsg[Controller].sdu[i] = PduInfo->sdu[i];
 	}
+	Can_PduMsg[Controller].state = canMsgBoxBusy;
 	SetEvent( Can_CtrlTxEvent[Controller] );
 	ReleaseMutex( Can_CtrlTxMutex[Controller] );
 	return CAN_OK;
@@ -288,6 +298,7 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 		if (ercd == SOCKET_ERROR){
 			printf("closesocket function failed with error: %d\n", WSAGetLastError());
 		}
+		Can_PduMsg[Controller].state = canMsgBoxIdle;
 		SuspendAllInterrupts();
 		Can_TxConformation(Controller,Can_PduMsg[Controller].swPduHandle);
 		ResumeAllInterrupts();

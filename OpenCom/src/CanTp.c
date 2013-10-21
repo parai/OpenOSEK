@@ -472,6 +472,7 @@ LOCAL void canTpSendCF(PduIdType TxPduId)
 		if(cantpRte[TxPduId].index >= cantpRte[TxPduId].length)
 		{
 			cantpRte[TxPduId].state = CanTp_stSendFinished;
+			tpCancelAlarm(TxPduId);
 			devTrace(tlCanTp,"CanTp[%d] Segmented Message Transmission Done!\n",TxPduId);
 		}
 		else if(cantpRte[TxPduId].BS > 1)

@@ -16,9 +16,6 @@ AR = ar
 RM = rm
 OILCC = python $(BD)/OpenTOOL/osek/oilcc.py
 
-OSCC = ecc2
-export OSCC
-
 OILCC-I = -I$(BD)/OpenCom/config
 #common flags
 ASFLGS = 
@@ -28,8 +25,8 @@ INCDIR = 	-I$(BD)/OpenRTOS/inc \
 			-I$(BD)/OpenCom/config \
 			-I$(BD)/OpenAPP/inc	\
 			-I$(BD)/OpenAPP/out	\
-			-I$(BD)/OpenRTOS/src/$(OSCC)	\
-			-I$(BD)/OpenRTOS/src/$(OSCC)/portable/mingw
+			-I$(BD)/OpenRTOS/src	\
+			-I$(BD)/OpenRTOS/src/portable/mingw
 
 MACROS = -DSIMULATE_ON_WIN
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
@@ -102,8 +99,8 @@ clean:
 ##   Fask-Build
 #common objectives		
 dir-y =	$(BD)/OpenAPP/src	\
-		$(BD)/OpenRTOS/src/$(OSCC) \
-		$(BD)/OpenRTOS/src/$(OSCC)/portable/mingw \
+		$(BD)/OpenRTOS/src \
+		$(BD)/OpenRTOS/src/portable/mingw \
 		$(BD)/OpenDriver/src/mingw \
 		$(BD)/OpenCom/src \
 		$(BD)/OpenCom/config \
