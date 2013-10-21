@@ -14,6 +14,11 @@ CC = gcc
 LD = gcc
 AR = ar
 RM = rm
+OILCC = python $(BD)/OpenTOOL/osek/oilcc.py
+OILCC-I = -I$(BD)/OpenCom/config
+
+OSCC = ecc2
+export OSCC
 
 #common flags
 ASFLGS = 
@@ -23,8 +28,8 @@ INCDIR = 	-I$(BD)/OpenRTOS/inc \
 			-I$(BD)/OpenCom/config \
 			-I$(BD)/OpenAPP/inc	\
 			-I$(BD)/OpenAPP/out	\
-			-I$(BD)/OpenRTOS/src	\
-			-I$(BD)/OpenRTOS/portable/posix
+			-I$(BD)/OpenRTOS/src/$(OSCC)	\
+			-I$(BD)/OpenRTOS/src/$(OSCC)/portable/posix
 
 MACROS = 
 CCFLGS = -c -g $(MACROS) -O2 -Wall $(INCDIR)
@@ -42,8 +47,8 @@ RMFLGS = -f
 
 #common objectives		
 dir-y =	$(BD)/OpenAPP/src	\
-		$(BD)/OpenRTOS/src \
-		$(BD)/OpenRTOS/portable/posix \
+		$(BD)/OpenRTOS/src/$(OSCC) \
+		$(BD)/OpenRTOS/src/$(OSCC)/portable/posix \
 		$(BD)/OpenDriver/src/posix \
 		$(BD)/OpenCom/src \
 		$(BD)/OpenCom/config \
@@ -56,10 +61,17 @@ all:$(obj-y)
 	@echo ">>>>>>>>>>>>>>>>>  BUILD $(TARGET).EXE DONE   <<<<<<<<<<<<<<<<<<<<<<"	
 
 gen:
-	(cd $(BD)/OpenAPP/config; make all)
+	@($(OILCC) $(OILCC-I) -S $(OUT)/OpenAPP.csv -o $(OUT) $(BD)/OpenAPP/config/OpenAPP.oil)
+	@echo ">>>>>>>>>>  OILCC BUILD DONE <<<<<<<<<<<<<<<< "
 	
 run:
-	@python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000
+#	@(sh python $(BD)/OpenTOOL/osek/CanBusServer.py --server 8000 &)
+#	@(sh python $(BD)/OpenTOOL/osek/uds.py --port 8999 &)
+	@($(OUT)/$(TARGET) 16 &) 
+	@($(OUT)/$(TARGET) 32 &)
+	@($(OUT)/$(TARGET) 48 &)
+	@($(OUT)/$(TARGET) 64 &)
+	@($(OUT)/$(TARGET) 81 &)
 	
 clean:
 	@echo remove $(obj-y) $(OUT)/*
