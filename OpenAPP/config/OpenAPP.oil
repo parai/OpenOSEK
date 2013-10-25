@@ -15,14 +15,14 @@ COUNTER SystemTimer
 {
 	MAXALLOWEDVALUE = 0x7FFFFFFF;
 	TICKSPERBASE = 1;
-	MINCYCLE = 1;
+	MINCYCLE = 0;
 	TYPE = SOFTWARE;
 }
 
 TASK TaskKeyMonitor  // Idle Task, always in running state
 {
 	PRIORITY = 0;
-	SCHEDULE = FULL;
+	SCHEDULE = NON;
 	ACTIVATION = 1;
 	AUTOSTART = TRUE 
 	{

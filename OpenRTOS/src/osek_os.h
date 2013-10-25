@@ -25,8 +25,13 @@
 #include "portable.h"
 
 /* ================================ MACROs    =============================== */
+#if(cfgOS_SCHEDULE != osNonPreemptive)
 #define ReleaseInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_ipriority[knl_curtsk]; }
 #define GetInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_rpriority[knl_curtsk]; }
+#else
+#define ReleaseInternalResource()
+#define GetInternalResource()
+#endif
 
 #define INVALID_TASK      ((TaskType)0xFF)
 #define INVALID_ALARM     ((AlarmType)0xFF)
@@ -141,6 +146,7 @@ do{												\
 typedef uint8 PriorityType;
 typedef uint16 StackSizeType;
 
+#if((cfgOS_MULTIPLY_ACTIVATION == 1) && (cfgOS_MULTIPLY_PRIORITY == 1))
 typedef struct
 {
 	uint8 head;
@@ -156,6 +162,19 @@ typedef struct
 	const TaskReadyQueueType null;
 	uint8	bitmap[NUM_BITMAP];	/* Bitmap area per priority */
 }RDYQUE;
+#else
+typedef struct
+{
+	PriorityType top_pri;
+	TaskType tskque[NUM_PRI];
+	const TaskType null;
+#if(cfgOS_MULTIPLY_PRIORITY == 1)
+	TaskType tsknext[cfgOS_TASK_NUM];
+	TaskType tskprev[cfgOS_TASK_NUM];
+#endif
+	uint8	bitmap[NUM_BITMAP];	/* Bitmap area per priority */
+}RDYQUE;
+#endif
 
 /* ================================ DATAs     =============================== */
 // task control block

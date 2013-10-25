@@ -29,7 +29,11 @@
 /* ================================ DATAs     =============================== */
 EXPORT TaskStateType       knl_tcb_state[cfgOS_TASK_NUM];
 EXPORT PriorityType        knl_tcb_curpri[cfgOS_TASK_NUM];
+#if(cfgOS_MULTIPLY_ACTIVATION == 0)
+EXPORT RDYQUE knl_rdyque;
+#else
 EXPORT uint8               knl_tcb_activation[cfgOS_TASK_NUM];
+#endif
 EXPORT TaskType knl_curtsk;
 EXPORT volatile TaskType knl_schedtsk;
 
@@ -77,12 +81,14 @@ EXPORT StatusType TerminateTask(void)
     DISABLE_INTERRUPT();
     //release internal resource or for non-preemtable task
     ReleaseInternalResource();
+#if( cfgOS_MULTIPLY_ACTIVATION == 1 )
     if(knl_tcb_activation[knl_curtsk] > 0)
     {
     	knl_tcb_activation[knl_curtsk] --;
     	knl_make_ready(knl_curtsk);
     }
     else
+#endif
     {
     	knl_tcb_state[knl_curtsk] = SUSPENDED;
     }
@@ -126,11 +132,13 @@ EXPORT StatusType ActivateTask ( TaskType TaskID )
 {
 	StatusType ercd = E_OK;
 	OS_STD_VALIDATE((TaskID<cfgOS_TASK_NUM),E_OS_ID);
+
 	BEGIN_CRITICAL_SECTION();
 	if(SUSPENDED == knl_tcb_state[TaskID])
 	{
 		knl_make_active(TaskID);
 	}
+#if(cfgOS_MULTIPLY_ACTIVATION == 1)
 	else
 	{
 		if(knl_tcb_activation[TaskID] < knl_tcb_max_activation[TaskID])
@@ -143,6 +151,12 @@ EXPORT StatusType ActivateTask ( TaskType TaskID )
 			ercd = E_OS_LIMIT;
 		}
 	}
+#else
+	else
+	{
+		ercd = E_OS_LIMIT;
+	}
+#endif
 	END_CRITICAL_SECTION();
 OS_VALIDATE_ERROR_EXIT()
 	OsErrorProcess1(ActivateTask,tskid,TaskID);
@@ -213,14 +227,17 @@ EXPORT  StatusType ChainTask    ( TaskType TaskID )
 	}
 	else
 	{
+
 		if(SUSPENDED != knl_tcb_state[TaskID])
 		{
+#if((cfgOS_MULTIPLY_ACTIVATION == 1))
 			if(knl_tcb_activation[TaskID] < knl_tcb_max_activation[TaskID])
 			{
 				knl_ready_queue_insert(TaskID);
 				knl_tcb_activation[TaskID] ++ ;
 			}
 			else
+#endif
 			{
 				ercd = E_OS_LIMIT;
 				goto Error_Exit;
@@ -230,12 +247,14 @@ EXPORT  StatusType ChainTask    ( TaskType TaskID )
 		//release internal resource or for non-preemtable task
 		ReleaseInternalResource();
 		//firstly terminate current running task
+#if((cfgOS_MULTIPLY_ACTIVATION == 1))
 		if(knl_tcb_activation[knl_curtsk] > 0)
 		{
 			knl_tcb_activation[knl_curtsk] --;
 			knl_make_ready(knl_curtsk);
 		}
 		else
+#endif
 		{
 			knl_tcb_state[knl_curtsk] = SUSPENDED;
 		}
@@ -393,9 +412,13 @@ EXPORT void knl_task_init(void)
 	knl_schedtsk = knl_curtsk = INVALID_TASK;
 	/* init ready queue */
 	knl_rdyque.top_pri = NUM_PRI;
+#if(cfgOS_MULTIPLY_ACTIVATION == 1)
 	for ( i = 0; i < NUM_PRI; i++ ) {
 		knl_rdyque.tskque[i].head = knl_rdyque.tskque[i].tail = 0;
 	}
+#else
+	(void)memset(knl_rdyque.tskque,INVALID_TASK,sizeof(knl_rdyque.tskque)+sizeof(TaskType));
+#endif
 	(void)memset(knl_rdyque.bitmap, 0, sizeof(knl_rdyque.bitmap));
 
 	knl_dispatch_disabled = 1; /* disable dispatch */
@@ -403,7 +426,9 @@ EXPORT void knl_task_init(void)
 	for(i=0; i<cfgOS_TASK_NUM; i++)
 	{
 		knl_tcb_state[i] = SUSPENDED;
+#if(cfgOS_MULTIPLY_ACTIVATION == 1)
 		knl_tcb_activation[i] = 0;
+#endif
 		if((knl_tcb_mode[i]&knl_appmode) != 0u)
 		{
 			knl_make_active(i);
@@ -456,6 +481,7 @@ EXPORT void knl_make_runnable(TaskType taskid)
 EXPORT void knl_search_schedtsk(void)
 {
 	PriorityType top_pri = knl_rdyque.top_pri;
+#if((cfgOS_MULTIPLY_ACTIVATION == 1) && (cfgOS_MULTIPLY_PRIORITY == 1))
 	TaskReadyQueueType *tskque;
 
 	tskque = &(knl_rdyque.tskque[top_pri]);
@@ -480,6 +506,8 @@ EXPORT void knl_search_schedtsk(void)
 	{
 		knl_schedtsk = INVALID_TASK;
 	}
+#else
+#endif
 }
 //no matter what,will put current ready task to the ready queue
 //and the high ready task <toptsk> will be dispatched.
@@ -499,6 +527,7 @@ EXPORT void knl_reschedule( void )
 EXPORT TaskType knl_ready_queue_top(void)
 {
 	PriorityType top_pri = knl_rdyque.top_pri;
+#if((cfgOS_MULTIPLY_ACTIVATION == 1) && (cfgOS_MULTIPLY_PRIORITY == 1))
 	TaskReadyQueueType *tskque;
 
 	tskque = &(knl_rdyque.tskque[top_pri]);
@@ -510,10 +539,13 @@ EXPORT TaskType knl_ready_queue_top(void)
 	{
 		return INVALID_TASK;
 	}
+#else
+#endif
 }
 EXPORT void knl_ready_queue_insert_top(TaskType taskid)
 {
 	PriorityType priority = knl_tcb_curpri[taskid];
+#if((cfgOS_MULTIPLY_ACTIVATION == 1) && (cfgOS_MULTIPLY_PRIORITY == 1))
 	TaskReadyQueueType *tskRdyQue = &knl_rdyque.tskque[priority];
 	if(0 == tskRdyQue->head)
 	{
@@ -529,13 +561,15 @@ EXPORT void knl_ready_queue_insert_top(TaskType taskid)
 	{
 		knl_rdyque.top_pri = priority;
 	}
-
+#else
+#endif
 	knl_bitmap_set(priority);
 }
 
 EXPORT void knl_ready_queue_insert(TaskType taskid)
 {
 	PriorityType priority = knl_tcb_ipriority[taskid];
+#if((cfgOS_MULTIPLY_ACTIVATION == 1) && (cfgOS_MULTIPLY_PRIORITY == 1))
 	TaskReadyQueueType *tskRdyQue = &knl_rdyque.tskque[priority];
 
 	tskRdyQue->queue[tskRdyQue->tail] = taskid;
@@ -552,7 +586,8 @@ EXPORT void knl_ready_queue_insert(TaskType taskid)
 	{
 		knl_rdyque.top_pri = priority;
 	}
-
+#else
+#endif
 	knl_bitmap_set(priority);
 }
 

@@ -42,12 +42,16 @@
  * Start/End critical section
  */
 #define BEGIN_CRITICAL_SECTION()	{ imask_t _primask_ = knl_disable_int()
+#if(cfgOS_SCHEDULE == osNonPreemptive)
+#define END_CRITICAL_SECTION()	                   knl_enable_int(_primask_); }
+#else
 #define END_CRITICAL_SECTION()	if ( knl_curtsk != knl_schedtsk         \
                                      && (0u == knl_taskindp)            \
                                      && (0u == knl_dispatch_disabled) ) { \
         knl_dispatch();                                                 \
     }                                                                   \
     knl_enable_int(_primask_); }
+#endif
 
 #define knl_dispatch() knl_dispatch_entry()
 #define knl_isr_dispatch() portDispatchInIsrRequested = TRUE

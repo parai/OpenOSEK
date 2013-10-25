@@ -57,6 +57,13 @@ oilcc_isIt = {
     'osekObj':re.compile(r'^\s*OS|^\s*TASK|^\s*ALARM|^\s*COUNTER|^\s*RESOURCE|^\s*EVENT|^\s*NM|^\s*IPDU'),
 }
 
+def pInt(str,base = None):
+    if(base == None):
+        if(str.find('0x') != -1):
+            base = 16
+        else:
+            base = 10
+    return int(str,base)
 def GetIt(rule,cstr):
     "Will use the rule to get the correspond value from cstr"
     try:
@@ -186,6 +193,9 @@ class OsekOS(OeskObject):
         self.addAttribute('STD_RES_NUM', hex(0))
         self.addAttribute('INT_RES_NUM', hex(0))
         self.addAttribute('CC', 'BCC1')
+        self.addAttribute('SCHEDULE', 'Full')
+        self.addAttribute('ACTIVATION', False)
+        self.addAttribute('MULTIPLYPRIORITY', False)
     def postProcess(self):
         """ Resolve the relationship and add some attributes needed by OpenOSEK ,
         also, there is some values should be defined dynamically"""
@@ -205,8 +215,8 @@ class OsekOS(OeskObject):
             if(obj == self):
                 continue  # skipped
             for priority in obj.getAttribute('PRIORITY'):
-                PRIORITY1 = int(priority.value,16)
-                PRIORITY2 = int(self.getValue('PRIORITY'),16)
+                PRIORITY1 = pInt(priority.value)
+                PRIORITY2 = pInt(self.getValue('PRIORITY'))
                 if(PRIORITY1 > PRIORITY2):
                     self.modifyAttribute('PRIORITY', hex(PRIORITY1))
         # step 3 : get TASK/ALARM/COUNTER/EVENT/INTERNAL_R/STANDARD_R number
@@ -245,14 +255,37 @@ class OsekOS(OeskObject):
                 break;
         cc2 = cc + '1'
         for task in  GetOsekObjects('TASK'):
-            if(int(task.getValue('ACTIVATION'),16) > 1):
+            if(pInt(task.getValue('ACTIVATION')) > 1):
                 cc2 = cc + '2'
                 break;
             for task2 in GetOsekObjects('TASK'):
-                if(task != task2 and int(task.getValue('PRIORITY')) == int(task2.getValue('PRIORITY'))):
+                if(task != task2 and pInt(task.getValue('PRIORITY')) == pInt(task2.getValue('PRIORITY'))):
                     cc2 = cc + '2'
                     break
         self.modifyAttribute('CC', cc2)
+        """ Is Full/Non/Mixed Schedule"""
+        isFull = isNon = True
+        for task in GetOsekObjects('TASK'):
+            if(task.getValue('SCHEDULE') == 'NON'):
+                isFull = False
+            elif(task.getValue('SCHEDULE') == 'FULL'):
+                isNon = False
+        if(isFull):
+            self.modifyAttribute('SCHEDULE', 'Full')
+        elif(isNon):
+            self.modifyAttribute('SCHEDULE', 'Non')
+        else:
+            self.modifyAttribute('SCHEDULE', 'Mixed')
+        """ Is Multiply Activation Enabled """
+        for task in GetOsekObjects('TASK'):
+            if(pInt(task.getValue('ACTIVATION')) > 1):
+                self.modifyAttribute('ACTIVATION', True)
+        """ Is Multiply Priority Enabled"""
+        for task in GetOsekObjects('TASK'):
+            for task2 in GetOsekObjects('TASK'):
+                if(task != task2):
+                    if(pInt(task.getValue('PRIORITY')) == pInt(task2.getValue('PRIORITY'))):
+                        self.modifyAttribute('MULTIPLYPRIORITY', True)            
     def getHookValue(self,value):
         if(self.getValue(value) == 'TRUE'):
             return 1
@@ -273,7 +306,10 @@ class OsekOS(OeskObject):
         fp.write('#define cfgOS_COUNTER_NUM %s\n'%(self.getValue('COUNTER_NUM')))
         fp.write('#define cfgOS_ALARM_NUM %s\n'%(self.getValue('ALARM_NUM')))
         fp.write('#define cfgOS_MAX_PRIORITY %s\n'%(self.getValue('PRIORITY')))
-        fp.write('#define cfgOS_CC %s\n\n'%(self.getValue('CC')))
+        fp.write('#define cfgOS_CC %s\n'%(self.getValue('CC')))
+        fp.write('#define cfgOS_MULTIPLY_ACTIVATION %s\n'%(int(self.getValue('ACTIVATION'))))
+        fp.write('#define cfgOS_MULTIPLY_PRIORITY %s\n'%(int(self.getValue('MULTIPLYPRIORITY'))))
+        fp.write('#define cfgOS_SCHEDULE os%sPreemptive\n\n'%(self.getValue('SCHEDULE')))
         fp.write('/* Application Modes */\n')
         offset = 1
         if(len(self.getAttribute('APPMODE')) > 32):
@@ -313,7 +349,7 @@ class OsekTask(OeskObject):
                     continue
                 for attr in task.getAttribute('RESOURCE'):
                     if(attr.value == inResName):
-                        if(int(self.getValue('RPRIORITY'),16) < int(task.getValue('PRIORITY'),16)):
+                        if(pInt(self.getValue('RPRIORITY')) < pInt(task.getValue('PRIORITY'))):
                             self.modifyAttribute('RPRIORITY', task.getValue('PRIORITY'))
         # step 3 : check Event of Task is valid
         for attr in self.getAttribute('EVENT'):
@@ -338,7 +374,7 @@ class OsekTask(OeskObject):
                                     continue
                                 if(event != event2): # Get another one Event of Task
                                     MASK2 = event2.getValue('MASK')
-                                    if(MASK2 != 'AUTO' and int(MASK2,16) == (1<<i)):
+                                    if(MASK2 != 'AUTO' and pInt(MASK2) == (1<<i)):
                                         flag = False
                         if(flag == True):
                             event.modifyAttribute('MASK',hex(1<<i))
@@ -355,10 +391,10 @@ class OsekTask(OeskObject):
             sys.exit(-1)
         # if has Event,Activation must be 1
         for event in self.getAttribute('EVENT'):
-            if(int(self.getValue('ACTIVATION'),16) != 1):
+            if(pInt(self.getValue('ACTIVATION')) != 1):
                 print 'ERROR: Task %s has EVENTs, ACTIVATION must be 1.'%(self.name)
                 sys.exit(-1);
-        if(int(self.getValue('ACTIVATION'),16) == 0):
+        if(pInt(self.getValue('ACTIVATION')) == 0):
             print 'ERROR: Task %s\'s ACTIVATION must be bigger than 0.'%(self.name)
             sys.exit(-1)
     def genH(self,fp):
@@ -409,7 +445,7 @@ class OsekCounter(OeskObject):
                 flag = True
         if(flag == False):
             print 'WARNING: Counter %s isn\'t referred by any alarm.'%(self.name)  
-        if(int(self.getValue('MAXALLOWEDVALUE'),16) > (0xFFFFFFFF-1)/2):
+        if(pInt(self.getValue('MAXALLOWEDVALUE')) > (0xFFFFFFFF-1)/2):
             print 'ERROR: counter %s max allowed value cann\'t be bigger than %s'%(self.name,hex((0xFFFFFFFF-1)/2).upper())
             sys.exit(-1)   
     def genH(self,fp):
@@ -506,7 +542,7 @@ class OsekResource(OeskObject):
             for attr1 in task.getAttribute('RESOURCE'):
                 if(attr1.value == self.name):
                     flag = True
-                    if(int(task.getValue('PRIORITY'),16) > int(self.getValue('PRIORITY'),16)):
+                    if(pInt(task.getValue('PRIORITY')) > pInt(self.getValue('PRIORITY'))):
                         self.modifyAttribute('PRIORITY', task.getValue('PRIORITY'))
         if(flag == False):
             print 'WARNING: %s hasn\'t been assigned to any task.'%(self.name)
@@ -552,7 +588,7 @@ class OsekIPDU(OeskObject):
         """ Rule: When sizeInBits > 64, It must has the suffix "_RX" or "_TX"
           and It must has a partner in name,For Example:
             UDSDiag_RX and UDSDiag_TX."""
-        length = int(self.getValue('SIZEINBITS'),10)
+        length = pInt(self.getValue('SIZEINBITS'))
         if(length > 64):
             if(   (self.getValue('IPDUPROPERTY') == 'RECEIVED' and self.name[-3:] != '_RX') 
                or (self.getValue('IPDUPROPERTY') == 'SENT'     and self.name[-3:] != '_TX')  ):
@@ -695,7 +731,7 @@ def PrepareCompile(file):
 def  osekComObjPostProcess():
     """ Move IPDU(size in bits > 64) to ahead."""
     for pdu in GetOsekObjects('IPDU'):
-        if(int(pdu.getValue('SIZEINBITS'),10) > 64):
+        if(pInt(pdu.getValue('SIZEINBITS')) > 64):
             if pdu.getValue('IPDUPROPERTY') == 'RECEIVED':
                 for pdu2 in GetOsekObjects('IPDU'):
                     if(pdu != pdu2 and pdu.name[:-3] == pdu2.name[:-3]):
@@ -769,10 +805,10 @@ class GenerateOsCfgC():
     def getPrioSize(self, priority):
         size = 0;
         for tsk in GetOsekObjects('TASK'):
-            if(int(tsk.getValue('PRIORITY'),16) == priority):
-                size += int(tsk.getValue('ACTIVATION'),16);
+            if(pInt(tsk.getValue('PRIORITY')) == priority):
+                size += pInt(tsk.getValue('ACTIVATION'));
         for res in GetOsekObjects('RESOURCE'):
-            if(int(res.getValue('PRIORITY'),16) == priority):
+            if(pInt(res.getValue('PRIORITY')) == priority):
                 flag = False;
                 for tsk in GetOsekObjects('TASK'):
                     for attr in tsk.getAttribute('RESOURCE'):
@@ -787,7 +823,7 @@ class GenerateOsCfgC():
         cstr = 'EXPORT RDYQUE knl_rdyque = \n{\n';
         cstr += '\t/* top_pri= */ NUM_PRI,\n'
         cstr +='\t{/* tskque[] */\n'
-        max_prio = int(GetOsekObjects('OS')[0].getValue('PRIORITY'),16) 
+        max_prio = pInt(GetOsekObjects('OS')[0].getValue('PRIORITY')) 
         for i in range(0, max_prio+1):
             size = self.getPrioSize(i);
             if(size != 0):
@@ -817,32 +853,36 @@ class GenerateOsCfgC():
         cstr += '};\n\n'
         fp.write(cstr);
         # -------------- task run-priority
-        cstr = 'EXPORT const PriorityType knl_tcb_rpriority[] = \n{\n'
-        for tsk in GetOsekObjects('TASK'):
-            cstr += '\t%s_rpriority,\n'%(tsk.name)
-        cstr += '};\n\n'
-        fp.write(cstr);
-        # -------------- task stack buffer
-        for tsk in GetOsekObjects('TASK'):
-            fp.write('LOCAL uint8 knl_%s_stack[%s_stacksize];\n'%(tsk.name, tsk.name))
-        # -------------- task stacksize list
-        cstr = 'EXPORT const StackSizeType knl_tcb_stksz[] = \n{\n'
-        for tsk in GetOsekObjects('TASK'):
-            cstr += '\t%s_stacksize,\n'%(tsk.name)
-        cstr += '};\n\n'
-        fp.write(cstr);
-        # -------------- task stackbuffer list
-        cstr = 'EXPORT const uint8* knl_tcb_stack[] = \n{\n'
-        for tsk in GetOsekObjects('TASK'):
-            cstr += '\t(knl_%s_stack+%s_stacksize),\n'%(tsk.name, tsk.name)
-        cstr += '};\n\n'
-        fp.write(cstr);
+        if( GetOsekObjects('OS')[0].getValue('SCHEDULE') != 'Non' ):
+            cstr = 'EXPORT const PriorityType knl_tcb_rpriority[] = \n{\n'
+            for tsk in GetOsekObjects('TASK'):
+                cstr += '\t%s_rpriority,\n'%(tsk.name)
+            cstr += '};\n\n'
+            fp.write(cstr);
+        if(GetOsekObjects('OS')[0].getValue('SCHEDULE') != 'Non' and
+           len(GetOsekObjects('EVENT')) == 0):
+            # -------------- task stack buffer
+            for tsk in GetOsekObjects('TASK'):
+                fp.write('LOCAL uint8 knl_%s_stack[%s_stacksize];\n'%(tsk.name, tsk.name))
+            # -------------- task stacksize list
+            cstr = 'EXPORT const StackSizeType knl_tcb_stksz[] = \n{\n'
+            for tsk in GetOsekObjects('TASK'):
+                cstr += '\t%s_stacksize,\n'%(tsk.name)
+            cstr += '};\n\n'
+            fp.write(cstr);
+            # -------------- task stackbuffer list
+            cstr = 'EXPORT const uint8* knl_tcb_stack[] = \n{\n'
+            for tsk in GetOsekObjects('TASK'):
+                cstr += '\t(knl_%s_stack+%s_stacksize),\n'%(tsk.name, tsk.name)
+            cstr += '};\n\n'
+            fp.write(cstr);
         # -------------- task activation
-        cstr = 'EXPORT const uint8 knl_tcb_max_activation[] = \n{\n'
-        for tsk in GetOsekObjects('TASK'):
-            cstr += '\t(%s_activation - 1),\n'%(tsk.name)
-        cstr += '};\n\n'
-        fp.write(cstr);
+        if GetOsekObjects('OS')[0].getValue('ACTIVATION') is True:
+            cstr = 'EXPORT const uint8 knl_tcb_max_activation[] = \n{\n'
+            for tsk in GetOsekObjects('TASK'):
+                cstr += '\t(%s_activation - 1),\n'%(tsk.name)
+            cstr += '};\n\n'
+            fp.write(cstr);
         # -------------- task event handle
         if(len(GetOsekObjects('EVENT')) > 0):
             cstr = 'EXPORT const uint8 knl_tcb_flgid[] = \n{\n'
@@ -856,8 +896,9 @@ class GenerateOsCfgC():
             cstr += '\t%s_appmode,\n'%(tsk.name)
         cstr += '};\n\n'
         fp.write(cstr);
-        fp.write('\n/* ====================== Task Ready Queue ====================== */\n')
-        self.genTaskReadyQueue(fp);
+        if GetOsekObjects('OS')[0].getValue('ACTIVATION') is True:
+            fp.write('\n/* ====================== Task Ready Queue ====================== */\n')
+            self.genTaskReadyQueue(fp);
     
     def genCountersBaseInfo(self, fp):
         if(len(GetOsekObjects('COUNTER')) == 0):
@@ -953,7 +994,7 @@ def GenerateComCfgH():
     tpTx = 0
     for pdu in GetOsekObjects('IPDU'):
         if(pdu.getValue('IPDUPROPERTY') == 'SENT'):
-            if(int(pdu.getValue('SIZEINBITS'),10) > 64):
+            if(pInt(pdu.getValue('SIZEINBITS')) > 64):
                 tpTx += 1;
             tx += 1
         else:
@@ -982,7 +1023,7 @@ class GenerateComCfgC():
     def genIPDU(self,fp):
         # Gen Buffer
         for pdu in GetOsekObjects('IPDU'):
-            fp.write('LOCAL uint8 %s_buffer[%s];\n'%(pdu.name,(int(pdu.getValue('SIZEINBITS'))+7)/8))
+            fp.write('LOCAL uint8 %s_buffer[%s];\n'%(pdu.name,(pInt(pdu.getValue('SIZEINBITS'))+7)/8))
         fp.write('\n')
         cstrT = 'EXPORT const Com_IPDUConfigType ComTxIPDUConfig[] = \n{\n'
         cstrR = 'EXPORT const Com_IPDUConfigType ComRxIPDUConfig[] = \n{\n'

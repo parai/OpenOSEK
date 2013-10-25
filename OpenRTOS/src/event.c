@@ -205,22 +205,7 @@ EXPORT StatusType WaitEvent ( EventMaskType Mask )
         knl_tcb_state[knl_curtsk] = WAITING;
         //release internal resource or for Non-Preemtable Task
         ReleaseInternalResource();
-        // TODO: serious problem may happen if knl_curtsk is multiple-activate-able.
-        // So when knl_curtsk is in multiple-activate state, knl_search_schedtsk may
-        // re-activate this task again. So the result is that the task may continue to run,
-        // but with-out the decrease of the activation counter.
-        // so may lead to system-panic. That is: when terminate task, may lead to a knl_make_ready()
-        // without any affect to the system schedule.
         knl_search_schedtsk();
-        // In-fact, here should assert(knl_curtsk != knl_schedtsk);
-        // to solve this problem
-        if(knl_curtsk == knl_schedtsk)
-        { // knl_curtsk encounters multiple-activate request.
-        	if(knl_tcb_activation[knl_curtsk] > 0)
-        	{
-        		knl_tcb_activation[knl_curtsk]--;
-        	}
-        }
     }
     END_CRITICAL_SECTION();
     //re-get internal resource or for Non-Preemtable task

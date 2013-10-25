@@ -41,6 +41,10 @@
  * of task activation allowed for basic tasks */
 #define ECC2 3
 
+#define osFullPreemptive  0
+#define osNonPreemptive   1
+#define osMixedPreemptive 2
+
 /* Values for TaskStateType */
 #define SUSPENDED (0x00u)
 #define RUNNING   (0x01u)
