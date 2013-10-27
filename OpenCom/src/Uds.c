@@ -30,6 +30,7 @@
 #define msToUdsTick(time) ((time + cfgUdsMainTaskTick - 1)/cfgUdsMainTaskTick)
 
 #define udsGetSerivceData(__i) (ComRxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i])
+#define udsGetServiceBuffer(__i) (&ComRxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i])
 #define udsSetResponseCode(__i,__v) {ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i] = (uint8)(__v);}
 #define udsGetResponseBuffer(__i) (&ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i])
 
@@ -127,6 +128,8 @@ IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
 IMPORT const Com_IPDUConfigType ComTxIPDUConfig[];
 IMPORT const Uds_ConfigType UdsConfig;
 LOCAL Uds_RTEType udsRte;
+LOCAL boolean udsIsSeedRequested = False;
+LOCAL Uds_SecurityLevelType udsSecurityLevelRequested = 0u;
 
 /* ================================ FUNCTIONs =============================== */
 LOCAL void udsHandleServiceRequest(void);
@@ -140,6 +143,7 @@ LOCAL void udsSessionControlFnc(void);
 LOCAL void udsSecurityAccessFnc(void);
 LOCAL void udsSelectServiceFunction(void);
 LOCAL uint8 udsPrepareSeed(uint8* seed);
+LOCAL boolean udsCompareKey(uint8* key,uint8 length);
 
 EXPORT void Uds_Init(void)
 {
@@ -167,6 +171,7 @@ EXPORT void Uds_RxIndication(PduIdType RxPduId,PduLengthType Length)
 	}
 	else
 	{
+		devTrace(tlError,'UDS Server is Currently Busy.');
 		// TODO:
 //		if(udsRte.Q.counter < cfgUDS_Q_NUM)
 //		{
@@ -346,27 +351,25 @@ LOCAL void udsSessionControlFnc(void)
  * @Return: the length of the seed */
 LOCAL uint8 udsPrepareSeed(uint8* seed)
 {
-#if 0
 	seed[0] = 0xDE; // Example key 0xDEADBEEF
 	seed[1] = 0xAD;
 	seed[2] = 0xBE;
 	seed[3] = 0xEF;
  	return 4;
-#else
- 	int i;
- 	for(i=0;i<128;i++)
- 	{
- 		seed[i] = i;
- 	}
- 	return 128;
-#endif
+}
+LOCAL boolean udsCompareKey(uint8* key,uint8 length)
+{
+	if( 	(4 == length) &&
+			(key[0] == 0xFE) && (key[1] == 0xEB) && (key[2] == 0xDA) && (key[3] == 0xED))
+	{
+		return True;
+	}
+	return False;
 }
 
 /* @UDS Service: 0x27 */
 LOCAL void udsSecurityAccessFnc(void)
 {
-	static boolean isSeedRequested = False;
-	static Uds_SecurityLevelType securityLevelRequested = 0u;
 	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
 	if(2u <= udsRte.rxLength)
 	{
@@ -374,8 +377,8 @@ LOCAL void udsSecurityAccessFnc(void)
 		{
 			if(3u == udsRte.rxLength)
 			{
-				isSeedRequested = True;
-				securityLevelRequested = udsGetSerivceData(2);
+				udsIsSeedRequested = True;
+				udsSecurityLevelRequested = udsGetSerivceData(2);
 				// Create Response
 				udsSetResponseCode(1u,0x01);
 				udsRte.txLength = 2 + udsPrepareSeed(udsGetResponseBuffer(2));
@@ -388,14 +391,26 @@ LOCAL void udsSecurityAccessFnc(void)
 		}
 		else if(0x02u == udsGetSerivceData(1)) // Send key
 		{
-			if(True == isSeedRequested)
+			if(True == udsIsSeedRequested)
 			{
+				if(True == udsCompareKey(udsGetServiceBuffer(2),udsRte.rxLength-2))
+				{
+					udsRte.securityLevel = (1<<udsSecurityLevelRequested);
+					udsIsSeedRequested = False;
+					// Create Response
+					udsSetResponseCode(1u,0x02);
+					udsRte.txLength = 2;
+					nrc = UDS_E_POSITIVERESPONSE;
+				}
+				else
+				{
+					nrc = UDS_E_CONDITIONSNOTCORRECT;
+				}
 			}
 			else
 			{
 				nrc = UDS_E_REQUESTSEQUENCEERROR;
 			}
-
 		}
 		else
 		{

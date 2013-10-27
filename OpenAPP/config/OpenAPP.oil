@@ -22,7 +22,7 @@ COUNTER SystemTimer
 TASK TaskKeyMonitor  // Idle Task, always in running state
 {
 	PRIORITY = 0;
-	SCHEDULE = NON;
+	SCHEDULE = FULL;
 	ACTIVATION = 1;
 	AUTOSTART = TRUE 
 	{

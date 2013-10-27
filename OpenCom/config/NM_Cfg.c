@@ -92,7 +92,7 @@ TASK(TaskNmInd)
 		}
 		else
 		{
-			printf("Error when Wait!\n");
+			printf("Error when Wait,ercd = %d.\n",ercd);
 		}
 	}
 	TerminateTask();

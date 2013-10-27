@@ -74,7 +74,7 @@ def UdsOnCanClient(port = 8999):
                 argv = None
             try:
                 UdsBuildIn[fnc](argv)
-                if WaitEvent(UdsAckEvent,5000):
+                if WaitEvent(UdsAckEvent,500):
                     ClearEvent(UdsAckEvent)
             except:
                 print 'Function <%s> is not build-in supported.'%(fnc)
@@ -86,10 +86,10 @@ def UdsOnCanClient(port = 8999):
                         data.append(int(chr,16))
                 except:
                     print 'Error input!'
-                    data = [0x3e,00]
+                    data = [0x3e,0x00]
                     break         
         else:
-            data = [0x3e,00]
+            data = [0x3e,0x00]
         CanTp_Transmit(data)
         if(True == WaitEvent(UdsAckEvent,5000)): 
             ClearEvent(UdsAckEvent)
@@ -125,10 +125,31 @@ def biSendFF(argv):
     except:
         print 'SendFF Argument Error!'
         
+def biTest(argv):
+    """ Session Control, Program"""
+    data = [0x10,0x02] 
+    print '    Send: [0x10,0x02]'
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    """ Security Access, Request Seed"""
+    data = [0x27,0x01,0x01] 
+    print '    Send: [0x27,0x01,0x01]'
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    """ Security Access, Send Key 0xDEADBEEF"""
+    data = [0x27,0x02,0xFE,0xEB,0xDA,0xED] 
+    print '    Send: [0x27,0x02,0xFE,0xEB,0xDA,0xED] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    
 UdsBuildIn = {
     'Session':biSession,
     'Security':biSecurity,
-    'SendFF':biSendFF
+    'SendFF':biSendFF,
+    'Test':biTest
 }
 def main(argc,argv):
     if(argc != 3):

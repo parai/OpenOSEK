@@ -754,6 +754,7 @@ def osekObjPostProcess():
     else:
         oilcc_osekObjs.remove(counter)
         oilcc_osekObjs.insert(0,counter) 
+    GetOsekObjects('OS')[0].postProcess()  # Do OS firstly
     for obj in oilcc_osekObjs:
         obj.postProcess()
     osekComObjPostProcess()
@@ -853,7 +854,8 @@ class GenerateOsCfgC():
         cstr += '};\n\n'
         fp.write(cstr);
         # -------------- task run-priority
-        if( GetOsekObjects('OS')[0].getValue('SCHEDULE') != 'Non' ):
+        if( GetOsekObjects('OS')[0].getValue('SCHEDULE') != 'Non' 
+            or pInt(GetOsekObjects('OS')[0].getValue('EVENT_NUM')) != 0):
             cstr = 'EXPORT const PriorityType knl_tcb_rpriority[] = \n{\n'
             for tsk in GetOsekObjects('TASK'):
                 cstr += '\t%s_rpriority,\n'%(tsk.name)
@@ -896,7 +898,8 @@ class GenerateOsCfgC():
             cstr += '\t%s_appmode,\n'%(tsk.name)
         cstr += '};\n\n'
         fp.write(cstr);
-        if GetOsekObjects('OS')[0].getValue('ACTIVATION') is True:
+        if( GetOsekObjects('OS')[0].getValue('ACTIVATION') == True or
+           GetOsekObjects('OS')[0].getValue('MULTIPLYPRIORITY') == True):
             fp.write('\n/* ====================== Task Ready Queue ====================== */\n')
             self.genTaskReadyQueue(fp);
     

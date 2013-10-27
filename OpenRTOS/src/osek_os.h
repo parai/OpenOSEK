@@ -25,12 +25,12 @@
 #include "portable.h"
 
 /* ================================ MACROs    =============================== */
-#if(cfgOS_SCHEDULE != osNonPreemptive)
-#define ReleaseInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_ipriority[knl_curtsk]; }
-#define GetInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_rpriority[knl_curtsk]; }
-#else
+#if((cfgOS_SCHEDULE == osNonPreemptive) && (cfgOS_FLAG_NUM == 0))
 #define ReleaseInternalResource()
 #define GetInternalResource()
+#else
+#define ReleaseInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_ipriority[knl_curtsk]; }
+#define GetInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_rpriority[knl_curtsk]; }
 #endif
 
 #define INVALID_TASK      ((TaskType)0xFF)
@@ -146,7 +146,7 @@ do{												\
 typedef uint8 PriorityType;
 typedef uint16 StackSizeType;
 
-#if((cfgOS_MULTIPLY_ACTIVATION == 1) && (cfgOS_MULTIPLY_PRIORITY == 1))
+#if((cfgOS_MULTIPLY_ACTIVATION == 1) || (cfgOS_MULTIPLY_PRIORITY == 1))
 typedef struct
 {
 	uint8 head;
@@ -168,10 +168,6 @@ typedef struct
 	PriorityType top_pri;
 	TaskType tskque[NUM_PRI];
 	const TaskType null;
-#if(cfgOS_MULTIPLY_PRIORITY == 1)
-	TaskType tsknext[cfgOS_TASK_NUM];
-	TaskType tskprev[cfgOS_TASK_NUM];
-#endif
 	uint8	bitmap[NUM_BITMAP];	/* Bitmap area per priority */
 }RDYQUE;
 #endif

@@ -42,7 +42,7 @@
  * Start/End critical section
  */
 #define BEGIN_CRITICAL_SECTION()	{ imask_t _primask_ = knl_disable_int()
-#if(cfgOS_SCHEDULE == osNonPreemptive)
+#if((cfgOS_SCHEDULE == osNonPreemptive) && (cfgOS_FLAG_NUM == 0))
 #define END_CRITICAL_SECTION()	                   knl_enable_int(_primask_); }
 #else
 #define END_CRITICAL_SECTION()	if ( knl_curtsk != knl_schedtsk         \
