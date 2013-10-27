@@ -32,6 +32,7 @@
 #define SID_READ_MEMORY_BY_ADDRESS				0x23
 #define SID_READ_SCALING_DATA_BY_IDENTIFIER		0x24
 #define SID_SECURITY_ACCESS						0x27
+#define SID_COMMUNICATION_CONTROL               0x28
 #define SID_READ_DATA_BY_PERIODIC_IDENTIFIER	0x2A
 #define SID_DYNAMICALLY_DEFINE_DATA_IDENTIFIER	0x2C
 #define SID_WRITE_DATA_BY_IDENTIFIER			0x2E
@@ -52,6 +53,7 @@
 //		03 : UdsExtendedSession (2),			04 : UdsSafetySystemSession  (3),
 //Hint: 40 : Your Session Want  (4),    and so on  see API udsIsNewSessionValid()
 // 	}
+#define UdsAllSession           0xFFFFU
 #define UdsDefaultSession       0x0001U
 #define UdsProgramSession       0x0002U
 #define UdsExtendedSession      0x0004U
@@ -111,8 +113,26 @@ typedef struct
 
 typedef struct
 {
+	uint16 did;
+	Uds_SessionMaskType sessionMask;
+	Uds_SecurityLevelMaskType securityLevelMask;
+	/*
+	 * Data:   pointer to the buffer to store value of DID
+	 * length: the length of the buffer "Data"
+	 * Return: length of this DID
+	 * IF DID's length > Data's length, please return 0 to indicate the
+	 * UDS Server that the buffer is not enough. This may happen when
+	 * Read many DIDs in one request.
+	 */
+	uint16 (*callout)(uint8* Data,uint16 length);
+}Uds_RDIDType;
+
+typedef struct
+{
 	const Uds_ServiceType*  sidList;
 	uint8             sidNbr;
+	const Uds_RDIDType*     rdidList;
+	uint8             rdidNbr;
 }Uds_ConfigType;
 
 

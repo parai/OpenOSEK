@@ -278,12 +278,21 @@ LOCAL void canTpReceiveFF(PduIdType RxPduId,uint8 pos)
 {
 	PduLengthType length = cantpRte[RxPduId].Q.queue[pos].data[0]&0x0F;
 	length += (length << 8) + cantpRte[RxPduId].Q.queue[pos].data[1];
-	cantpRte[RxPduId].length = length;
-	memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(cantpRte[RxPduId].Q.queue[pos].data[2]),6);
-	cantpRte[RxPduId].index = 6; // 6 bytes already received by FF
-	canTpSendFC(RxPduId);
-	cantpRte[RxPduId].BS = N_BS;
-	cantpRte[RxPduId].SN = 1;
+	if(length < ComRxIPDUConfig[RxPduId].pdu.SduLength)
+	{
+		cantpRte[RxPduId].length = length;
+		memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(cantpRte[RxPduId].Q.queue[pos].data[2]),6);
+		cantpRte[RxPduId].index = 6; // 6 bytes already received by FF
+		canTpSendFC(RxPduId);
+		cantpRte[RxPduId].BS = N_BS;
+		cantpRte[RxPduId].SN = 1;
+	}
+	else
+	{
+		// Length out of range
+		cantpRte[RxPduId].state = CanTp_stIdle;
+		devTrace(tlError,"CanTp request out of range!\n");
+	}
 }
 
 LOCAL void canTpReceiveCF(PduIdType RxPduId,uint8 pos)
@@ -331,7 +340,6 @@ LOCAL void CanTp_ReceivingMain(PduIdType RxPduId)
 		}
 		else if(N_PCI_FF == (cantpRte[RxPduId].Q.queue[i].data[0]&N_PCI_MASK))
 		{
-			devTrace(tlCanTp,"FF received.\n");
 			canTpReceiveFF(RxPduId,i);
 		}
 		else if(N_PCI_CF == (cantpRte[RxPduId].Q.queue[i].data[0]&N_PCI_MASK))
@@ -567,6 +575,7 @@ void CanTp_TaskMain(void)
 					{
 						devTrace(tlError,"Error: CanTp[%d] Timeout in the state %d.\n",(int)i,cantpRte[i].state);
 						cantpRte[i].state = CanTp_stIdle;
+						memset(&cantpRte[i],0,sizeof(cantpRteType));
 						Uds_TxConformation(i,E_NOT_OK);
 					}
 				}
@@ -587,3 +596,17 @@ TASK(TaskCanTpMain)
 	CanTp_TaskMain();
 	TerminateTask();
 }
+
+
+// -------------- For Debug Only
+#if tlCanTp > 0
+void CanTp_Print(void)
+{
+	int i;
+	for(i=0;i<cfgCOM_TPIPDU_NUM;i++)
+	{
+		printf("CanTp[%d] State is %d,",i,(int)cantpRte[i].state);
+		printf("Q.couner = %d.\n",cantpRte[i].Q.counter);
+	}
+}
+#endif

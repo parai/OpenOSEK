@@ -33,7 +33,7 @@
 #define udsGetServiceBuffer(__i) (&ComRxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i])
 #define udsSetResponseCode(__i,__v) {ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i] = (uint8)(__v);}
 #define udsGetResponseBuffer(__i) (&ComTxIPDUConfig[udsRte.pduId].pdu.SduDataPtr[__i])
-
+#define udsGetResponseBufferLength() (ComTxIPDUConfig[udsRte.pduId].pdu.SduLength)
 #define cfgP2Server   5000  //ms
 
 #define udsSetAlarm(__tick)			\
@@ -141,6 +141,9 @@ LOCAL boolean udsIsNewSessionValid(Uds_SessionType Session);
 LOCAL Uds_SessionType udsSessionMap(Uds_SessionType Session);
 LOCAL void udsSessionControlFnc(void);
 LOCAL void udsSecurityAccessFnc(void);
+LOCAL void udsCommunicationControlFnc(void);
+LOCAL void udsTesterPresentFnc(void);
+LOCAL void udsRDIDFnc(void);
 LOCAL void udsSelectServiceFunction(void);
 LOCAL uint8 udsPrepareSeed(uint8* seed);
 LOCAL boolean udsCompareKey(uint8* key,uint8 length);
@@ -424,7 +427,147 @@ LOCAL void udsSecurityAccessFnc(void)
 	}
 	udsProcessingDone(nrc);
 }
-
+/* @UDS Service: 0x28 */
+LOCAL void udsCommunicationControlFnc(void)
+{
+	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
+	if(3u == udsRte.rxLength)
+	{
+		// TODO: Add Special Process For Your App here
+		switch(udsGetSerivceData(1))
+		{
+			case 0x00: //enableRxAndTx
+				if(0x02 == udsGetSerivceData(2))  // CTP is NWMCP
+				{	// This is just a example
+					TalkNM(0);
+				}
+				else
+				{
+					nrc = UDS_E_CONDITIONSNOTCORRECT;
+				}
+				break;
+			case 0x01: //enableRxAndDisableTx
+				if(0x02 == udsGetSerivceData(2))  // CTP is NWMCP
+				{	// This is just a example
+					SilentNM(0);
+				}
+				else
+				{
+					nrc = UDS_E_CONDITIONSNOTCORRECT;
+				}
+				break;
+			case 0x02: //disableRxAndEnableTx
+				nrc = UDS_E_SUBFUNCTIONNOTSUPPORTED;
+				break;
+			case 0x03: //disableRxAndTx
+				nrc = UDS_E_SUBFUNCTIONNOTSUPPORTED;
+				break;
+			default:
+				nrc = UDS_E_SUBFUNCTIONNOTSUPPORTED;
+				break;
+		}
+		if(UDS_E_POSITIVERESPONSE == nrc)
+		{
+			udsRte.txLength = 2;
+			udsSetResponseCode(1,udsGetSerivceData(1));
+		}
+	}
+	else
+	{
+		nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
+	}
+	udsProcessingDone(nrc);
+}
+/* @UDS Service: 0x3e */
+LOCAL void udsTesterPresentFnc(void)
+{
+	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
+	if(2u == udsRte.rxLength)
+	{
+		if(0x00 == udsGetSerivceData(1))
+		{
+			udsSetAlarm(msToUdsTick(cfgP2Server));
+			udsSetResponseCode(1,0x00);
+			udsRte.txLength = 2;
+		}
+		else
+		{
+			nrc = UDS_E_SUBFUNCTIONNOTSUPPORTED;
+		}
+	}
+	else
+	{
+		nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
+	}
+	udsProcessingDone(nrc);
+}
+/* @UDS Service: 0x22 */
+LOCAL void udsRDIDFnc(void)
+{
+	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
+	if(3u <= udsRte.rxLength)
+	{
+		uint8 didNbr = (udsRte.rxLength-1)/2;
+		uint8 i,j;
+		udsRte.txLength = 1;
+		for(i=0;i<didNbr;i++)
+		{
+			uint16 did = ((uint16)udsGetSerivceData(1+i*2)<<8) + udsGetSerivceData(2+i*2);
+			printf("DID is 0x%X\n",did);
+			for(j=0;j<UdsConfig.rdidNbr;j++)
+			{
+				if(did == UdsConfig.rdidList[j].did)
+				{
+					break;
+				}
+			}
+			if(j < UdsConfig.rdidNbr )
+			{
+				if(0u != (UdsConfig.rdidList[j].sessionMask & (1<<udsRte.session)))
+				{
+					if(0u != (UdsConfig.rdidList[j].securityLevelMask & udsRte.securityLevel))
+					{
+						uint16 rlen;
+						udsSetResponseCode(udsRte.txLength,did>>8);
+						udsSetResponseCode(udsRte.txLength+1,did);
+						udsRte.txLength += 2;
+						rlen = UdsConfig.rdidList[j].callout(udsGetResponseBuffer(udsRte.txLength),
+								udsGetResponseBufferLength()-udsRte.txLength);
+						if(rlen != 0u)
+						{
+							udsRte.txLength += rlen;
+						}
+						else
+						{
+							nrc = UDS_E_REQUESTOUTOFRANGE;
+							break;
+						}
+					}
+					else
+					{
+						nrc = UDS_E_SECUTITYACCESSDENIED;
+						break;
+					}
+				}
+				else
+				{
+					nrc = UDS_E_SERVICENOTSUPPORTEDINACTIVESESSION;
+					break;
+				}
+			}
+			else
+			{
+				nrc = UDS_E_REQUESTOUTOFRANGE;
+				break;
+			}
+		}
+	}
+	else
+	{
+		nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
+	}
+	udsProcessingDone(nrc);
+}
 LOCAL void udsSelectServiceFunction(void)
 {
 	switch(udsRte.currentSid)
@@ -434,6 +577,15 @@ LOCAL void udsSelectServiceFunction(void)
 			break;
 		case SID_SECURITY_ACCESS:
 			udsSecurityAccessFnc();
+			break;
+		case SID_COMMUNICATION_CONTROL:
+			udsCommunicationControlFnc();
+			break;
+		case SID_TESTER_PRESENT:
+			udsTesterPresentFnc();
+			break;
+		case SID_READ_DATA_BY_IDENTIFIER:
+			udsRDIDFnc();
 			break;
 		default:
 			break;

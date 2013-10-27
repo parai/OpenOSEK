@@ -144,6 +144,23 @@ def biTest(argv):
     CanTp_Transmit(data)
     WaitEvent(UdsAckEvent,5000)
     ClearEvent(UdsAckEvent)
+    """ Communication Control:enableRxAndDisableTx"""
+    data = [0x28,0x01,0x02] 
+    print '    Send: [0x28,0x01,0x02] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    """ RDID : 0xFF01 0xFF09"""
+    data = [0x22,0xFF,0x01,0xFF,0x09] 
+    print '    Send: [0x22,0xFF,0x01,0xFF,0x09] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    """ RDID : 0xFF09"""
+    data = [0x22,0xFF,0x09] 
+    print '    Send: [0x22,0xFF,0x09] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
     
 UdsBuildIn = {
     'Session':biSession,

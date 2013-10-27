@@ -6,7 +6,7 @@ void StartupHook(void)
 	StartNM(0);
 	CanTp_Init();
 }
-
+extern void CanTp_Print(void);
 TASK(TaskKeyMonitor)
 {
 	char chr;
@@ -42,6 +42,11 @@ TASK(TaskKeyMonitor)
 		{
 			StartNM(0);
 			printf("StartNM\n");
+		}
+		else if('p' == chr)
+		{
+			// print the info of each module
+			CanTp_Print();
 		}
 	}
 	TerminateTask();
