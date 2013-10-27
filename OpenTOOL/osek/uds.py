@@ -155,12 +155,30 @@ def biTest(argv):
     print '    Send: [0x22,0xFF,0x01,0xFF,0x09] '
     CanTp_Transmit(data)
     WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
     """ RDID : 0xFF09"""
     data = [0x22,0xFF,0x09] 
     print '    Send: [0x22,0xFF,0x09] '
     CanTp_Transmit(data)
     WaitEvent(UdsAckEvent,5000)
     ClearEvent(UdsAckEvent)
+    """ WDID : 0xFE02"""
+    data = [0x2E,0xFE,0x02] 
+    for i in range(0,128):
+        data.append(i)
+    print '    Send: [0x2E,0xFE,0x02,.....] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    """ WDID : 0xFE09"""
+    data = [0x2E,0xFE,0x09] 
+    for i in range(0,64):
+        data.append(i*2)
+    print '    Send: [0x2E,0xFE,0x09,.....] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    
     
 UdsBuildIn = {
     'Session':biSession,

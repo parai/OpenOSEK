@@ -144,6 +144,7 @@ LOCAL void udsSecurityAccessFnc(void);
 LOCAL void udsCommunicationControlFnc(void);
 LOCAL void udsTesterPresentFnc(void);
 LOCAL void udsRDIDFnc(void);
+LOCAL void udsWDIDFnc(void);
 LOCAL void udsSelectServiceFunction(void);
 LOCAL uint8 udsPrepareSeed(uint8* seed);
 LOCAL boolean udsCompareKey(uint8* key,uint8 length);
@@ -513,7 +514,6 @@ LOCAL void udsRDIDFnc(void)
 		for(i=0;i<didNbr;i++)
 		{
 			uint16 did = ((uint16)udsGetSerivceData(1+i*2)<<8) + udsGetSerivceData(2+i*2);
-			printf("DID is 0x%X\n",did);
 			for(j=0;j<UdsConfig.rdidNbr;j++)
 			{
 				if(did == UdsConfig.rdidList[j].did)
@@ -568,6 +568,61 @@ LOCAL void udsRDIDFnc(void)
 	}
 	udsProcessingDone(nrc);
 }
+/* @UDS Service: 0x22 */
+LOCAL void udsWDIDFnc(void)
+{
+	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
+	if(3u < udsRte.rxLength)
+	{
+		uint16 did = ((uint16)udsGetSerivceData(1)<<8) + udsGetSerivceData(2);
+		uint8 i;
+		for(i=0;i<UdsConfig.wdidNbr;i++)
+		{
+			if(did == UdsConfig.wdidList[i].did)
+			{
+				break;
+			}
+		}
+		if(i < UdsConfig.wdidNbr )
+		{
+			if(0u != (UdsConfig.wdidList[i].sessionMask & (1<<udsRte.session)))
+			{
+				if(0u != (UdsConfig.wdidList[i].securityLevelMask & udsRte.securityLevel))
+				{
+					StatusType ercd;
+					ercd = UdsConfig.wdidList[i].callout(udsGetServiceBuffer(3),udsRte.rxLength-3);
+					if(E_OK == ercd)
+					{
+						udsSetResponseCode(1,did>>8);
+						udsSetResponseCode(2,did);
+						udsRte.txLength = 3;
+					}
+					else
+					{
+						nrc = UDS_E_GENERALPROGRAMMINGFAILURE;
+					}
+				}
+				else
+				{
+					nrc = UDS_E_SECUTITYACCESSDENIED;
+				}
+			}
+			else
+			{
+				nrc = UDS_E_SERVICENOTSUPPORTEDINACTIVESESSION;
+			}
+		}
+		else
+		{
+			nrc = UDS_E_REQUESTOUTOFRANGE;
+		}
+	}
+	else
+	{
+		nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
+	}
+	udsProcessingDone(nrc);
+}
 LOCAL void udsSelectServiceFunction(void)
 {
 	switch(udsRte.currentSid)
@@ -586,6 +641,9 @@ LOCAL void udsSelectServiceFunction(void)
 			break;
 		case SID_READ_DATA_BY_IDENTIFIER:
 			udsRDIDFnc();
+			break;
+		case SID_WRITE_DATA_BY_IDENTIFIER:
+			udsWDIDFnc();
 			break;
 		default:
 			break;

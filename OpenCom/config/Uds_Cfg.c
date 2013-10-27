@@ -27,12 +27,17 @@ LOCAL const Uds_ServiceType UdsServiceTable[] =
 		SID_READ_DATA_BY_IDENTIFIER,
 		UdsAllSession,
 		UdsUnSecurityLevel
+	},
+	{
+		SID_WRITE_DATA_BY_IDENTIFIER,
+		UdsAllSession,
+		UdsUnSecurityLevel
 	}
 };
 // An Example Config
 IMPORT uint16 UdsRDID_FF01(uint8* Data,uint16 length);
 IMPORT uint16 UdsRDID_FF09(uint8* Data,uint16 length);
-LOCAL const Uds_RDIDType UdsRDIDTable[] =
+LOCAL const Uds_DIDType UdsRDIDTable[] =
 {
 	{
 		0xFF01,
@@ -48,12 +53,35 @@ LOCAL const Uds_RDIDType UdsRDIDTable[] =
 	}
 };
 
+// An Example Config
+IMPORT uint16 UdsWDID_FE02(uint8* Data,uint16 length);
+IMPORT uint16 UdsWDID_FE09(uint8* Data,uint16 length);
+LOCAL const Uds_DIDType UdsWDIDTable[] =
+{
+	{
+		0xFE02,
+		UdsProgramSession,
+		UdsSecurityLevel1,
+		UdsWDID_FE02
+	},
+	{
+		0xFE09,
+		UdsProgramSession,
+		UdsSecurityLevel1,
+		UdsWDID_FE09
+	}
+};
+
+
+
 EXPORT const Uds_ConfigType UdsConfig =
 {
 	UdsServiceTable,
 	sizeof(UdsServiceTable)/sizeof(Uds_ServiceType),
 	UdsRDIDTable,
-	sizeof(UdsRDIDTable)/sizeof(Uds_RDIDType),
+	sizeof(UdsRDIDTable)/sizeof(Uds_DIDType),
+	UdsWDIDTable,
+	sizeof(UdsWDIDTable)/sizeof(Uds_DIDType),
 };
 
 EXPORT uint16 UdsRDID_FF01(uint8* Data,uint16 length)
@@ -82,6 +110,38 @@ EXPORT uint16 UdsRDID_FF09(uint8* Data,uint16 length)
 		Data[i] = i;
 	}
 	return 64;
+}
+
+EXPORT uint16 UdsWDID_FE02(uint8* Data,uint16 length)
+{
+	int i;
+	if(128u != length)
+	{
+		return E_NOT_OK;
+	}
+	printf("WDID_FE02=[");
+	for(i=0;i<length;i++)
+	{
+		printf("0x%X,",Data[i]);
+	}
+	printf("]\n");
+	return E_OK;
+}
+
+IMPORT uint16 UdsWDID_FE09(uint8* Data,uint16 length)
+{
+	int i;
+	if(64u != length)
+	{
+		return E_NOT_OK;
+	}
+	printf("WDID_FE09=[");
+	for(i=0;i<length;i++)
+	{
+		printf("0x%X,",Data[i]);
+	}
+	printf("]\n");
+	return E_OK;
 }
 
 

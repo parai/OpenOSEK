@@ -267,6 +267,8 @@ LOCAL void canTpSendFC(PduIdType RxPduId)
 	if(CAN_OK == ercd)
 	{
 		cantpRte[RxPduId].state = CanTp_stWaitTxConformSinceSendFC;
+		cantpRte[RxPduId].BS = N_BS;
+		devTrace(tlCanTp,"CanTp[%d] FC sent.\n",RxPduId);
 	}
 	else
 	{
@@ -280,11 +282,11 @@ LOCAL void canTpReceiveFF(PduIdType RxPduId,uint8 pos)
 	length += (length << 8) + cantpRte[RxPduId].Q.queue[pos].data[1];
 	if(length < ComRxIPDUConfig[RxPduId].pdu.SduLength)
 	{
+		devTrace(tlCanTp,"CanTp[%d] FF Received.\n",RxPduId);
 		cantpRte[RxPduId].length = length;
 		memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(cantpRte[RxPduId].Q.queue[pos].data[2]),6);
 		cantpRte[RxPduId].index = 6; // 6 bytes already received by FF
 		canTpSendFC(RxPduId);
-		cantpRte[RxPduId].BS = N_BS;
 		cantpRte[RxPduId].SN = 1;
 	}
 	else

@@ -284,8 +284,9 @@ class ooCanTpController(threading.Thread):
             for i in range(0,size):
                 self.__LocalData.append(data[1+i])
             if(len(self.__LocalData) >= self.__counter):
-                self.__rxIndication(self.__LocalData)
+                #print 'Goto Idle, Receiving Done!'
                 self.__state = CanTp_stIdle;
+                self.__rxIndication(self.__LocalData)
             if(self.__BS > 1):
                 self.__BS -= 1
                 if self.__BS == 1:
@@ -309,6 +310,8 @@ class ooCanTpController(threading.Thread):
         if(CanTp_stIdle == self.__state):
             self.copyToLocal(data,length)
             self.__state = CanTp_stStartToSend
+        else:
+            print 'CanTp is busy now.'
     def sendSF(self):
         data = []
         data.append(len(self.__LocalData) & 0x07)  # SF
@@ -345,7 +348,7 @@ class ooCanTpController(threading.Thread):
         if(self.__counter >= len(self.__LocalData)):
             """ Finshed """
             self.__state = CanTp_stIdle
-            print "    Segmented Message Transmission Done!"
+            #print "    Segmented Message Transmission Done!"
         else:
             if(self.__BS > 1):
                 self.__BS -= 1

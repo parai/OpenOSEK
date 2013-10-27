@@ -119,20 +119,25 @@ typedef struct
 	/*
 	 * Data:   pointer to the buffer to store value of DID
 	 * length: the length of the buffer "Data"
-	 * Return: length of this DID
+	 * Return:  (1) length of this DID for ReadDID
+	 *          (2) E_OK,E_NOT_OK for WriteDID
+	 *                E_OK: write OK
+	 *                E_NOT_OK: write failed, such as condition is not OK
 	 * IF DID's length > Data's length, please return 0 to indicate the
 	 * UDS Server that the buffer is not enough. This may happen when
 	 * Read many DIDs in one request.
 	 */
 	uint16 (*callout)(uint8* Data,uint16 length);
-}Uds_RDIDType;
+}Uds_DIDType;
 
 typedef struct
 {
-	const Uds_ServiceType*  sidList;
-	uint8             sidNbr;
-	const Uds_RDIDType*     rdidList;
-	uint8             rdidNbr;
+	const Uds_ServiceType* sidList;
+	uint8                  sidNbr;
+	const Uds_DIDType*     rdidList;
+	uint8                  rdidNbr;
+	const Uds_DIDType*     wdidList;
+	uint8                  wdidNbr;
 }Uds_ConfigType;
 
 
