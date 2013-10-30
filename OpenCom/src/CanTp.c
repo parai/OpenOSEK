@@ -32,8 +32,8 @@
 #define N_As  1
 #define N_Bs  200 // important
 #define N_Cs  xx   // same with the period of CanTpMainTask
-#define N_Ar  1
-#define N_Br  xx
+#define N_Ar  200
+#define N_Br  200
 #define N_Cr  200  // important
 #define N_STmin 10
 #define N_BS    8
@@ -97,14 +97,15 @@ typedef struct
 	volatile enum
 	{
 		CanTp_stIdle = 0,
-		CanTp_stReceiving,
-		CanTp_stSendFC,
-		CanTp_stWaitTxConformSinceSendFC,
-		CanTp_stBusy,          // To say the rx buffer of handle is in used by UDS,locked
-		CanTp_stStartToSend,
-		CanTp_stSending,
+		/* ========== Receive ========== */
+		CanTp_stWaitCF,
 		CanTp_stWaitFC,
-		CanTp_stSendFinished,  // Wait For TxConform
+		/* ========== BUSY ============= */
+		CanTp_stBusy,          // To say the rx buffer of handle is in used by UDS,locked
+		/* ========== Send ============= */
+		CanTp_stStartToSend,
+		CanTp_stWaitToSendCF,
+		CanTp_stWaitToSendFC,
 	}state;
 }cantpRteType; // RTE
 
@@ -113,16 +114,16 @@ IMPORT const Com_IPDUConfigType ComRxIPDUConfig[];
 IMPORT const Com_IPDUConfigType ComTxIPDUConfig[];
 LOCAL cantpRteType cantpRte[cfgCOM_TPIPDU_NUM];
 /* ================================ FUNCTIONs =============================== */
-LOCAL void canTpReceiveSF(PduIdType RxPduId,uint8 pos);
-LOCAL void canTpReceiveFF(PduIdType RxPduId,uint8 pos);
-LOCAL void canTpReceiveCF(PduIdType RxPduId,uint8 pos);
+LOCAL void canTpReceiveSF(PduIdType RxPduId,uint8* Data);
+LOCAL void canTpReceiveFF(PduIdType RxPduId,uint8* Data);
+LOCAL void canTpReceiveCF(PduIdType RxPduId,uint8* Data);
+LOCAL void canTpReceiveFC(PduIdType RxPduId,uint8* Data);
 LOCAL void CanTp_ReceivingMain(PduIdType RxPduId);
 LOCAL void canTpSendSF(PduIdType RxPduId);
 LOCAL void canTpSendFF(PduIdType TxPduId);
 LOCAL void canTpSendFC(PduIdType RxPduId);
 LOCAL void canTpSendCF(PduIdType TxPduId);
 LOCAL void CanTp_StartToSendMain(PduIdType TxPduId);
-LOCAL void CanTp_SendingMain(PduIdType RxPduId);
 
 EXPORT void CanTp_Init(void)
 {
@@ -143,81 +144,14 @@ EXPORT void CanTp_ReleaseRxBuffer(PduIdType RxPduId)
 
 EXPORT void CanTp_TxConformation(PduIdType TxPduId)
 {
-	switch(cantpRte[TxPduId].state)
-	{
-		case CanTp_stSendFinished:
-		{
-			cantpRte[TxPduId].state = CanTp_stIdle;
-			Uds_TxConformation(TxPduId,E_OK);
-			break;
-		}
-		case CanTp_stWaitTxConformSinceSendFC:
-		{
-			cantpRte[TxPduId].state = CanTp_stReceiving;
-			break;
-		}
-		case CanTp_stSending:
-		{
-//			if(0u == cantpRte[TxPduId].STmin)
-//			{
-//				canTpSendCF(TxPduId);
-//			}
-			break;
-		}
-		case CanTp_stWaitFC:	//nothing as has just send the First Frame or BS count down to 0
-			break;
-		default:
-		{
-			devTrace(tlError,"Error In CanTp_TxConformation state[%d] = %d\n",TxPduId,cantpRte[TxPduId].state);
-			break;
-		}
-	}
+	// OK, No need of it.
+	// Treat each transmit is OK.
 }
 EXPORT void CanTp_RxIndication( PduIdType RxPduId, const PduInfoType *CanTpRxPduPtr )
 {
 	uint8 index = cantpRte[RxPduId].Q.counter;
-#if 0
-	{
-		int i;
-		printf("CANID = 0x%x,[",ComRxIPDUConfig[RxPduId].id);
-		for(i=0;i<CanTpRxPduPtr->SduLength;i++)
-		{
-			printf("0x%x,",(unsigned int)CanTpRxPduPtr->SduDataPtr[i]);
-		}
-		printf("]\n");
-	}
-#endif
-	printf("*");
-	if(CanTp_stWaitFC == cantpRte[RxPduId].state) // Special process
-	{
-		if((CanTpRxPduPtr->SduDataPtr[0]&N_PCI_MASK) == N_PCI_FC)
-		{
-			if((CanTpRxPduPtr->SduDataPtr[0]&N_PCI_FS) == N_PCI_CTS)
-			{
-				cantpRte[RxPduId].state = CanTp_stSending;
-				if(0u != CanTpRxPduPtr->SduDataPtr[1])
-				{
-					cantpRte[RxPduId].BS = CanTpRxPduPtr->SduDataPtr[1] + 1;
-				}
-				else
-				{
-					cantpRte[RxPduId].BS = 0; //Send all the left without FC
-				}
-				cantpRte[RxPduId].STmin = CanTpRxPduPtr->SduDataPtr[2];
-				tpSetAlarm(RxPduId,msToCanTpTick(cantpRte[RxPduId].STmin));
-			}
-			else if((CanTpRxPduPtr->SduDataPtr[0]&N_PCI_FS) == N_PCI_WT)
-			{
-				tpCancelAlarm(RxPduId);  // Wait
-			}
-			else if((CanTpRxPduPtr->SduDataPtr[0]&N_PCI_FS) == N_PCI_OVFLW)
-			{
-				cantpRte[RxPduId].state =CanTp_stIdle; // Abort as Error.
-				devTrace(tlError,"Error: The Client buffer overflow CanTp[%d].\n",RxPduId);
-			}
-		}
-	}
-	else if( index < N_BS)
+
+	if( index < N_BS)
 	{
 		memcpy(cantpRte[RxPduId].Q.queue[index].data,CanTpRxPduPtr->SduDataPtr,CanTpRxPduPtr->SduLength);
 		cantpRte[RxPduId].Q.queue[index].length = CanTpRxPduPtr->SduLength;
@@ -240,12 +174,19 @@ EXPORT Std_ReturnType CanTp_Transmit( PduIdType TxSduId, PduLengthType Length)
 	return ercd;
 }
 
-LOCAL void canTpReceiveSF(PduIdType RxPduId,uint8 pos)
+LOCAL void canTpReceiveSF(PduIdType RxPduId,uint8* Data)
 {
-	uint8 length = cantpRte[RxPduId].Q.queue[pos].data[0]&N_PCI_SF_DL;
-	memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(cantpRte[RxPduId].Q.queue[pos].data[1]),length);
-	cantpRte[RxPduId].state = CanTp_stBusy;
-	Uds_RxIndication(RxPduId,length);
+	if(cantpRte[RxPduId].state != CanTp_stIdle)
+	{
+		devTrace(tlError,"Error: CanTp[%d] Received SF when in state %d.\n",RxPduId,cantpRte[RxPduId].state);
+	}
+	else
+	{
+		uint8 length = Data[0]&N_PCI_SF_DL;
+		memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(Data[1]),length);
+		cantpRte[RxPduId].state = CanTp_stBusy;
+		Uds_RxIndication(RxPduId,length);
+	}
 }
 
 LOCAL void canTpSendFC(PduIdType RxPduId)
@@ -270,25 +211,26 @@ LOCAL void canTpSendFC(PduIdType RxPduId)
 	ercd = Can_Write(ComTxIPDUConfig[RxPduId].controller,&pdu);
 	if(CAN_OK == ercd)
 	{
-		cantpRte[RxPduId].state = CanTp_stWaitTxConformSinceSendFC;
+		cantpRte[RxPduId].state = CanTp_stWaitCF;
+		tpSetAlarm(RxPduId,msToCanTpTick(N_Ar));
 		cantpRte[RxPduId].BS = N_BS;
 		devTrace(tlCanTp,"CanTp[%d] FC sent.\n",RxPduId);
 	}
 	else
 	{
-		cantpRte[RxPduId].state = CanTp_stSendFC; // Re-Do it later
+		cantpRte[RxPduId].state = CanTp_stWaitToSendFC; // Re-Do it later
 	}
 }
 
-LOCAL void canTpReceiveFF(PduIdType RxPduId,uint8 pos)
+LOCAL void canTpReceiveFF(PduIdType RxPduId,uint8* Data)
 {
-	PduLengthType length = cantpRte[RxPduId].Q.queue[pos].data[0]&0x0F;
-	length += (length << 8) + cantpRte[RxPduId].Q.queue[pos].data[1];
+	PduLengthType length = Data[0]&0x0F;
+	length += (length << 8) + Data[1];
 	if(length < ComRxIPDUConfig[RxPduId].pdu.SduLength)
 	{
 		devTrace(tlCanTp,"CanTp[%d] FF Received.\n",RxPduId);
 		cantpRte[RxPduId].length = length;
-		memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(cantpRte[RxPduId].Q.queue[pos].data[2]),6);
+		memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr,&(Data[2]),6);
 		cantpRte[RxPduId].index = 6; // 6 bytes already received by FF
 		canTpSendFC(RxPduId);
 		cantpRte[RxPduId].SN = 1;
@@ -301,9 +243,9 @@ LOCAL void canTpReceiveFF(PduIdType RxPduId,uint8 pos)
 	}
 }
 
-LOCAL void canTpReceiveCF(PduIdType RxPduId,uint8 pos)
+LOCAL void canTpReceiveCF(PduIdType RxPduId,uint8* Data)
 {
-	if(cantpRte[RxPduId].SN == (cantpRte[RxPduId].Q.queue[pos].data[0]&N_PCI_SN))
+	if(cantpRte[RxPduId].SN == (Data[0]&N_PCI_SN))
 	{
 		uint8 size;
 		cantpRte[RxPduId].SN ++ ;
@@ -311,7 +253,7 @@ LOCAL void canTpReceiveCF(PduIdType RxPduId,uint8 pos)
 		size = cantpRte[RxPduId].length - cantpRte[RxPduId].index;
 		if( size > 7 ) { size = 7; }
 		memcpy(ComRxIPDUConfig[RxPduId].pdu.SduDataPtr + cantpRte[RxPduId].index,
-				&(cantpRte[RxPduId].Q.queue[pos].data[1]),size);
+				&(Data[1]),size);
 		cantpRte[RxPduId].index += size;
 		if(cantpRte[RxPduId].index >= cantpRte[RxPduId].length)
 		{
@@ -334,52 +276,63 @@ LOCAL void canTpReceiveCF(PduIdType RxPduId,uint8 pos)
 	}
 }
 
+LOCAL void canTpReceiveFC(PduIdType RxPduId,uint8* Data)
+{
+	if(CanTp_stWaitFC == cantpRte[RxPduId].state) // Special process
+	{
+		if((Data[0]&N_PCI_FS) == N_PCI_CTS)
+		{
+			cantpRte[RxPduId].state = CanTp_stWaitToSendCF;
+			if(0u != Data[1])
+			{
+				cantpRte[RxPduId].BS = Data[1] + 1;
+			}
+			else
+			{
+				cantpRte[RxPduId].BS = 0; //Send all the left without FC
+			}
+			cantpRte[RxPduId].STmin = Data[2];
+			tpSetAlarm(RxPduId,msToCanTpTick(cantpRte[RxPduId].STmin));
+		}
+		else if((Data[0]&N_PCI_FS) == N_PCI_WT)
+		{
+			tpSetAlarm(RxPduId,msToCanTpTick(N_Br));
+		}
+		else if((Data[0]&N_PCI_FS) == N_PCI_OVFLW)
+		{
+			cantpRte[RxPduId].state =CanTp_stIdle; // Abort as Error.
+			devTrace(tlError,"Error: The Client buffer overflow CanTp[%d].\n",RxPduId);
+		}
+	}
+
+}
 LOCAL void CanTp_ReceivingMain(PduIdType RxPduId)
 {
 	uint8 i;
-	for(i=0;(i<cantpRte[RxPduId].Q.counter)&&(CanTp_stReceiving == cantpRte[RxPduId].state);i++)
+	for(i=0;i<cantpRte[RxPduId].Q.counter;i++)
 	{
-		tpCancelAlarm(RxPduId);
 		if( N_PCI_SF == (cantpRte[RxPduId].Q.queue[i].data[0]&N_PCI_MASK))
 		{
-			canTpReceiveSF(RxPduId,i);
+			canTpReceiveSF(RxPduId,cantpRte[RxPduId].Q.queue[i].data);
 		}
 		else if(N_PCI_FF == (cantpRte[RxPduId].Q.queue[i].data[0]&N_PCI_MASK))
 		{
-			canTpReceiveFF(RxPduId,i);
+			canTpReceiveFF(RxPduId,cantpRte[RxPduId].Q.queue[i].data);
 		}
 		else if(N_PCI_CF == (cantpRte[RxPduId].Q.queue[i].data[0]&N_PCI_MASK))
 		{
-			canTpReceiveCF(RxPduId,i);
+			canTpReceiveCF(RxPduId,cantpRte[RxPduId].Q.queue[i].data);
 		}
-	}
-	// Timeout of Rx receive
-	if(CanTp_stReceiving == cantpRte[RxPduId].state)
-	{
-		if(tpIsAlarmStarted(RxPduId))
+		else if(N_PCI_FC == (cantpRte[RxPduId].Q.queue[i].data[0]&N_PCI_MASK))
 		{
-			tpSignalAlarm(RxPduId);
-			if(tpIsAlarmTimeout(RxPduId))
-			{
-				cantpRte[RxPduId].state = CanTp_stIdle;
-				devTrace(tlError,"Error: CanTp[%d] Timeout of Receiving.\n",(int)RxPduId);
-			}
+			canTpReceiveFC(RxPduId,cantpRte[RxPduId].Q.queue[i].data);
 		}
 		else
 		{
-			tpSetAlarm(RxPduId,msToCanTpTick(N_Cr));
 		}
 	}
-	if(i < cantpRte[RxPduId].Q.counter)  // as in busy state
-	{
-		cantpRte[RxPduId].Q.counter -= i;
-		memcpy(cantpRte[RxPduId].Q.queue,&(cantpRte[RxPduId].Q.queue[i]),sizeof(CanTp_QItemType)*(cantpRte[RxPduId].Q.counter));
-		devTrace(tlCanTp,'Info:CanTp[%d] Q is not empty but transit to state Busy.\n',(int)RxPduId);
-	}
-	else
-	{
-		cantpRte[RxPduId].Q.counter = 0; // Empty it
-	}
+
+	cantpRte[RxPduId].Q.counter = 0;
 }
 LOCAL void canTpSendSF(PduIdType TxPduId)
 {
@@ -403,7 +356,8 @@ LOCAL void canTpSendSF(PduIdType TxPduId)
 	ercd = Can_Write(ComTxIPDUConfig[TxPduId].controller,&pdu);
 	if(CAN_OK == ercd)
 	{
-		cantpRte[TxPduId].state = CanTp_stSendFinished;
+		cantpRte[TxPduId].state = CanTp_stIdle;
+		Uds_TxConformation(TxPduId,E_OK);
 	}
 	else
 	{
@@ -436,7 +390,7 @@ LOCAL void canTpSendFF(PduIdType TxPduId)
 		cantpRte[TxPduId].index = 6;
 		cantpRte[TxPduId].SN = 1;
 		cantpRte[TxPduId].state = CanTp_stWaitFC;
-		tpCancelAlarm(TxPduId);
+		tpSetAlarm(TxPduId,msToCanTpTick(N_Br));
 	}
 	else
 	{
@@ -485,8 +439,8 @@ LOCAL void canTpSendCF(PduIdType TxPduId)
 		if(cantpRte[TxPduId].SN > 15) {cantpRte[TxPduId].SN = 0;}
 		if(cantpRte[TxPduId].index >= cantpRte[TxPduId].length)
 		{
-			cantpRte[TxPduId].state = CanTp_stSendFinished;
-			tpCancelAlarm(TxPduId);
+			cantpRte[TxPduId].state = CanTp_stIdle;
+			Uds_TxConformation(TxPduId,E_OK);
 			devTrace(tlCanTp,"CanTp[%d] Segmented Message Transmission Done!\n",TxPduId);
 		}
 		else if(cantpRte[TxPduId].BS > 1)
@@ -514,48 +468,19 @@ LOCAL void canTpSendCF(PduIdType TxPduId)
 	}
 }
 
-LOCAL void CanTp_SendingMain(PduIdType RxPduId)
-{
-	if(tpIsAlarmStarted(RxPduId))
-	{
-		tpSignalAlarm(RxPduId);
-		if(tpIsAlarmTimeout(RxPduId))
-		{
-			tpCancelAlarm(RxPduId);
-			canTpSendCF(RxPduId);
-		}
-	}
-	else
-	{	// Something Wrong
-		cantpRte[RxPduId].state = CanTp_stIdle;
-		devTrace(tlError,"Error: as CanTp[%d] STmin Timer not started during Sending.\n",RxPduId);
-	}
-}
-
 void CanTp_TaskMain(void)
 {
 	uint8 i;
 	SuspendAllInterrupts();
-	printf("#");
 	for(i=0;i<cfgCOM_TPIPDU_NUM;i++)
 	{
+		if(0u != cantpRte[i].Q.counter)
+		{
+			CanTp_ReceivingMain(i);
+		}
 		switch(cantpRte[i].state)
 		{
-			case CanTp_stIdle:
-			{
-				if(0 != cantpRte[i].Q.counter)  // has data in queue
-				{
-					cantpRte[i].state = CanTp_stReceiving;
-					CanTp_ReceivingMain(i);
-				}
-				break;
-			}
-			case CanTp_stReceiving:
-			{
-				CanTp_ReceivingMain(i);
-				break;
-			}
-			case CanTp_stSendFC:
+			case CanTp_stWaitToSendFC:
 			{
 				canTpSendFC(i);
 				break;
@@ -565,14 +490,20 @@ void CanTp_TaskMain(void)
 				CanTp_StartToSendMain(i);
 				break;
 			}
-			case CanTp_stSending:
+			case CanTp_stWaitToSendCF:
 			{
-				CanTp_SendingMain(i);
+				if(tpIsAlarmStarted(i))
+				{
+					tpSignalAlarm(i);
+					if(tpIsAlarmTimeout(i))
+					{
+						canTpSendCF(i);
+					}
+				}
 				break;
 			}
+			case CanTp_stWaitCF:
 			case CanTp_stWaitFC:
-			case CanTp_stWaitTxConformSinceSendFC: // For others
-			case CanTp_stSendFinished:
 			{
 				if(tpIsAlarmStarted(i))
 				{
@@ -584,10 +515,6 @@ void CanTp_TaskMain(void)
 						memset(&cantpRte[i],0,sizeof(cantpRteType));
 						Uds_TxConformation(i,E_NOT_OK);
 					}
-				}
-				else
-				{
-					tpSetAlarm(i,msToCanTpTick(N_Cr));
 				}
 				break;
 			}
