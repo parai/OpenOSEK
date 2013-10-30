@@ -19,10 +19,10 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
-//#define NM_TEST_WITHOUT_RTOS
-#ifdef NM_TEST_WITHOUT_RTOS
+#define APP_RUN_WITHOUT_RTOS
+#ifdef APP_RUN_WITHOUT_RTOS
 #include <windows.h>
-#include "Nm.h"
+#include "Com.h"
 #endif
 #include "Os.h"
 
@@ -48,12 +48,13 @@ void main(void)
 	if(argc == 2)  // For NM
 	{
 		argNMNodeId = atoi(argv[1]);
-#ifdef NM_TEST_WITHOUT_RTOS
+#ifdef APP_RUN_WITHOUT_RTOS
 		StartupHook();
 		for(;;)
 		{
-			static unsigned long time = 0;
 			NM_MainTask();
+			CanTp_TaskMain();
+			Uds_MainTask();
 			Sleep(10);
 		}
 #endif

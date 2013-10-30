@@ -32,6 +32,11 @@ LOCAL const Uds_ServiceType UdsServiceTable[] =
 		SID_WRITE_DATA_BY_IDENTIFIER,
 		UdsAllSession,
 		UdsUnSecurityLevel
+	},
+	{
+		SID_ROUTINE_CONTROL,
+		UdsAllSession,
+		UdsUnSecurityLevel
 	}
 };
 // An Example Config
@@ -71,6 +76,20 @@ LOCAL const Uds_DIDType UdsWDIDTable[] =
 		UdsWDID_FE09
 	}
 };
+IMPORT uint16 UdsStartRC_AB11(uint8* param,uint16 length,uint8* status);
+IMPORT uint16 UdsStopRC_AB11(uint8* param,uint16 length,uint8* status);
+IMPORT uint16 UdsRequestResultRC_AB11(uint8* param,uint16 length,uint8* result);
+LOCAL const Uds_RCType UdsRCTable[] =
+{
+	{
+		0xAB11,
+		UdsProgramSession,
+		UdsSecurityLevel1,
+		UdsStartRC_AB11,
+		UdsStopRC_AB11,
+		UdsRequestResultRC_AB11
+	}
+};
 
 
 
@@ -82,6 +101,8 @@ EXPORT const Uds_ConfigType UdsConfig =
 	sizeof(UdsRDIDTable)/sizeof(Uds_DIDType),
 	UdsWDIDTable,
 	sizeof(UdsWDIDTable)/sizeof(Uds_DIDType),
+	UdsRCTable,
+	sizeof(UdsRCTable)/sizeof(Uds_RCType),
 };
 
 EXPORT uint16 UdsRDID_FF01(uint8* Data,uint16 length)
@@ -128,7 +149,7 @@ EXPORT uint16 UdsWDID_FE02(uint8* Data,uint16 length)
 	return E_OK;
 }
 
-IMPORT uint16 UdsWDID_FE09(uint8* Data,uint16 length)
+EXPORT uint16 UdsWDID_FE09(uint8* Data,uint16 length)
 {
 	int i;
 	if(64u != length)
@@ -142,6 +163,25 @@ IMPORT uint16 UdsWDID_FE09(uint8* Data,uint16 length)
 	}
 	printf("]\n");
 	return E_OK;
+}
+
+EXPORT uint16 UdsStartRC_AB11(uint8* param,uint16 length,uint8* status)
+{
+	printf("StartRC_AB11().\n");
+	memcpy(status,"StartRC_AB11().\n",sizeof("StartRC_AB11().\n"));
+	return RCReturn(sizeof("StartRC_AB11().\n"));
+}
+EXPORT uint16 UdsStopRC_AB11(uint8* param,uint16 length,uint8* status)
+{
+	printf("StopRC_AB11().\n");
+	memcpy(status,"StopRC_AB11().\n",sizeof("StopRC_AB11().\n"));
+	return RCReturn(sizeof("StopRC_AB11().\n"));
+}
+EXPORT uint16 UdsRequestResultRC_AB11(uint8* param,uint16 length,uint8* result)
+{
+	printf("RequestResultRC_AB11().\n");
+	memcpy(result,"RequestResultRC_AB11().\n",sizeof("RequestResultRC_AB11().\n"));
+	return RCReturn(sizeof("RequestResultRC_AB11().\n"));
 }
 
 

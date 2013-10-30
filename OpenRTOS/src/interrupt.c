@@ -130,19 +130,19 @@ void DisableAllInterrupts(void)
 /* |------------------+------------------------------------------------------------------| */
 void ResumeAllInterrupts ( void )
 {
-	if (sus_all_cnt == 0) {
-		/*
-		 *  SuspendAllInterrupts hasn't been called before ResumeAllInterrupts
-		 *  It's an error, so just do nothig.
-		 */
-	}
-	else if (sus_all_cnt == 1) {
-		sus_all_cnt--;
-		knl_enable_int(sus_all_mask);
-	}
-	else {
-		sus_all_cnt--;
-	}
+//	if (sus_all_cnt == 0) {
+//		/*
+//		 *  SuspendAllInterrupts hasn't been called before ResumeAllInterrupts
+//		 *  It's an error, so just do nothig.
+//		 */
+//	}
+//	else if (sus_all_cnt == 1) {
+//		sus_all_cnt--;
+//		knl_enable_int(sus_all_mask);
+//	}
+//	else {
+//		sus_all_cnt--;
+//	}
 }
 
 /* |------------------+------------------------------------------------------------------| */
@@ -176,19 +176,19 @@ void ResumeAllInterrupts ( void )
 /* |------------------+------------------------------------------------------------------| */
 void SuspendAllInterrupts( void )
 {
-	if (sus_all_cnt == 0xFFu) {
-		/*
-		 *  SuspendAllInterrupts has reached its max nest count
-		 *  So do nothing. May a ResumeAllInterrupts call has been forgot.
-		 */
-	}
-	else if (sus_all_cnt == 0) {
-		sus_all_mask = knl_disable_int();
-		sus_all_cnt++;
-	}
-	else {
-		sus_all_cnt++;
-	}
+//	if (sus_all_cnt == 0xFFu) {
+//		/*
+//		 *  SuspendAllInterrupts has reached its max nest count
+//		 *  So do nothing. May a ResumeAllInterrupts call has been forgot.
+//		 */
+//	}
+//	else if (sus_all_cnt == 0) {
+//		sus_all_mask = knl_disable_int();
+//		sus_all_cnt++;
+//	}
+//	else {
+//		sus_all_cnt++;
+//	}
 }
 
 /* |------------------+------------------------------------------------------------------| */

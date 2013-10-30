@@ -24,7 +24,7 @@
 /* ================================ INCLUDEs  =============================== */
 
 /* ================================ MACROs    =============================== */
-#define cfgDEV_TRACE_ON     1
+#define cfgDEV_TRACE_ON     0
 // the bigger value has higher level
 #define cfgDEV_TRACE_LEVEL  0
 // Suggest Level

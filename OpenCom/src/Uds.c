@@ -136,7 +136,8 @@ LOCAL void udsHandleServiceRequest(void);
 LOCAL void udsCreateAndSendNrc(Uds_NrcType Nrc);
 LOCAL void udsProcessingDone(Uds_NrcType Ncr);
 LOCAL boolean udsLookupSid(void);
-LOCAL boolean udsCheckSessionLevel(void);
+LOCAL boolean udsCheckSessionLevel(Uds_SessionMaskType sessionMask);
+LOCAL boolean udsCheckSecurityLevel(Uds_SecurityLevelMaskType securityLevelMask);
 LOCAL boolean udsIsNewSessionValid(Uds_SessionType Session);
 LOCAL Uds_SessionType udsSessionMap(Uds_SessionType Session);
 LOCAL void udsSessionControlFnc(void);
@@ -224,6 +225,7 @@ LOCAL void udsProcessingDone(Uds_NrcType Ncr)
 			udsSendResponse(True);
 		}
 		else {
+			devTrace(tlUds,"Suppressed Response!\n");
 			udsSendResponse(False);
 		}
 	}
@@ -246,31 +248,30 @@ LOCAL boolean udsLookupSid(void)
 	}
 	return find;
 }
-LOCAL boolean udsCheckSessionLevel(void)
+LOCAL boolean udsCheckSessionLevel(Uds_SessionMaskType sessionMask)
 {
-	if( (UdsConfig.sidList[udsRte.sidIndex].sessionMask&(1<<udsRte.session)) != 0u )
+	boolean isOk = False;
+	if( (sessionMask&(1<<udsRte.session)) != 0u )
 	{
-		return True;
+		isOk = True;
 	}
-	else
-	{
-		return False;
-	}
+	return isOk;
 }
-LOCAL boolean udsCheckSecurityLevel(void)
+LOCAL boolean udsCheckSecurityLevel(Uds_SecurityLevelMaskType securityLevelMask)
 {
-	if(0u == UdsConfig.sidList[udsRte.sidIndex].securityLevelMask)
-	{	// This sid is unsecured
-		return True;
-	}
-	else if( (UdsConfig.sidList[udsRte.sidIndex].securityLevelMask&(udsRte.securityLevel)) != 0u )
+	boolean isOk = False;
+	if(UdsUnSecurityLevel == securityLevelMask)
 	{
-		return True;
+		isOk = True;
+	}
+	else if( (securityLevelMask&(udsRte.securityLevel)) != 0u )
+	{
+		isOk = True;
 	}
 	else
 	{
-		return False;
 	}
+	return isOk;
 }
 LOCAL boolean udsIsNewSessionValid(Uds_SessionType Session)
 {
@@ -328,14 +329,22 @@ LOCAL void udsSessionControlFnc(void)
 {
 	if(2u == udsRte.rxLength)
 	{
-		Uds_SessionType session = udsGetSerivceData(1);
-		devTrace(tlUds,"Info:Session Control %2x.\n",session);
-		if(True == udsIsNewSessionValid(session))
+		uint8 subFnc = udsGetSerivceData(1); //
+		if((0x80U&subFnc) != 0)
+		{
+			udsRte.suppressPosRspMsg = True;
+			subFnc = subFnc&0x7F;
+		}
+		devTrace(tlUds,"Info:Session Control %2x.\n",subFnc);
+		if(True == udsIsNewSessionValid(subFnc))
 		{
 			// TODO: here should askApplicationForSessionPermission
-			udsRte.session = udsSessionMap(session);
+//			if(udsRte.session == udsSessionMap(subFnc))
+//			{ //TODO
+//			}
+			udsRte.session = udsSessionMap(subFnc);
 			// Create Response
-			udsSetResponseCode(1,session);
+			udsSetResponseCode(1,subFnc);
 			udsRte.txLength = 2;
 			udsProcessingDone(UDS_E_POSITIVERESPONSE);
 		}
@@ -377,23 +386,39 @@ LOCAL void udsSecurityAccessFnc(void)
 	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
 	if(2u <= udsRte.rxLength)
 	{
-		if(0x01u == udsGetSerivceData(1))	// Request Seed
+		uint8 subFnc = udsGetSerivceData(1);
+		if((0x80U&subFnc) != 0u)
+		{
+			udsRte.suppressPosRspMsg = True;
+			subFnc = subFnc&0x7F;
+		}
+		if(0x01u == subFnc)	// Request Seed
 		{
 			if(3u == udsRte.rxLength)
 			{
-				udsIsSeedRequested = True;
 				udsSecurityLevelRequested = udsGetSerivceData(2);
-				// Create Response
-				udsSetResponseCode(1u,0x01);
-				udsRte.txLength = 2 + udsPrepareSeed(udsGetResponseBuffer(2));
-				nrc = UDS_E_POSITIVERESPONSE;
+				if(udsCheckSecurityLevel(1<<udsSecurityLevelRequested))
+				{
+					udsSetResponseCode(1u,0x01);
+					udsRte.txLength = 2 + 4 /* TODO key length */;
+					memset(udsGetResponseBuffer(2),0,4);
+					nrc = UDS_E_POSITIVERESPONSE;
+				}
+				else
+				{
+					udsIsSeedRequested = True;
+					// Create Response
+					udsSetResponseCode(1u,0x01);
+					udsRte.txLength = 2 + udsPrepareSeed(udsGetResponseBuffer(2));
+					nrc = UDS_E_POSITIVERESPONSE;
+				}
 			}
 			else
 			{
 				nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
 			}
 		}
-		else if(0x02u == udsGetSerivceData(1)) // Send key
+		else if(0x02u == subFnc) // Send key
 		{
 			if(True == udsIsSeedRequested)
 			{
@@ -434,8 +459,14 @@ LOCAL void udsCommunicationControlFnc(void)
 	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
 	if(3u == udsRte.rxLength)
 	{
+		uint8 subFnc = udsGetSerivceData(1); //
+		if((0x80U&subFnc) != 0)
+		{
+			udsRte.suppressPosRspMsg = True;
+			subFnc = subFnc&0x7F;
+		}
 		// TODO: Add Special Process For Your App here
-		switch(udsGetSerivceData(1))
+		switch(subFnc)
 		{
 			case 0x00: //enableRxAndTx
 				if(0x02 == udsGetSerivceData(2))  // CTP is NWMCP
@@ -485,7 +516,13 @@ LOCAL void udsTesterPresentFnc(void)
 	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
 	if(2u == udsRte.rxLength)
 	{
-		if(0x00 == udsGetSerivceData(1))
+		uint8 subFnc = udsGetSerivceData(1); //
+		if((0x80U&subFnc) != 0)
+		{
+			udsRte.suppressPosRspMsg = True;
+			subFnc = subFnc&0x7F;
+		}
+		if(0x00 == subFnc)
 		{
 			udsSetAlarm(msToUdsTick(cfgP2Server));
 			udsSetResponseCode(1,0x00);
@@ -523,9 +560,9 @@ LOCAL void udsRDIDFnc(void)
 			}
 			if(j < UdsConfig.rdidNbr )
 			{
-				if(0u != (UdsConfig.rdidList[j].sessionMask & (1<<udsRte.session)))
+				if(True == udsCheckSessionLevel(UdsConfig.rdidList[j].sessionMask))
 				{
-					if(0u != (UdsConfig.rdidList[j].securityLevelMask & udsRte.securityLevel))
+					if(True == udsCheckSecurityLevel(UdsConfig.rdidList[j].securityLevelMask) )
 					{
 						uint16 rlen;
 						udsSetResponseCode(udsRte.txLength,did>>8);
@@ -585,9 +622,9 @@ LOCAL void udsWDIDFnc(void)
 		}
 		if(i < UdsConfig.wdidNbr )
 		{
-			if(0u != (UdsConfig.wdidList[i].sessionMask & (1<<udsRte.session)))
+			if(True == udsCheckSessionLevel(UdsConfig.wdidList[i].sessionMask))
 			{
-				if(0u != (UdsConfig.wdidList[i].securityLevelMask & udsRte.securityLevel))
+				if(True == udsCheckSecurityLevel(UdsConfig.wdidList[i].securityLevelMask) )
 				{
 					StatusType ercd;
 					ercd = UdsConfig.wdidList[i].callout(udsGetServiceBuffer(3),udsRte.rxLength-3);
@@ -623,6 +660,75 @@ LOCAL void udsWDIDFnc(void)
 	}
 	udsProcessingDone(nrc);
 }
+/* @UDS Service: 0x31 */
+LOCAL void udsRCFnc(void)
+{
+	Uds_NrcType nrc = UDS_E_POSITIVERESPONSE;
+	if(4u <= udsRte.rxLength)
+	{
+		uint8 i;
+		uint8 subFnc = udsGetSerivceData(1);
+		uint16 rcid = ((uint16)udsGetSerivceData(2)<<8) + udsGetSerivceData(3);
+		if((0x80U&subFnc) != 0)
+		{
+			udsRte.suppressPosRspMsg = True;
+			subFnc = subFnc&0x7F;
+		}
+		for(i=0;i<UdsConfig.rcNbr;i++)
+		{
+			if(UdsConfig.rcList[i].id == rcid)
+			{
+				break;
+			}
+		}
+		if(i<UdsConfig.rcNbr)
+		{
+			uint16 ercd = 0;
+			switch(subFnc)
+			{
+				case 0x01:
+					ercd = UdsConfig.rcList[i].startRC(udsGetServiceBuffer(4),
+								udsRte.rxLength-4,udsGetResponseBuffer(4));
+					break;
+				case 0x02:
+					ercd = UdsConfig.rcList[i].stopRC(udsGetServiceBuffer(4),
+								udsRte.rxLength-4,udsGetResponseBuffer(4));
+					break;
+				case 0x03:
+					ercd = UdsConfig.rcList[i].requestResultRC(udsGetServiceBuffer(4),
+								udsRte.rxLength-4,udsGetResponseBuffer(4));
+					break;
+				default:
+					nrc = UDS_E_SUBFUNCTIONNOTSUPPORTED;
+					break;
+			}
+			if((subFnc>=0x01) && (subFnc<=0x03))
+			{
+				if(0 == ercd)
+				{
+					nrc = UDS_E_CONDITIONSNOTCORRECT;
+				}
+				else
+				{
+					udsSetResponseCode(1,subFnc);
+					udsSetResponseCode(2,rcid>>8);
+					udsSetResponseCode(3,rcid);
+					udsRte.txLength = 4 + ercd -1;
+				}
+			}
+		}
+		else
+		{
+			nrc = UDS_E_REQUESTOUTOFRANGE;
+		}
+
+	}
+	else
+	{
+		nrc = UDS_E_INCORRECTMESSAGELENGTHORINVALIDFORMAT;
+	}
+	udsProcessingDone(nrc);
+}
 LOCAL void udsSelectServiceFunction(void)
 {
 	switch(udsRte.currentSid)
@@ -645,6 +751,9 @@ LOCAL void udsSelectServiceFunction(void)
 		case SID_WRITE_DATA_BY_IDENTIFIER:
 			udsWDIDFnc();
 			break;
+		case SID_ROUTINE_CONTROL:
+			udsRCFnc();
+			break;
 		default:
 			break;
 	}
@@ -655,9 +764,9 @@ LOCAL void udsHandleServiceRequest(void)
 	udsRte.currentSid = udsGetSerivceData(0);
 	if(TRUE == udsLookupSid())
 	{	// Start to Process it
-		if(TRUE == udsCheckSessionLevel())
+		if(TRUE == udsCheckSessionLevel(UdsConfig.sidList[udsRte.sidIndex].sessionMask))
 		{
-			if(TRUE == udsCheckSecurityLevel())
+			if(TRUE == udsCheckSecurityLevel(UdsConfig.sidList[udsRte.sidIndex].securityLevelMask))
 			{
 				udsRte.suppressPosRspMsg = False; // TODO: ???
 				udsSelectServiceFunction();

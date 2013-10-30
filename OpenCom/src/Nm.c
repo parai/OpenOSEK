@@ -631,7 +631,6 @@ LOCAL void nmAddtoPresent(NetIdType NetId,NodeIdType NodeId)
 		ercd = CmpConfig(NetId,NM_ControlBlock[NetId].nmConfig.normal,RefConfig,NM_ControlBlock[NetId].nmCMask.normal);
 		if(ercd != E_OK)
 		{ // do ind
-			printf("Node = 0x%x\n",NodeId);
 			if(NM_ControlBlock[NetId].nmIndDeltaConfig.normal.SMode == SignalActivation)
 			{
 				(void)ActivateTask(NM_ControlBlock[NetId].nmIndDeltaConfig.normal.TaskId);

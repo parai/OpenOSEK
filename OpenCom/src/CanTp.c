@@ -18,6 +18,9 @@
  * Email: parai@foxmail.com
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
+// TODO: No matter what, There is Serious Porblem in CanTp.
+// So, I think I should better to learn more from the CanTp of arcore.
+
 
 /* ================================ INCLUDEs  =============================== */
 #include "Com.h"
@@ -155,10 +158,10 @@ EXPORT void CanTp_TxConformation(PduIdType TxPduId)
 		}
 		case CanTp_stSending:
 		{
-			if(0u == cantpRte[TxPduId].STmin)
-			{
-				canTpSendCF(TxPduId);
-			}
+//			if(0u == cantpRte[TxPduId].STmin)
+//			{
+//				canTpSendCF(TxPduId);
+//			}
 			break;
 		}
 		case CanTp_stWaitFC:	//nothing as has just send the First Frame or BS count down to 0
@@ -184,6 +187,7 @@ EXPORT void CanTp_RxIndication( PduIdType RxPduId, const PduInfoType *CanTpRxPdu
 		printf("]\n");
 	}
 #endif
+	printf("*");
 	if(CanTp_stWaitFC == cantpRte[RxPduId].state) // Special process
 	{
 		if((CanTpRxPduPtr->SduDataPtr[0]&N_PCI_MASK) == N_PCI_FC)
@@ -525,7 +529,6 @@ LOCAL void CanTp_SendingMain(PduIdType RxPduId)
 	{	// Something Wrong
 		cantpRte[RxPduId].state = CanTp_stIdle;
 		devTrace(tlError,"Error: as CanTp[%d] STmin Timer not started during Sending.\n",RxPduId);
-
 	}
 }
 
@@ -533,6 +536,7 @@ void CanTp_TaskMain(void)
 {
 	uint8 i;
 	SuspendAllInterrupts();
+	printf("#");
 	for(i=0;i<cfgCOM_TPIPDU_NUM;i++)
 	{
 		switch(cantpRte[i].state)

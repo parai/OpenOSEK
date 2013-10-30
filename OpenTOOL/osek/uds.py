@@ -26,6 +26,8 @@ uds_tx_id = 0x731
 uds_rx_id = 0x732
 UdsAckEvent = DeclareEvent()
 
+uds_ack = []
+
 def UdsOnCanUsage():
     print "Usage:"
     print "\t python uds.py --port port"
@@ -43,9 +45,12 @@ def UdsConfig():
     print 'Tx = %s, Rx = %s.'%(hex(uds_tx_id),hex(uds_rx_id))
 
 def Uds_RxIndication(data):
+    global uds_ack
+    uds_ack = []
     cstr = '    Response: ['
     for i in range(0,len(data)):
         cstr += '0x%-2x,'%(data[i])
+        uds_ack.append(data[i])
     cstr += ']..['
     for i in range(0,len(data)):
         if re.match(r'[^\s]','%c'%(data[i])):
@@ -54,6 +59,7 @@ def Uds_RxIndication(data):
             cstr += '.'
     cstr += ']'
     print cstr
+    Sleep(10)
     SetEvent(UdsAckEvent)
 def UdsOnCanClient(port = 8999):
     global uds_tx_id, uds_rx_id
@@ -126,6 +132,7 @@ def biSendFF(argv):
         print 'SendFF Argument Error!'
         
 def biTest(argv):
+    global uds_ack
     """ Session Control, Program"""
     data = [0x10,0x02] 
     print '    Send: [0x10,0x02]'
@@ -138,12 +145,15 @@ def biTest(argv):
     CanTp_Transmit(data)
     WaitEvent(UdsAckEvent,5000)
     ClearEvent(UdsAckEvent)
-    """ Security Access, Send Key 0xDEADBEEF"""
-    data = [0x27,0x02,0xFE,0xEB,0xDA,0xED] 
-    print '    Send: [0x27,0x02,0xFE,0xEB,0xDA,0xED] '
-    CanTp_Transmit(data)
-    WaitEvent(UdsAckEvent,5000)
-    ClearEvent(UdsAckEvent)
+    if(uds_ack[2]==0 and uds_ack[3]==0 and uds_ack[4]==0 and uds_ack[5]==0):
+        print 'Already UnSecured!'
+    else:
+        """ Security Access, Send Key 0xDEADBEEF"""
+        data = [0x27,0x02,0xFE,0xEB,0xDA,0xED] 
+        print '    Send: [0x27,0x02,0xFE,0xEB,0xDA,0xED] '
+        CanTp_Transmit(data)
+        WaitEvent(UdsAckEvent,5000)
+        ClearEvent(UdsAckEvent)
     """ Communication Control:enableRxAndDisableTx"""
     data = [0x28,0x01,0x02] 
     print '    Send: [0x28,0x01,0x02] '
@@ -178,13 +188,38 @@ def biTest(argv):
     CanTp_Transmit(data)
     WaitEvent(UdsAckEvent,5000)
     ClearEvent(UdsAckEvent)
-    
+    """ RC Start : 0xAB11"""
+    data = [0x31,0x01,0xAB,0x11] 
+    print '    Send: [0x31,0x01,0xAB,0x11] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    """ RC Stop : 0xAB11"""
+    data = [0x31,0x02,0xAB,0x11] 
+    print '    Send: [0x31,0x02,0xAB,0x11] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+    """ RC RequestResult : 0xAB11"""
+    data = [0x31,0x03,0xAB,0x11] 
+    print '    Send: [0x31,0x03,0xAB,0x11] '
+    CanTp_Transmit(data)
+    WaitEvent(UdsAckEvent,5000)
+    ClearEvent(UdsAckEvent)
+
+def biCT(argv):
+    if argv is None:
+        argv = 100
+    while argv > 0:
+        biTest(None)    
+        argv -= 1
     
 UdsBuildIn = {
     'Session':biSession,
     'Security':biSecurity,
     'SendFF':biSendFF,
-    'Test':biTest
+    'Test':biTest,
+    'CT':biCT
 }
 def main(argc,argv):
     if(argc != 3):

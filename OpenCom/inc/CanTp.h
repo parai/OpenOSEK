@@ -33,7 +33,7 @@
 IMPORT void CanTp_Init(void);
 IMPORT void CanTp_Shutdown(void);
 IMPORT Std_ReturnType CanTp_Transmit( PduIdType TxSduId, PduLengthType Length);
-IMPORT void CanTp_MainFunction(void);
+IMPORT void CanTp_TaskMain(void);
 IMPORT void CanTp_RxIndication( PduIdType CanTpRxPduId, const PduInfoType *CanTpRxPduPtr );
 IMPORT void CanTp_TxConformation(PduIdType CanTpTxPduId);
 IMPORT void CanTp_ReleaseRxBuffer(PduIdType CanTpRxPduId);

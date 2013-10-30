@@ -94,6 +94,8 @@
 #define UdsSecurityLevelE         0x4000U
 #define UdsSecurityLevelF         0x8000U
 
+#define RCReturn(__len) (__len+1)
+
 /* ================================ TYPEs     =============================== */
 typedef uint8 Uds_SessionType;
 typedef uint8 Uds_SecurityLevelType;
@@ -132,12 +134,35 @@ typedef struct
 
 typedef struct
 {
+	uint16 id;
+	Uds_SessionMaskType sessionMask;
+	Uds_SecurityLevelMaskType securityLevelMask;
+	/*
+	 * Here is the memo,
+	 * Return:
+	 * 		If it is not condition OK to startRC or "param" is invalid: Return 0
+	 * 		Else: Return (the length of "status" + 1), please use the macro RCReturn() instead.
+	 * 		Example : return RCReturn(3);
+	 * param: the Optional routineControlOptionRecord
+	 * length: length of "param"
+	 * status : the Optional routineStatusRecord
+	 * result: the result of RC
+	 */
+	uint16 (*startRC)(uint8* param,uint16 length,uint8* status);
+	uint16 (*stopRC)(uint8* param,uint16 length,uint8* status);
+	uint16 (*requestResultRC)(uint8* param,uint16 length,uint8* result);
+}Uds_RCType;
+
+typedef struct
+{
 	const Uds_ServiceType* sidList;
 	uint8                  sidNbr;
 	const Uds_DIDType*     rdidList;
 	uint8                  rdidNbr;
 	const Uds_DIDType*     wdidList;
 	uint8                  wdidNbr;
+	const Uds_RCType*      rcList;
+	uint8                  rcNbr;
 }Uds_ConfigType;
 
 
@@ -148,5 +173,6 @@ typedef uint8 Uds_NrcType;
 /* ================================ FUNCTIONs =============================== */
 IMPORT void Uds_RxIndication(PduIdType RxPduId,PduLengthType Length);
 IMPORT void Uds_TxConformation(PduIdType RxPduId,StatusType status);
+IMPORT void Uds_MainTask(void);
 
 #endif
