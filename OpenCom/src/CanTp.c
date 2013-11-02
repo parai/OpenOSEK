@@ -311,6 +311,17 @@ LOCAL void CanTp_ReceivingMain(PduIdType RxPduId)
 	uint8 i;
 	for(i=0;i<cantpRte[RxPduId].Q.counter;i++)
 	{
+#if(tlCanTp > cfgDEV_TRACE_LEVEL)
+		{
+			int j;
+			printf("Received Q[%d] = [",i);
+			for(j=0;j<cantpRte[RxPduId].Q.queue[i].length;j++)
+			{
+				printf("0x%-2X,",cantpRte[RxPduId].Q.queue[i].data[j]);
+			}
+			printf("]\n");
+		}
+#endif
 		if( N_PCI_SF == (cantpRte[RxPduId].Q.queue[i].data[0]&N_PCI_MASK))
 		{
 			canTpReceiveSF(RxPduId,cantpRte[RxPduId].Q.queue[i].data);
@@ -526,13 +537,13 @@ void CanTp_TaskMain(void)
 }
 TASK(TaskCanTpMain)
 {
-	CanTp_TaskMain();
+    CanTp_TaskMain();
 	TerminateTask();
 }
 
 
 // -------------- For Debug Only
-#if tlCanTp > 0
+#if( tlCanTp > cfgDEV_TRACE_LEVEL )
 void CanTp_Print(void)
 {
 	int i;

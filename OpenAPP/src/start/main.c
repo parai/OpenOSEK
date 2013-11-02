@@ -19,7 +19,7 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
-#define APP_RUN_WITHOUT_RTOS
+//#define APP_RUN_WITHOUT_RTOS
 #ifdef APP_RUN_WITHOUT_RTOS
 #include <windows.h>
 #include "Com.h"

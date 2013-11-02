@@ -188,17 +188,6 @@ EXPORT Can_ReturnType Can_Write(Can_HwHandleType Hth,const Can_PduType* PduInfo)
 {
 	int i;
 	uint16 Controller = Hth; // find controller
-#if 0 // The test says that don't send it too fast, better 10ms / 1 Frame
-	{
-		int i;
-		printf("CANID = 0x%x,[",PduInfo->id);
-		for(i=0;i<PduInfo->length;i++)
-		{
-			printf("0x%-2x,",(unsigned int)PduInfo->sdu[i]);
-		}
-		printf("]\n");
-	}
-#endif
 	// Check parameter
 	if(Controller >= CAN_CONTROLLER_CNT)
 	{
@@ -217,6 +206,17 @@ EXPORT Can_ReturnType Can_Write(Can_HwHandleType Hth,const Can_PduType* PduInfo)
 	}
 	WaitForSingleObject( Can_CtrlTxMutex[Controller], INFINITE );
 
+#if(tlCan > cfgDEV_TRACE_LEVEL) // The test says that don't send it too fast, better 10ms / 1 Frame
+	{
+		int i;
+		printf("Send[0x%X] = [",(unsigned int)PduInfo->id);
+		for(i=0;i<PduInfo->length;i++)
+		{
+			printf("0x%-2X,",(unsigned int)PduInfo->sdu[i]);
+		}
+		printf("]\n");
+	}
+#endif
 	Can_PduMsg[Controller].swPduHandle = PduInfo->swPduHandle;
 	Can_PduMsg[Controller].id = PduInfo->id;
 	Can_PduMsg[Controller].length = PduInfo->length;

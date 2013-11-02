@@ -96,6 +96,7 @@ ALARM AlarmUdsMain {
 		APPMODE = OSDEFAULTAPPMODE;
 	}
 };
+
 // No Standard NM definition, So now Define by OpenOSEK
 // Only Direct NM was suported
 NM Network1

@@ -815,6 +815,6 @@ EXPORT void Uds_MainTask(void)
 
 TASK(TaskUdsMain)
 {
-	Uds_MainTask();
+    Uds_MainTask();
 	TerminateTask();
 }

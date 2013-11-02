@@ -179,7 +179,7 @@ IMPORT const PriorityType  knl_tcb_ipriority[];
 IMPORT const PriorityType  knl_tcb_rpriority[];
 IMPORT const uint8         knl_tcb_max_activation[];
 IMPORT const StackSizeType knl_tcb_stksz[];
-EXPORT const uint8*        knl_tcb_stack[];
+IMPORT uint8* const        knl_tcb_stack[];
 IMPORT const AppModeType   knl_tcb_mode[];
 IMPORT const uint8         knl_tcb_flgid[];
 IMPORT TaskStateType       knl_tcb_state[];
@@ -190,7 +190,7 @@ IMPORT ResourceType        knl_tcb_resque[];
 IMPORT AppModeType knl_appmode;
 IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
 IMPORT uint8    knl_dispatch_disabled;
-IMPORT TaskType knl_curtsk;
+IMPORT volatile TaskType knl_curtsk;
 IMPORT volatile TaskType knl_schedtsk;
 IMPORT RDYQUE knl_rdyque;
 

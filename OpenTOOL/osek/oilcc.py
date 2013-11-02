@@ -861,8 +861,8 @@ class GenerateOsCfgC():
                 cstr += '\t%s_rpriority,\n'%(tsk.name)
             cstr += '};\n\n'
             fp.write(cstr);
-        if(GetOsekObjects('OS')[0].getValue('SCHEDULE') != 'Non' and
-           len(GetOsekObjects('EVENT')) == 0):
+        if(GetOsekObjects('OS')[0].getValue('SCHEDULE') != 'Non' or
+           len(GetOsekObjects('EVENT')) != 0):
             # -------------- task stack buffer
             for tsk in GetOsekObjects('TASK'):
                 fp.write('LOCAL uint8 knl_%s_stack[%s_stacksize];\n'%(tsk.name, tsk.name))
@@ -873,7 +873,7 @@ class GenerateOsCfgC():
             cstr += '};\n\n'
             fp.write(cstr);
             # -------------- task stackbuffer list
-            cstr = 'EXPORT const uint8* knl_tcb_stack[] = \n{\n'
+            cstr = 'EXPORT uint8* const knl_tcb_stack[] = \n{\n'
             for tsk in GetOsekObjects('TASK'):
                 cstr += '\t(knl_%s_stack+%s_stacksize),\n'%(tsk.name, tsk.name)
             cstr += '};\n\n'

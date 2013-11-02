@@ -2,13 +2,16 @@
 #include "Com.h"
 void StartupHook(void)
 {
+  /*
 	Can_Init(NULL);
 	StartNM(0);
 	CanTp_Init();
+  */
 }
 extern void CanTp_Print(void);
 TASK(TaskKeyMonitor)
 {
+  /*
 	char chr;
 	for(;;)
 	{
@@ -49,6 +52,9 @@ TASK(TaskKeyMonitor)
 			CanTp_Print();
 		}
 	}
+  */
+    printf("TaskKeyMonitor is Running.\n");
+    for(;;);  // Should always be Idle.
 	TerminateTask();
 }
 

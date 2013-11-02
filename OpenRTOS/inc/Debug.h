@@ -32,6 +32,7 @@
 #define tlWarning    90
 
 // Component
+#define tlCan        20
 #define tlCanTp      30
 #define tlUds        40
 #if	defined( __GNUC__ ) && (cfgDEV_TRACE_ON == 1)

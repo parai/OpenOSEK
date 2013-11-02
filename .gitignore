@@ -18,6 +18,20 @@ cscope.files
 .settings
 *.log
 
+
+*.pbi
+*.cout
+*.bat
+*.dbgdt
+*.dni
+*.pbd
+*.browse
+*.dep
+*.xml
+*.jlink
+*.wsdt
+*.ewd
+
 # Libraries
 *.lib
 *.a

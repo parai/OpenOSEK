@@ -1101,6 +1101,6 @@ EXPORT void NM_MainTask(void)
 
 TASK(TaskNmMain)
 {
-	NM_MainTask();
+    NM_MainTask();
 	TerminateTask();
 }

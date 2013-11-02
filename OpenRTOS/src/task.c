@@ -36,7 +36,7 @@ EXPORT RDYQUE knl_rdyque;
 #if(cfgOS_MULTIPLY_ACTIVATION == 1)
 EXPORT uint8               knl_tcb_activation[cfgOS_TASK_NUM];
 #endif
-EXPORT TaskType knl_curtsk;
+EXPORT volatile TaskType knl_curtsk;
 EXPORT volatile TaskType knl_schedtsk;
 
 /* ================================ FUNCTIONs =============================== */
