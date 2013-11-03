@@ -2,11 +2,9 @@
 #include "Com.h"
 void StartupHook(void)
 {
-  /*
 	Can_Init(NULL);
 	StartNM(0);
 	CanTp_Init();
-  */
 }
 extern void CanTp_Print(void);
 TASK(TaskKeyMonitor)

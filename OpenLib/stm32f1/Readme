@@ -1,0 +1,10 @@
+URL: http://www.st.com/web/en/catalog/tools/PF257853#
+
+download: STSW-STM32017
+and extract the "libraries", and put it here.
+
+
+/OpenLib/stm32f1/libraries/CMSIS
+/OpenLib/stm32f1/libraries/STM32F10x_StdPeriph_Driver
+...
+
