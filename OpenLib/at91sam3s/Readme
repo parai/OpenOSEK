@@ -1,0 +1,8 @@
+URL: http://www.atmel.com/tools/SAM3SSOFTWAREPACKAGE.aspx
+
+download: AT91SAM3S-EK GNU Software Package.zip
+and extract the "libraries", and put it here.
+
+
+/OpenLib/at91sam3s/libraries/libchip_sam3s
+/OpenLib/at91sam3s/libraries/libboard_sam3s-ek

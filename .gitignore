@@ -31,6 +31,7 @@ cscope.files
 *.jlink
 *.wsdt
 *.ewd
+*.tmp
 
 # Libraries
 *.lib
@@ -58,4 +59,5 @@ OpenRTOS/mak/9s12xep100/CW
 OpenRTOS/out
 OpenRTOS/test
 OpenAPP/out
+OpenLib/at91sam3s/libraries
 
