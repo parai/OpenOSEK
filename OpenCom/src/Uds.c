@@ -176,7 +176,7 @@ EXPORT void Uds_RxIndication(PduIdType RxPduId,PduLengthType Length)
 	}
 	else
 	{
-		devTrace(tlError,'UDS Server is Currently Busy.');
+		devTrace(tlError,"UDS Server is Currently Busy.\n");
 		// TODO:
 //		if(udsRte.Q.counter < cfgUDS_Q_NUM)
 //		{

@@ -115,12 +115,14 @@ EXPORT void knl_setup_context(TaskType taskid)
 	FP pc = portWaitForStart;
 	knl_tcb_old_sp[taskid] = knl_tcb_sp[taskid];
 	knl_tcb_sp[taskid]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) pc, NULL, CREATE_SUSPENDED, NULL );
+	devAssert(knl_tcb_sp[taskid]!=NULL,"OS:Create Task <%d> Context Failed!",(int)taskid);
 	SetThreadAffinityMask( knl_tcb_sp[taskid], 0x01 );
 	SetThreadPriorityBoost( knl_tcb_sp[taskid], TRUE );
 	SetThreadPriority( knl_tcb_sp[taskid], THREAD_PRIORITY_IDLE );
 }
 LOCAL void l_dispatch0(void)
 {
+	DWORD ercd = 0;
 	portInterruptsEnabled = TRUE; //enable interrupt
 	while(INVALID_TASK == knl_schedtsk)
 	{
@@ -130,28 +132,67 @@ LOCAL void l_dispatch0(void)
 	knl_dispatch_disabled=0;    /* Dispatch enable */
 
 	/* resume task */
-	if(-1 == ResumeThread(knl_tcb_sp[knl_curtsk]))
-	{
-		printf("Resume Task <%d> failed.\n",knl_curtsk);
-	}
+	ercd = ResumeThread(knl_tcb_sp[knl_curtsk]);
+	devTrace(tlPort,"Resume Task %d, Previous Suspend Count is %d.\n",(int)knl_curtsk,(int)ercd);
+	devAssert(-1 != ercd,"Resume Task <%d> failed.\n",(int)knl_curtsk);
 }
 
 EXPORT void knl_dispatch_entry(void)
 {
 	TaskType curtsk;
+	DWORD ercd;
 	knl_dispatch_disabled=1;    /* Dispatch disable */
 	curtsk = knl_curtsk;
 	knl_curtsk = INVALID_TASK;
 
 	l_dispatch0();
-	if((curtsk != INVALID_TASK)&&(-1 == SuspendThread( knl_tcb_sp[curtsk])))
+	if(curtsk != INVALID_TASK)
 	{
-		printf("Suspend Task %d failed.\n",curtsk);
+		ercd = SuspendThread( knl_tcb_sp[curtsk]);
+		devTrace(tlPort,"Suspend Task %d, Previous Suspend Count is %d.\n",(int)curtsk,(int)ercd);
+		devAssert(-1 != ercd,"Suspend Task <%d> failed.\n",(int)curtsk);
 	}
 }
 
 LOCAL void knl_system_timer(void)
 {
+#if(tlPort > cfgDEV_TRACE_LEVEL)
+	{
+		static unsigned int i = 0;
+		i++;
+		if(0 == (i%1000))
+		{
+			devTrace(tlPort,"OpenRTOS System Timer is Running.\n");
+		}
+		if(0 == (i%5000))
+		{
+			int j;
+			devTrace(tlPort,"OpenRTOS State: knl_dispatch_disabled=%d,knl_taskindp=%d.\n",
+					(int)knl_dispatch_disabled,(int)knl_taskindp);
+			devTrace(tlPort,"OpenRTOS State: knl_curtsk=%d(st=%d),knl_schedtsk=%d(st=%d).\n",
+					(int)knl_curtsk,(int)knl_tcb_state[knl_curtsk],(int)knl_schedtsk,(int)knl_tcb_state[knl_schedtsk]);
+			devTrace(tlPort,"knl_rdyque: top_pri=%d, bitmap=[",knl_rdyque.top_pri);
+			for(j=0;j<sizeof(knl_rdyque.bitmap);j++)
+			{
+				devTrace(tlPort,"0x%-2X,",(unsigned int)knl_rdyque.bitmap[j]);
+			}
+			devTrace(tlPort,"]\n");
+#           if((cfgOS_MULTIPLY_ACTIVATION == 1) || (cfgOS_MULTIPLY_PRIORITY == 1))
+			for(j=0;j<NUM_PRI;j++)
+			{
+				int h;
+				TaskReadyQueueType* tskque = &knl_rdyque.tskque[j];
+				devTrace(tlPort,"{%d,%d,%d, [",(int)tskque->head,(int)tskque->tail,(int)tskque->length);
+				for(h=0;h<tskque->length;h++)
+				{
+					devTrace(tlPort,"%d,",(int)tskque->queue[h]);
+				}
+				devTrace(tlPort,"] }\n");
+			}
+#           endif
+		}
+	}
+#endif
 	EnterISR();
 #if(cfgOS_ALARM_NUM > 0)
 	(void)SignalCounter(SystemTimer);
@@ -277,7 +318,7 @@ LOCAL void portProcessSimulatedInterrupts( void )
 			ReleaseMutex( portInterruptEventMutex );
 			if((portDispatchInIsrRequested == TRUE) &&(knl_dispatch_disabled == 0))
 			{
-				// printf("ISR dispatch!\n");
+				devTrace(tlPort,"OS:Service the request of Dispatch in ISR!\n");
 				portDispatchInIsrRequested = FALSE;
 				knl_dispatch_entry();
 			}
@@ -307,6 +348,12 @@ EXPORT void portGenerateSimulatedInterrupt( unsigned long ulInterruptNumber )
 }
 LOCAL void portWaitForStart(void)
 {
+	StatusType ercd;
 	GetInternalResource();
 	knl_tcb_pc[knl_curtsk]();
+	ReleaseInternalResource();
+	knl_taskindp = 0u ;
+	ercd = TerminateTask();
+	devAssert(E_OK==ercd,"TerminateTask Failed, ercd = %d.\n",(int)ercd);
+	devTrace(tlPort,"os: the last action of thread, returned.\n");
 }

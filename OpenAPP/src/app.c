@@ -9,7 +9,7 @@ void StartupHook(void)
 extern void CanTp_Print(void);
 TASK(TaskKeyMonitor)
 {
-  /*
+
 	char chr;
 	for(;;)
 	{
@@ -50,7 +50,6 @@ TASK(TaskKeyMonitor)
 			CanTp_Print();
 		}
 	}
-  */
     printf("TaskKeyMonitor is Running.\n");
     for(;;);  // Should always be Idle.
 	TerminateTask();

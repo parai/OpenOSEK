@@ -28,7 +28,7 @@
 
 /* ================================ DATAs     =============================== */
 EXPORT AppModeType knl_appmode = INVALID_APPMODE;
-EXPORT uint8    knl_taskindp = 0u;   /* task in independent part nested level */
+EXPORT uint8    knl_taskindp = 0u;          /* task in independent part nested level */
 EXPORT uint8    knl_dispatch_disabled = 0u; /* os dispatch state:enabled(0) or disabled(1) */
 
 #if(cfgOS_ERRORHOOK == 1)
@@ -133,6 +133,7 @@ EXPORT void EnterISR(void)
 
 EXPORT void LeaveISR(void)
 {
+
 	DISABLE_INTERRUPT();
 	if(knl_taskindp > 0)
 	{
@@ -142,6 +143,7 @@ EXPORT void LeaveISR(void)
 	{
 		if(knl_curtsk != knl_schedtsk)
 		{
+			devTrace(tlPort,"OS:Dispatch in ISR has been requested!\n");
 			knl_isr_dispatch();
 		}
 	}

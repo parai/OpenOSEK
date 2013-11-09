@@ -828,7 +828,7 @@ class GenerateOsCfgC():
         for i in range(0, max_prio+1):
             size = self.getPrioSize(i);
             if(size != 0):
-                fp.write('LOCAL TaskType knl_%s_queue[%s];\n'%(i, size+1))
+                fp.write('LOCAL TaskType knl_%s_queue[%s] = {%s};\n'%(i, size+1,'INVALID_TASK,'*(size+1)))
                 cstr += '\t\t{/* head= */ 0,/* tail= */ 0,/* length= */ %s, /* queue= */ knl_%s_queue},\n'%(size+1, i);
             else:
                 cstr += '\t\t{/* head= */ 0,/* tail= */ 0,/* length= */ 0, /* queue= */ NULL},\n';
@@ -951,10 +951,12 @@ class GenerateOsCfgC():
         for alm in GetOsekObjects('ALARM'):
             if(alm.getValue('ACTION') == 'SETEVENT'):
                 cstr += 'LOCAL void AlarmMain%s(void)\n{\n'%(alm.name)
+                cstr += '\tdevTrace(tlGen,"SetEvetn(%s,%s);\\n");\n'%(alm.getValue('TASK'), alm.getValue('EVENT'))
                 cstr += '\t(void)SetEvent(%s,%s);\n'%(alm.getValue('TASK'), alm.getValue('EVENT'))
                 cstr += '}\n'
             elif(alm.getValue('ACTION') == 'ACTIVATETASK'):
                 cstr += 'LOCAL void AlarmMain%s(void)\n{\n'%(alm.name)
+                cstr += '\tdevTrace(tlGen,"ActivateTask(%s);\\n");\n'%(alm.getValue('TASK'))
                 cstr += '\t(void)ActivateTask(%s);\n'%(alm.getValue('TASK'))
                 cstr += '}\n'
             else: #if(alm.action == 'ALARMCALLBACK'):

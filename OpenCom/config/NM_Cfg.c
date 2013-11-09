@@ -86,7 +86,7 @@ TASK(TaskNmInd)
 			}
 			if((mask&EventRingData) != 0)
 			{
-				// printf("NM Ring Data ind.\n");
+				printf("NM Ring Data ind.\n");
 			}
 			(void)ClearEvent(EventNmNormal|EventNmLimphome|EventNmStatus|EventRingData);
 		}

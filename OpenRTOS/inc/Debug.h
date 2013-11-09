@@ -26,20 +26,33 @@
 /* ================================ MACROs    =============================== */
 #define cfgDEV_TRACE_ON     1
 // the bigger value has higher level
-#define cfgDEV_TRACE_LEVEL  0
+#define cfgDEV_TRACE_LEVEL  15
 // Suggest Level
 #define tlError      100
 #define tlWarning    90
 
 // Component
+#define tlGen        10
 #define tlCan        20
 #define tlCanTp      30
 #define tlUds        40
+#define tlOs         0
+#define tlPort       0
 #if	defined( __GNUC__ ) && (cfgDEV_TRACE_ON == 1)
 #define devTrace(__level,...) 	\
-	if(__level >= cfgDEV_TRACE_LEVEL)	printf(__VA_ARGS__)
+	if(__level > cfgDEV_TRACE_LEVEL)	printf(__VA_ARGS__)
+#define devAction(__level,__action)	\
+	if(__level > cfgDEV_TRACE_LEVEL)	(__action)
+#define devAssert(__isTrue,...)		\
+	if(!(__isTrue))					\
+	{								\
+		printf(__VA_ARGS__);		\
+		for(;;);					\
+	}
 #else
 #define devTrace(__level,...)
+#define devAction(__level,__action)
+#define devAssert(__isTrue,...)
 #endif
 
 /* ================================ TYPEs     =============================== */

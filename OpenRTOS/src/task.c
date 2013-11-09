@@ -88,11 +88,13 @@ EXPORT StatusType TerminateTask(void)
     {
     	knl_tcb_activation[knl_curtsk] --;
     	knl_make_ready(knl_curtsk);
+    	devTrace(tlOs,"TerminateTask Task %d, Goto READY state as Activation > 0.\n",(int)knl_curtsk);
     }
     else
 #endif
     {
     	knl_tcb_state[knl_curtsk] = SUSPENDED;
+    	devTrace(tlOs,"TerminateTask Task %d, Goto SUSPENDED state.\n",(int)knl_curtsk);
     }
     knl_search_schedtsk();
     knl_force_dispatch();
@@ -139,6 +141,7 @@ EXPORT StatusType ActivateTask ( TaskType TaskID )
 	if(SUSPENDED == knl_tcb_state[TaskID])
 	{
 		knl_make_active(TaskID);
+		devTrace(tlOs,"ActivateTask Task %d in SUSPENDED state.\n",(int)TaskID);
 	}
 #if(cfgOS_MULTIPLY_ACTIVATION == 1)
 	else
@@ -147,6 +150,7 @@ EXPORT StatusType ActivateTask ( TaskType TaskID )
 		{
 			knl_ready_queue_insert(TaskID);
 			knl_tcb_activation[TaskID] ++ ;
+			devTrace(tlOs,"Multiply ActivateTask Task %d.\n",(int)TaskID);
 		}
 		else
 		{
@@ -490,6 +494,7 @@ EXPORT void knl_search_schedtsk(void)
 	if(tskque->head != tskque->tail)
 	{  // not empty.
 		knl_schedtsk = tskque->queue[tskque->head];
+		devAction(tlOs,tskque->queue[tskque->head]=INVALID_TASK);
 		if((tskque->head+1) < tskque->length)
 		{
 			tskque->head++;
@@ -546,6 +551,7 @@ EXPORT TaskType knl_ready_queue_top(void)
 		return INVALID_TASK;
 	}
 #else
+	return knl_rdyque.tskque[top_pri];
 #endif
 }
 EXPORT void knl_ready_queue_insert_top(TaskType taskid)
@@ -561,6 +567,7 @@ EXPORT void knl_ready_queue_insert_top(TaskType taskid)
 	{
 		tskRdyQue->head --;
 	}
+	devAssert(tskRdyQue->tail!=tskRdyQue->head,"Error As Task Ready Queue Full when Push to Head.\n");
 	tskRdyQue->queue[tskRdyQue->head] = taskid;
 #else
 	knl_rdyque.tskque[priority] = taskid;
@@ -587,6 +594,7 @@ EXPORT void knl_ready_queue_insert(TaskType taskid)
 	{
 		tskRdyQue->tail = 0;
 	}
+	devAssert(tskRdyQue->tail!=tskRdyQue->head,"Error As Task Ready Queue Full when Push to Tail.\n");
 #elif(cfgOS_MULTIPLY_PRIORITY == 0)
 	knl_rdyque.tskque[priority] = taskid;
 #endif
