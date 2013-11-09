@@ -24,7 +24,7 @@
 
 /* ================================ MACROs    =============================== */
 #define portINTERRUPT_TICK				( 0UL )
-#define portMAX_INTERRUPTS 				( 2UL )
+#define portMAX_INTERRUPTS 				( 1UL )
 
 /*
  * Interrupt enable/disable

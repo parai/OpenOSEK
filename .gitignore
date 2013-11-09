@@ -61,4 +61,8 @@ OpenRTOS/test
 OpenAPP/out
 OpenLib/at91sam3s/libraries
 OpenLib/stm32f1/libraries
+OpenAPP/mak/vc2010/OpenOSEK/Debug
+OpenAPP/mak/vc2010/OpenOSEK/OpenOSEK/Debug
+OpenAPP/mak/vc2010/OpenOSEK/ipch
+
 

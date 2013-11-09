@@ -20,9 +20,9 @@
  */
 /* ================================ INCLUDEs  =============================== */
 #include "Can.h"
-#include <windows.h>
 #include <winsock2.h>
 #include <Ws2tcpip.h>
+#include <windows.h>
 #include <Os.h>
 // Link with ws2_32.lib
 #ifndef __GNUC__
@@ -61,8 +61,12 @@ LOCAL const Can_ConfigType canCongig =
 {
 	{
 		{
-			.CanControllerId = CAN_CTRL_0,
-			.CanSocketServerPort = 8000, // 127.0.0.1:8000 CAN-BUS1 server
+			/*.CanControllerId = */CAN_CTRL_0,
+			/* .CanControllerBaudRate = */ 125000,
+			/* .CanControllerPropSeg = */ 1,
+			/* .CanControllerSeg1 = */ 13,
+			/* .CanControllerSeg2 = */ 2,
+			/* .CanSocketServerPort = */8000, // 127.0.0.1:8000 CAN-BUS1 server
 		},
 //		{
 //			.CanControllerId = CAN_CTRL_1,

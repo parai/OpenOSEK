@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{9FDF90E0-BAC3-4308-90D1-CB2424A07708}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>OpenOSEK</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>H:\OpenOSEK\OpenAPP\inc;H:\OpenOSEK\OpenAPP\out;H:\OpenOSEK\OpenCom\inc;H:\OpenOSEK\OpenCom\config;H:\OpenOSEK\OpenDriver\inc;H:\OpenOSEK\OpenRTOS\inc;H:\OpenOSEK\OpenRTOS\src;H:\OpenOSEK\OpenRTOS\src\portable\mingw;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;SIMULATE_ON_WIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\..\OpenCom\config\OpenCom.oil" />
+    <None Include="..\..\..\..\config\OpenAPP.oil" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\OpenCom\config\Dll_Cfg.c" />
+    <ClCompile Include="..\..\..\..\..\OpenCom\config\NM_Cfg.c" />
+    <ClCompile Include="..\..\..\..\..\OpenCom\config\Uds_Cfg.c" />
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\CanTp.c" />
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\Dll.c" />
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\Nm.c" />
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\Uds.c" />
+    <ClCompile Include="..\..\..\..\..\OpenDriver\src\mingw\Can.c" />
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\alarm.c" />
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\event.c" />
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\interrupt.c" />
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\osctrl.c" />
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\portable\mingw\portable.c" />
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\resource.c" />
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\task.c" />
+    <ClCompile Include="..\..\..\..\out\comcfg.c" />
+    <ClCompile Include="..\..\..\..\out\oscfg.c" />
+    <ClCompile Include="..\..\..\..\src\app.c" />
+    <ClCompile Include="..\..\..\..\src\start\main.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\OpenCom\config\Uds_Cfg.h" />
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\CanTp.h" />
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Com.h" />
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\ComStack_Types.h" />
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Dll.h" />
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Nm.h" />
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Uds.h" />
+    <ClInclude Include="..\..\..\..\..\OpenDriver\inc\Can.h" />
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\inc\Debug.h" />
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\inc\Os.h" />
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\inc\Std_Types.h" />
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\src\osek_os.h" />
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\src\portable\mingw\portable.h" />
+    <ClInclude Include="..\..\..\..\out\comcfg.h" />
+    <ClInclude Include="..\..\..\..\out\oscfg.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

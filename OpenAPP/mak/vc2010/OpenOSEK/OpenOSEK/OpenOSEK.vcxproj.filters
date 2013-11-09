@@ -1,0 +1,173 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="OpenApp">
+      <UniqueIdentifier>{00dac7e1-ee6a-47e2-a023-941971132c2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenApp\src">
+      <UniqueIdentifier>{132bc47f-1241-481e-97c5-b12342f79a0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenApp\inc">
+      <UniqueIdentifier>{2767e1e7-715d-4605-b962-5c8fb12e9de0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenApp\config">
+      <UniqueIdentifier>{8af1d35e-dbb5-424e-83a9-7ee8b2823129}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenApp\src\start">
+      <UniqueIdentifier>{d0590aff-6449-4be6-a42c-5284981a0c37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenApp\out">
+      <UniqueIdentifier>{410ee7c3-a2ed-4a54-adf2-de7af0dfedd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenRTOS">
+      <UniqueIdentifier>{28bc0140-4cae-44b0-8f17-fac6927af278}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenRTOS\inc">
+      <UniqueIdentifier>{320e05f9-763a-446b-95c8-b57729ed55bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenRTOS\src">
+      <UniqueIdentifier>{c9c5d4ce-26dd-4ec7-9adb-f5ea66db0ad3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenRTOS\src\portable">
+      <UniqueIdentifier>{aea44946-9d58-4bb6-afad-514519c42dc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenRTOS\src\portable\mingw">
+      <UniqueIdentifier>{f7e162e4-9642-4742-96fc-495f20ecc6a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenCom">
+      <UniqueIdentifier>{d3984196-3f1f-413d-a7f9-b2fa3e00687f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenCom\inc">
+      <UniqueIdentifier>{87c42617-25aa-4659-9397-cb8b789487c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenCom\config">
+      <UniqueIdentifier>{824fb8e2-609c-416e-9014-63169339b16c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenCom\src">
+      <UniqueIdentifier>{f6890d22-8ed6-42ed-ad0f-5fab3a8f17c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenDriver">
+      <UniqueIdentifier>{bad98259-b15b-460d-80f7-74e5277246f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenDriver\inc">
+      <UniqueIdentifier>{8cbca3b3-7c2c-448c-b25c-58b64539f2e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenDriver\src">
+      <UniqueIdentifier>{9111574f-c985-43ac-a2be-c5e266d7f0ae}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\config\OpenAPP.oil">
+      <Filter>OpenApp\config</Filter>
+    </None>
+    <None Include="..\..\..\..\..\OpenCom\config\OpenCom.oil">
+      <Filter>OpenCom\config</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\src\app.c">
+      <Filter>OpenApp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\start\main.c">
+      <Filter>OpenApp\src\start</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\out\comcfg.c">
+      <Filter>OpenApp\out</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\out\oscfg.c">
+      <Filter>OpenApp\out</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\alarm.c">
+      <Filter>OpenRTOS\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\event.c">
+      <Filter>OpenRTOS\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\interrupt.c">
+      <Filter>OpenRTOS\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\osctrl.c">
+      <Filter>OpenRTOS\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\resource.c">
+      <Filter>OpenRTOS\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\task.c">
+      <Filter>OpenRTOS\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenRTOS\src\portable\mingw\portable.c">
+      <Filter>OpenRTOS\src\portable\mingw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenCom\config\Dll_Cfg.c">
+      <Filter>OpenCom\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenCom\config\NM_Cfg.c">
+      <Filter>OpenCom\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenCom\config\Uds_Cfg.c">
+      <Filter>OpenCom\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\CanTp.c">
+      <Filter>OpenCom\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\Dll.c">
+      <Filter>OpenCom\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\Nm.c">
+      <Filter>OpenCom\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenCom\src\Uds.c">
+      <Filter>OpenCom\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\OpenDriver\src\mingw\Can.c">
+      <Filter>OpenDriver\src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\out\comcfg.h">
+      <Filter>OpenApp\out</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\out\oscfg.h">
+      <Filter>OpenApp\out</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\inc\Debug.h">
+      <Filter>OpenRTOS\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\inc\Os.h">
+      <Filter>OpenRTOS\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\inc\Std_Types.h">
+      <Filter>OpenRTOS\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\src\osek_os.h">
+      <Filter>OpenRTOS\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenRTOS\src\portable\mingw\portable.h">
+      <Filter>OpenRTOS\src\portable\mingw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\CanTp.h">
+      <Filter>OpenCom\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Com.h">
+      <Filter>OpenCom\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\ComStack_Types.h">
+      <Filter>OpenCom\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Dll.h">
+      <Filter>OpenCom\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Nm.h">
+      <Filter>OpenCom\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenCom\inc\Uds.h">
+      <Filter>OpenCom\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenCom\config\Uds_Cfg.h">
+      <Filter>OpenCom\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\OpenDriver\inc\Can.h">
+      <Filter>OpenDriver\inc</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
