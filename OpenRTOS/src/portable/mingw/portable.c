@@ -48,7 +48,7 @@ LOCAL void portStartDispatcher(void);
 LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter );
 LOCAL void portProcessSimulatedInterrupts( void );
 LOCAL void l_dispatch0(void);
-LOCAL void portWaitForStart(void);
+LOCAL void portWaitForStart(DWORD taskid);
 LOCAL void knl_system_timer(void);
 
 EXPORT imask_t knl_disable_int( void )
@@ -114,7 +114,7 @@ EXPORT void knl_setup_context(TaskType taskid)
 	//FP pc = knl_tcb_pc[taskid];
 	FP pc = portWaitForStart;
 	knl_tcb_old_sp[taskid] = knl_tcb_sp[taskid];
-	knl_tcb_sp[taskid]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) pc, NULL, CREATE_SUSPENDED, NULL );
+	knl_tcb_sp[taskid]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) pc, (LPVOID)taskid, CREATE_SUSPENDED, NULL );
 	devAssert(knl_tcb_sp[taskid]!=NULL,"OS:Create Task <%d> Context Failed!",(int)taskid);
 	SetThreadAffinityMask( knl_tcb_sp[taskid], 0x01 );
 	SetThreadPriorityBoost( knl_tcb_sp[taskid], TRUE );
@@ -124,7 +124,7 @@ LOCAL void l_dispatch0(void)
 {
 	DWORD ercd = 0;
 	portInterruptsEnabled = TRUE; //enable interrupt
-	while(INVALID_TASK == knl_schedtsk)
+	while((INVALID_TASK == knl_schedtsk) || (knl_taskindp > 0))
 	{
 		Sleep(0); // release CPU give the right to other thread
 	}
@@ -346,13 +346,23 @@ EXPORT void portGenerateSimulatedInterrupt( unsigned long ulInterruptNumber )
 		ReleaseMutex( portInterruptEventMutex );
 	}
 }
-LOCAL void portWaitForStart(void)
+LOCAL void portWaitForStart(DWORD taskid)
 {
 	StatusType ercd;
+	while(knl_taskindp > 0)
+	{
+		Sleep(0);
+	}
+	devAssert(taskid==knl_curtsk,"OS:Serious Error as DATA inConsistant.\n");
 	GetInternalResource();
 	knl_tcb_pc[knl_curtsk]();
-	ReleaseInternalResource();
-	knl_taskindp = 0u ;
+
+	// OK, this port is not successful, some bug in it but Now I cann't solve it
+	// SO I try to recover from the bug
+	while(knl_taskindp > 0)
+	{
+		Sleep(0);
+	}
 	ercd = TerminateTask();
 	devAssert(E_OK==ercd,"TerminateTask Failed, ercd = %d.\n",(int)ercd);
 	devTrace(tlPort,"os: the last action of thread, returned.\n");

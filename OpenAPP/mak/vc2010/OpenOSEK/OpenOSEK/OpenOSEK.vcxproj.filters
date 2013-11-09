@@ -46,22 +46,22 @@
     <Filter Include="OpenCom\src">
       <UniqueIdentifier>{f6890d22-8ed6-42ed-ad0f-5fab3a8f17c8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="OpenDriver">
+    <Filter Include="OpenCom\src\OpenDriver">
       <UniqueIdentifier>{bad98259-b15b-460d-80f7-74e5277246f8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="OpenDriver\inc">
+    <Filter Include="OpenCom\src\OpenDriver\inc">
       <UniqueIdentifier>{8cbca3b3-7c2c-448c-b25c-58b64539f2e0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="OpenDriver\src">
+    <Filter Include="OpenCom\src\OpenDriver\src">
       <UniqueIdentifier>{9111574f-c985-43ac-a2be-c5e266d7f0ae}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\config\OpenAPP.oil">
-      <Filter>OpenApp\config</Filter>
-    </None>
     <None Include="..\..\..\..\..\OpenCom\config\OpenCom.oil">
       <Filter>OpenCom\config</Filter>
+    </None>
+    <None Include="..\..\..\..\config\OpenAPP.oil">
+      <Filter>OpenApp\config</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -120,7 +120,7 @@
       <Filter>OpenCom\src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\OpenDriver\src\mingw\Can.c">
-      <Filter>OpenDriver\src</Filter>
+      <Filter>OpenCom\src\OpenDriver\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -167,7 +167,7 @@
       <Filter>OpenCom\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\OpenDriver\inc\Can.h">
-      <Filter>OpenDriver\inc</Filter>
+      <Filter>OpenCom\src\OpenDriver\inc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

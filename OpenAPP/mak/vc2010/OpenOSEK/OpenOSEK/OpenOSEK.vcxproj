@@ -78,7 +78,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="..\..\..\..\..\OpenCom\config\OpenCom.oil" />
-    <None Include="..\..\..\..\config\OpenAPP.oil" />
+    <None Include="..\..\..\..\config\OpenAPP.oil">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Outputs>
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\OpenCom\config\Dll_Cfg.c" />
