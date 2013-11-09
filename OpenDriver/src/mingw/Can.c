@@ -299,9 +299,9 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 			printf("closesocket function failed with error: %d\n", WSAGetLastError());
 		}
 		Can_PduMsg[Controller].state = canMsgBoxIdle;
-		SuspendAllInterrupts();
+		EnterISR();
 		Can_TxConformation(Controller,Can_PduMsg[Controller].swPduHandle);
-		ResumeAllInterrupts();
+		LeaveISR();
 		ReleaseMutex( Can_CtrlTxMutex[Controller] );
 	}
 	return NULL;
@@ -375,7 +375,7 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 		if ( ercd == 17 )
 		{ // Rx ISR
 			id = (((uint32)msg[0])<<24) + (((uint32)msg[1])<<16) + (((uint32)msg[2])<<8) + msg[3];
-			SuspendAllInterrupts();
+			EnterISR();
 			if(CAN_T_SLEEP == Can_CtrlState[Controller])
 			{
 				Can_WakeupIndication(Controller);
@@ -384,7 +384,7 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 			{
 				Can_RxIndication(Controller,id,&msg[5],msg[4]);
 			}
-			ResumeAllInterrupts();
+			LeaveISR();
 		}
 		else
 		{
