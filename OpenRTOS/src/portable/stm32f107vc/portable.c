@@ -65,7 +65,7 @@
 /* ================================ DATAs     =============================== */
 EXPORT uint8* knl_tcb_sp[cfgOS_TASK_NUM]={0};
 EXPORT FP    knl_tcb_dispatcher[cfgOS_TASK_NUM]={0};
-EXPORT uint8 knl_system_stack[512];
+EXPORT uint8 knl_system_stack[1024];
 
 /* ================================ FUNCTIONs =============================== */
 LOCAL void portStartSystemTimer( void );

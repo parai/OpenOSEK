@@ -28,6 +28,6 @@ TASK TaskKeyMonitor  // Idle Task, always in running state
 	{
 		APPMODE = OSDEFAULTAPPMODE;
 	};
-	STACK = 256;
+	STACK = 1024;
 	TYPE = BASIC;
 }

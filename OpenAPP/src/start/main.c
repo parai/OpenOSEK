@@ -60,6 +60,7 @@ void main(void)
 #endif
 	}
 #endif
+    for(;;);
     /* You can do some-special work here,such as init the system clock and so on... */
 	StartOS(OSDEFAULTAPPMODE);
     /* never returned when the os is started. */

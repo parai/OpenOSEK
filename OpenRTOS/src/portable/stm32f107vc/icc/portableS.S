@@ -88,7 +88,7 @@ knl_dispatch_r:
     PUBLIC  knl_force_dispatch_impl
 knl_force_dispatch_impl:
     /* Interrupt is disabled,during SVC mode */
-    ldr     sp, =(knl_system_stack + 512)  /* Set system stack, see portable.c*/
+    ldr     sp, =(knl_system_stack + 1024)  /* Set system stack, see portable.c*/
 
     ldr     r12, =knl_dispatch_disabled
     ldr     r0, =1

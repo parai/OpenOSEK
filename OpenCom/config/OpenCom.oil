@@ -5,7 +5,7 @@ TASK TaskNmMain
 	SCHEDULE = NON;
 	ACTIVATION = 1;
 	AUTOSTART = FALSE;
-	STACK = 256;
+	STACK = 1024;
 	TYPE = BASIC;
 }
 
@@ -21,7 +21,7 @@ TASK TaskNmInd{
 	EVENT = EventNmLimphome;
 	EVENT = EventNmStatus;
 	EVENT = EventRingData;
-	STACK = 256;
+	STACK = 1024;
 	TYPE = EXTENDED;
 }
 
@@ -61,7 +61,7 @@ TASK TaskCanTpMain
 	SCHEDULE = NON;
 	ACTIVATION = 1;
 	AUTOSTART = FALSE;
-	STACK = 256;
+	STACK = 1024;
 	TYPE = BASIC;
 }
 ALARM AlarmCanTpMain {

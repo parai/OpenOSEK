@@ -47,7 +47,8 @@
 #else
 #define END_CRITICAL_SECTION()	if ( knl_curtsk != knl_schedtsk         \
                                      && (0u == knl_taskindp)            \
-                                     && (0u == knl_dispatch_disabled) ) { \
+                                     && (0u == knl_dispatch_disabled)	\
+									 && (True == _primask_)) { 			\
         knl_dispatch();                                                 \
     }                                                                   \
     knl_enable_int(_primask_); }
