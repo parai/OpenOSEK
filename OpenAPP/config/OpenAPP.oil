@@ -19,7 +19,20 @@ COUNTER SystemTimer
 	TYPE = SOFTWARE;
 }
 
-TASK TaskKeyMonitor  // Idle Task, always in running state
+TASK TaskKeyMonitor 
+{
+	PRIORITY = 1;
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	AUTOSTART = TRUE 
+	{
+		APPMODE = OSDEFAULTAPPMODE;
+	};
+	STACK = 1024;
+	TYPE = BASIC;
+}
+
+TASK TaskIdle  // Idle Task, always in running state
 {
 	PRIORITY = 0;
 	SCHEDULE = FULL;

@@ -23,8 +23,15 @@
 /* ================================ INCLUDEs  =============================== */
 
 /* ================================ MACROs    =============================== */
-#define portINTERRUPT_TICK				( 0UL )
-#define portMAX_INTERRUPTS 				( 1UL )
+enum{
+	portIsrForceDispatch = 0UL,
+	portIsrDispatch,
+	portIsrTick,
+	portIsrCan0Rx,
+	portIsrCan0Tx,
+	portIsrCan0Wakeup,
+	portIsrNbr
+};
 
 /*
  * Interrupt enable/disable
@@ -54,7 +61,7 @@
     knl_enable_int(_primask_); }
 #endif
 
-#define knl_dispatch() knl_dispatch_entry()
+
 #define knl_isr_dispatch() portDispatchInIsrRequested = TRUE
 /* ================================ TYPEs     =============================== */
 /* interrupr mask type.determined by CPU */
@@ -67,7 +74,7 @@ IMPORT imask_t knl_disable_int( void );
 IMPORT void knl_enable_int( imask_t mask );
 IMPORT void knl_force_dispatch(void);
 IMPORT void knl_setup_context(TaskType taskid);
-IMPORT void knl_dispatch_entry(void);
+IMPORT void knl_dispatch(void);
 /*
  * Raise a simulated interrupt represented by the bit mask in ulInterruptMask.
  * Each bit can be used to represent an individual interrupt - with the first

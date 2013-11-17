@@ -64,5 +64,6 @@ OpenLib/stm32f1/libraries
 OpenAPP/mak/vc2010/OpenOSEK/Debug
 OpenAPP/mak/vc2010/OpenOSEK/OpenOSEK/Debug
 OpenAPP/mak/vc2010/OpenOSEK/ipch
+OpenDriver/src/stm32f107vc
 
 

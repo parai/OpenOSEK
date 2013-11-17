@@ -9,8 +9,9 @@ void StartupHook(void)
 extern void CanTp_Print(void);
 TASK(TaskKeyMonitor)
 {
-#ifdef __GNUCC__
+#if defined(__GNUCC__) || defined(WIN32) 
 	char chr;
+	printf("TaskKeyMonitor is running\n");
 	for(;;)
 	{
 		chr = (char)getchar();
@@ -54,5 +55,12 @@ TASK(TaskKeyMonitor)
 #endif    
     for(;;);  // Should always be Idle.
 	TerminateTask();
+}
+
+TASK(TaskIdle)
+{
+	printf("TaskIdle is running\n");
+	for(;;);
+	devAssert(False,"System Panic as TaskIdle returned\n");
 }
 

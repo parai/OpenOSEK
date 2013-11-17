@@ -165,7 +165,6 @@
         <option>
           <name>CCDefines</name>
           <state>STM32F10X_CL</state>
-          <state>USE_STM3210C_EVAL</state>
           <state>USE_STDPERIPH_DRIVER</state>
         </option>
         <option>
@@ -301,11 +300,11 @@
           <state>$PROJ_DIR$\..\..\..\OpenRTOS\src</state>
           <state>$PROJ_DIR$\..\..\..\OpenRTOS\src\portable\stm32f107vc</state>
           <state>$PROJ_DIR$\..\..\..\OpenDriver\inc</state>
+          <state>$PROJ_DIR$\..\..\..\OpenDriver\src\stm32f107vc</state>
           <state>$PROJ_DIR$\..\..\..\OpenCom\inc</state>
           <state>$PROJ_DIR$\..\..\..\OpenCom\config</state>
           <state>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32F10x_StdPeriph_Driver\inc</state>
-          <state>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc</state>
-          <state>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc</state>
+          <state>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc</state>
           <state>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x</state>
         </option>
         <option>
@@ -1986,134 +1985,44 @@
           </group>
         </group>
         <group>
-          <name>STM32_USB-FS-Device_Driver</name>
-          <group>
-            <name>config</name>
-            <group>
-              <name>inc</name>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\hw_config.h</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\platform_config.h</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\stm32f10x_conf.h</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\usb_conf.h</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\usb_desc.h</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\usb_istr.h</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\usb_prop.h</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\inc\usb_pwr.h</name>
-              </file>
-            </group>
-            <group>
-              <name>src</name>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\src\hw_config.c</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\src\usb_desc.c</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\src\usb_endp.c</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\src\usb_istr.c</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\src\usb_prop.c</name>
-              </file>
-              <file>
-                <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\config\src\usb_pwr.c</name>
-              </file>
-            </group>
-          </group>
+          <name>STM32_USB-OTG-FS_Driver</name>
           <group>
             <name>inc</name>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\otgd_fs_cal.h</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc\usb_conf.h</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\otgd_fs_dev.h</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc\usb_core.h</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\otgd_fs_int.h</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc\usb_defines.h</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\otgd_fs_pcd.h</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc\usb_hcd.h</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\otgd_fs_regs.h</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc\usb_otg.h</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_core.h</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc\usb_pcd.h</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_def.h</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_init.h</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_int.h</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_lib.h</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_mem.h</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_regs.h</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_sil.h</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\inc\usb_type.h</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\inc\usb_regs.h</name>
             </file>
           </group>
           <group>
             <name>src</name>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\otgd_fs_cal.c</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\src\usb_core.c</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\otgd_fs_dev.c</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\src\usb_hcd.c</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\otgd_fs_int.c</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\src\usb_otg.c</name>
             </file>
             <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\otgd_fs_pcd.c</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\usb_core.c</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\usb_init.c</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\usb_int.c</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\usb_mem.c</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\usb_regs.c</name>
-            </file>
-            <file>
-              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-FS-Device_Driver\src\usb_sil.c</name>
+              <name>$PROJ_DIR$\..\..\..\OpenLib\stm32f1\libraries\STM32_USB-OTG-FS_Driver\src\usb_pcd.c</name>
             </file>
           </group>
         </group>

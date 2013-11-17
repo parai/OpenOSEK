@@ -50,15 +50,15 @@ EXPORT void NMInit(NetIdType NetId)
 		InitNMScaling(NetId,0xFF); // TODO: not used
 		InitCMaskTable(NetId,NM_ckNormal,config);
 		InitCMaskTable(NetId,NM_ckLimphome,config);
-		InitIndDeltaConfig(NetId,NM_ckNormal,SignalEvent,TaskNmInd,EventNmNormal);
-		InitIndDeltaConfig(NetId,NM_ckLimphome,SignalEvent,TaskNmInd,EventNmLimphome);
+		InitIndDeltaConfig(NetId,NM_ckNormal,SignalInvalid/*SignalEvent*/,TaskNmInd,EventNmNormal);
+		InitIndDeltaConfig(NetId,NM_ckLimphome,SignalInvalid/*SignalEvent*/,TaskNmInd,EventNmLimphome);
 		memset(&status,0,sizeof(NetworkStatusType));
 		status.W.NMactive = 1;
 		InitSMaskTable(NetId,&status); // TODO : not implemented for indication
 		InitTargetStatusTable(NetId,&status);
-		InitIndDeltaStatus(NetId,SignalEvent,TaskNmInd,EventNmStatus);
+		InitIndDeltaStatus(NetId,SignalInvalid/*SignalEvent*/,TaskNmInd,EventNmStatus);
 		InitDirectNMParams(NetId,argNMNodeId /* LocalNodeId */,tTyp,tMax,tError,tWBS,tTx);
-		InitIndRingData(NetId,SignalEvent,TaskNmInd,EventRingData);
+		InitIndRingData(NetId,SignalInvalid/*SignalEvent*/,TaskNmInd,EventRingData);
 	}
 }
 

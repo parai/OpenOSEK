@@ -23,7 +23,7 @@
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 #include <windows.h>
-#include <Os.h>
+#include <osek_os.h>
 // Link with ws2_32.lib
 #ifndef __GNUC__
 #pragma comment(lib, "Ws2_32.lib")
@@ -34,7 +34,7 @@
 typedef struct
 {
 	Can_ControllerIdType CanControllerId;
-	uint16          CanControllerBaudRate;
+	uint32          CanControllerBaudRate;
 	uint16          CanControllerPropSeg;
 	uint16          CanControllerSeg1;
 	uint16          CanControllerSeg2;
@@ -115,7 +115,7 @@ EXPORT void Can_InitController(uint8 Controller,const void* Config)
 	// IP address, and port of the server to be connected to.
 	Can_SockAddr[Controller].sin_family = AF_INET;
 	Can_SockAddr[Controller].sin_addr.s_addr = inet_addr("127.0.0.1");
-	Can_SockAddr[Controller].sin_port = htons(Can_Config_PC->CanControllerConfig[Controller].CanSocketServerPort);
+	Can_SockAddr[Controller].sin_port = (u_short)htons(Can_Config_PC->CanControllerConfig[Controller].CanSocketServerPort);
 
 	Can_CtrlRxThread[Controller]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) Can_RxMainThread, \
 						(void*)Config, CREATE_SUSPENDED, NULL );
@@ -303,13 +303,22 @@ LOCAL void* Can_TxMainThread(const Can_ControllerConfigType* Config)
 			printf("closesocket function failed with error: %d\n", WSAGetLastError());
 		}
 		Can_PduMsg[Controller].state = canMsgBoxIdle;
-		EnterISR();
-		Can_TxConformation(Controller,Can_PduMsg[Controller].swPduHandle);
-		LeaveISR();
+		switch(Controller)
+		{
+			case CAN_CTRL_0:
+				portGenerateSimulatedInterrupt(portIsrCan0Tx);
+				break;
+			default:
+				break;
+		}
 		ReleaseMutex( Can_CtrlTxMutex[Controller] );
+		Sleep(0);
 	}
 	return NULL;
 }
+LOCAL uint8 Can0RxMsg[64];
+LOCAL uint32 Can0RxId;
+LOCAL uint8 Can0RxDlc;
 LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 {
 	uint16 Controller = Config->CanControllerId;
@@ -346,7 +355,7 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 	do{
 		//----------------------
 		// Bind the socket.
-		service.sin_port = htons(port);
+		service.sin_port = (u_short)htons(port);
 		ercd = bind(ListenSocket, (SOCKADDR *) &service, sizeof (service));
 		if (ercd == SOCKET_ERROR) {
 			port ++;
@@ -379,16 +388,31 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 		if ( ercd == 17 )
 		{ // Rx ISR
 			id = (((uint32)msg[0])<<24) + (((uint32)msg[1])<<16) + (((uint32)msg[2])<<8) + msg[3];
-			EnterISR();
 			if(CAN_T_SLEEP == Can_CtrlState[Controller])
 			{
-				Can_WakeupIndication(Controller);
+				switch(Controller)
+				{
+					case CAN_CTRL_0:
+						portGenerateSimulatedInterrupt(portIsrCan0Wakeup);
+						break;
+					default:
+						break;
+				}
 			}
 			else
 			{
-				Can_RxIndication(Controller,id,&msg[5],msg[4]);
+				switch(Controller)
+				{
+					case CAN_CTRL_0:
+						Can0RxDlc = msg[4];
+						Can0RxId = id;
+						memcpy(Can0RxMsg,&msg[5],Can0RxDlc);
+						portGenerateSimulatedInterrupt(portIsrCan0Rx);
+						break;
+					default:
+						break;
+				}
 			}
-			LeaveISR();
 		}
 		else
 		{
@@ -405,6 +429,29 @@ LOCAL void* Can_RxMainThread(const Can_ControllerConfigType* Config)
 		if (ercd == SOCKET_ERROR){
 			printf("RX:closesocket function failed with error: %d\n", WSAGetLastError());
 		}
+		Sleep(0);
 	}
 	return NULL;
+}
+
+
+EXPORT void Can0TxIsr(void)
+{
+	EnterISR();
+	Can_TxConformation(CAN_CTRL_0,Can_PduMsg[CAN_CTRL_0].swPduHandle);
+	LeaveISR();
+}
+
+EXPORT void Can0RxIsr(void)
+{
+	EnterISR();
+	Can_RxIndication(CAN_CTRL_0,Can0RxId,Can0RxMsg,Can0RxDlc);
+	LeaveISR();
+}
+
+EXPORT void Can0WakeupIsr(void)
+{
+	EnterISR();
+	Can_WakeupIndication(CAN_CTRL_0);
+	LeaveISR();
 }
