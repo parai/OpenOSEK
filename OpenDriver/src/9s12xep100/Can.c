@@ -1,16 +1,10 @@
 #include "Com.h"
-//#include "hw_config.h"
-//#include "usb_lib.h"
-//__IO uint8_t PrevXferComplete = 1;
-
+EXPORT void devTrace(int __level,char* fmt,...)
+{
+}
 EXPORT void Can_Init(const void* Config)
 {
-    //Set_System();
-    //USB_Interrupts_Config();
 
-    //Set_USBClock();
-
-    //USB_Init();
 }
 
 EXPORT void Can_InitController(uint8 Controller,const void* Config)

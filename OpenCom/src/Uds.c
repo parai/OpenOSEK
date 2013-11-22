@@ -102,6 +102,14 @@ typedef struct
 	Uds_RequestQItemType queue[cfgUDS_Q_NUM];
 	uint8 counter;
 }Uds_RequestQueueType;
+typedef enum
+{
+	Uds_stIdle = 0,
+	Uds_stServiceRequested,
+	Uds_stServiceInProcess,
+	Uds_stSentingResponse,
+	Uds_stServiceFinshed
+}Uds_StateType;
 typedef struct
 {
 	PduIdType         pduId;   		/* used to refer the request service data */
@@ -113,14 +121,7 @@ typedef struct
 	Uds_SecurityLevelMaskType securityLevel;	/* record current unsecured level, each bit is a special level.*/
 	boolean           suppressPosRspMsg;		/* TODO: */
 	TickType      	  timer;		/* Timer used for error recover or P2Server */
-	volatile enum
-	{
-		Uds_stIdle = 0,
-		Uds_stServiceRequested,
-		Uds_stServiceInProcess,
-		Uds_stSentingResponse,
-		Uds_stServiceFinshed
-	}state;						/* UDS State Machine */
+	volatile Uds_StateType state;						/* UDS State Machine */
 	// Uds_RequestQueueType Q;		/* TODO: Queue to cache the consecutive request service in case that UDS State is not Idle */
 }Uds_RTEType;
 /* ================================ DATAs     =============================== */

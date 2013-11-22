@@ -48,7 +48,7 @@
         EXTERN  SystemInit,__iar_program_start
         EXTERN  knl_dispatch_entry,EnterISR2,ExitISR2      
         EXTERN  knl_force_dispatch_impl
-        EXTERN  STM32_PCD_OTG_ISR_Handler
+        ;EXTERN  STM32_PCD_OTG_ISR_Handler
         EXTERN  EnterISR2,ExitISR2
         PUBLIC  __vector_table
 
@@ -495,11 +495,11 @@ CAN2_SCE_IRQHandler
         PUBWEAK OTG_FS_IRQHandler
         SECTION .text:CODE:REORDER(1)
 OTG_FS_IRQHandler
-        ;B OTG_FS_IRQHandler
-        push {lr}
-        bl EnterISR2
-        B STM32_PCD_OTG_ISR_Handler
-        b  ExitISR2
+        B OTG_FS_IRQHandler
+        ;push {lr}
+        ;bl EnterISR2
+        ;B STM32_PCD_OTG_ISR_Handler
+        ;b  ExitISR2
 
         END
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/

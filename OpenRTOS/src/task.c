@@ -494,7 +494,8 @@ EXPORT void knl_search_schedtsk(void)
 	if(tskque->head != tskque->tail)
 	{  // not empty.
 		knl_schedtsk = tskque->queue[tskque->head];
-		devAction(tlOs,tskque->queue[tskque->head]=INVALID_TASK);
+		assert(INVALID_TASK != knl_schedtsk);
+		tskque->queue[tskque->head]=INVALID_TASK;
 		if((tskque->head+1) < tskque->length)
 		{
 			tskque->head++;
@@ -507,6 +508,10 @@ EXPORT void knl_search_schedtsk(void)
 		{
 			knl_bitmap_clear(top_pri);
 			knl_rdyque.top_pri = knl_bitmap_search(top_pri);
+		}
+		else
+		{
+			printf("Task Queue is not empty on Priority = %d.\n",top_pri);
 		}
 	}
 	else
@@ -567,7 +572,7 @@ EXPORT void knl_ready_queue_insert_top(TaskType taskid)
 	{
 		tskRdyQue->head --;
 	}
-	devAssert(tskRdyQue->tail!=tskRdyQue->head,"Error As Task Ready Queue Full when Push to Head.\n");
+	assert(tskRdyQue->tail!=tskRdyQue->head);
 	tskRdyQue->queue[tskRdyQue->head] = taskid;
 #else
 	knl_rdyque.tskque[priority] = taskid;
@@ -594,7 +599,7 @@ EXPORT void knl_ready_queue_insert(TaskType taskid)
 	{
 		tskRdyQue->tail = 0;
 	}
-	devAssert(tskRdyQue->tail!=tskRdyQue->head,"Error As Task Ready Queue Full when Push to Tail.\n");
+	assert(tskRdyQue->tail!=tskRdyQue->head);
 #elif(cfgOS_MULTIPLY_PRIORITY == 0)
 	knl_rdyque.tskque[priority] = taskid;
 #endif

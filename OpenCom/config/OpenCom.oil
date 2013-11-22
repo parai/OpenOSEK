@@ -57,7 +57,7 @@ ALARM AlarmNmMain {
 
 TASK TaskCanTpMain
 {
-	PRIORITY = 2;
+	PRIORITY = 3;
 	SCHEDULE = NON;
 	ACTIVATION = 1;
 	AUTOSTART = FALSE;
@@ -78,7 +78,7 @@ ALARM AlarmCanTpMain {
 
 TASK TaskUdsMain
 {
-	PRIORITY = 2;
+	PRIORITY = 4;
 	SCHEDULE = NON;
 	ACTIVATION = 1;
 	AUTOSTART = FALSE;

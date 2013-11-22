@@ -17,6 +17,8 @@ cscope.files
 *.xpr
 .settings
 *.log
+*.ini
+*.opensdf
 
 
 *.pbi

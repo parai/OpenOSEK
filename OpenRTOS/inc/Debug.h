@@ -22,7 +22,7 @@
 #define _DEBUG_H__H_H_H
 
 /* ================================ INCLUDEs  =============================== */
-
+#include <assert.h>
 /* ================================ MACROs    =============================== */
 #define cfgDEV_TRACE_ON     1
 // the bigger value has higher level
@@ -38,7 +38,7 @@
 #define tlUds        40
 #define tlOs         0
 #define tlPort       0
-#if	defined( __GNUC__ ) && (cfgDEV_TRACE_ON == 1)
+#if	(defined( __GNUC__ )||defined( WIN32 )) && (cfgDEV_TRACE_ON == 1)
 #define devTrace(__level,...) 	\
 	if(__level > cfgDEV_TRACE_LEVEL)	printf(__VA_ARGS__)
 #define devAction(__level,__action)	\
@@ -50,9 +50,15 @@
 		for(;;);					\
 	}
 #else
+//#if	(defined( __GNUC__ )||defined( WIN32 ))
 #define devTrace(__level,...)
 #define devAction(__level,__action)
 #define devAssert(__isTrue,...)
+//#else
+//void devTrace(int __level,char* fmt,...);
+//#define devAction(__level,__action)
+//void devAssert(int __level,char* fmt,...);
+//#endif
 #endif
 
 /* ================================ TYPEs     =============================== */

@@ -19,70 +19,125 @@
  * Sourrce Open At: https://github.com/parai/OpenOSEK/
  */
 /* ================================ INCLUDEs  =============================== */
-#include <windows.h>
 #include "osek_os.h"
 
 
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
-
+typedef struct
+{
+	HANDLE thread[cfgOS_TASK_NUM];  // the context of the Task
+	HANDLE thread2[cfgOS_TASK_NUM]; // the backup context of the Task
+	HANDLE irqEvent;	// notify the portable the generation of IRQn
+	volatile imask_t imask;
+	HANDLE criticalMutex; // ensure system critical protect
+	volatile unsigned long pendingIRQn; // Each bit means a ISR pending
+	volatile unsigned long dispatchInIRQnRequested;
+	FP IRQnHandle[32];
+	unsigned long isRunning;
+}portOsRTE_Type;
 /* ================================ DATAs     =============================== */
-EXPORT volatile long portDispatchInIsrRequested = FALSE;
-LOCAL HANDLE knl_tcb_sp[cfgOS_TASK_NUM] = {NULL};
-LOCAL HANDLE knl_tcb_old_sp[cfgOS_TASK_NUM] = {NULL};
-LOCAL HANDLE portInterruptEventMutex = NULL;
-LOCAL HANDLE portInterruptEvent = NULL;
-LOCAL HANDLE portMainThread = NULL;
-LOCAL HANDLE portIsrTickThread = NULL;
-LOCAL volatile int portInterruptsEnabled = FALSE;
-LOCAL volatile unsigned long portPendingInterrupts = 0L;
-LOCAL int portProcessSimulatedInterruptsCalled = FALSE;
-/* Handlers for all the simulated software interrupts.  The first two positions
-are used for the Yield and Tick interrupts so are handled slightly differently,
-all the other interrupts can be user defined. */
-LOCAL FP portIsrHandler[ portIsrNbr ] = { 0 };
-
+LOCAL portOsRTE_Type portOsRte;
 /* ================================ FUNCTIONs =============================== */
-LOCAL void portStartDispatcher(void);
 LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter );
 LOCAL void portProcessSimulatedInterrupts( void );
 LOCAL void l_dispatch0(void);
-LOCAL void portWaitForStart(DWORD taskid);
+LOCAL void portStartTaskEntry(DWORD taskid);
 LOCAL void knl_system_timer(void);
+LOCAL void knl_force_dispatch_impl(void);
+LOCAL void knl_dispatch_entry(void);
 
+EXPORT void portEnterCriticalSection(void)
+{
+	WaitForSingleObject( portOsRte.criticalMutex, INFINITE );
+}
+EXPORT void portExitCriticalSection(void)
+{
+	ReleaseMutex(portOsRte.criticalMutex);
+}
+
+EXPORT HANDLE portCreSecondaryThread(HANDLE thread_entry,PVOID thread_param)
+{
+	/* Start the thread that simulates the IRQn peripheral to generate
+	interrupts.  The priority is set below that of the simulated
+	interrupt handler so the interrupt event mutex is used for the
+	handshake / overrun protection. */
+	HANDLE handle = CreateThread( NULL, 0, thread_entry, thread_param, 0, NULL );
+	if( handle != NULL )
+	{
+		SetThreadPriority( handle, THREAD_PRIORITY_BELOW_NORMAL );
+		SetThreadPriorityBoost( handle, TRUE );
+		SetThreadAffinityMask( handle, 0x01 );
+	}
+	else
+	{
+		assert(False);
+	}
+	return handle;
+}
+
+EXPORT void knl_install_isr(IRQn_Type isrNbr,FP isrFp)
+{
+	if((isrNbr<eIRQnNumber) && (isrNbr < 32))
+	{
+		portOsRte.IRQnHandle[isrNbr] = isrFp;
+	}
+	else
+	{
+		devAssert(False,"IRQn install error.\n");
+	}
+}
+
+EXPORT void portOsStartupHook(void)
+{
+	memset(&portOsRte,0u,sizeof(portOsRte));
+	// ============= Install IRQn handle
+	knl_install_isr(eIRQnForceDispatch,knl_force_dispatch_impl);
+	knl_install_isr(eIRQnDispatch,knl_dispatch_entry);
+	knl_install_isr(eIRQnSystemTick,knl_system_timer);
+	// ============= Create Event and Mutex
+	portOsRte.criticalMutex = CreateMutex( NULL, FALSE, NULL );
+	portOsRte.irqEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
+	if( (NULL == portOsRte.criticalMutex) || (NULL == portOsRte.irqEvent))
+	{
+		assert(False);
+	}
+	// ============= Main Thread and Secondary Thread Process
+	/* Set the priority of this thread such that it is above the priority of
+	the threads that run tasks.  This higher priority is required to ensure
+	simulated interrupts take priority over tasks. */
+	if( GetCurrentThread() != NULL )
+	{
+		if( False == SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_NORMAL ) )
+		{
+			assert(False);
+		}
+		SetThreadPriorityBoost( GetCurrentThread(), TRUE );
+		SetThreadAffinityMask( GetCurrentThread(), 0x01 );
+	}
+	portCreSecondaryThread(portSimulatedPeripheralTimer,NULL);
+}
 EXPORT imask_t knl_disable_int( void )
 {
-	imask_t mask = portInterruptsEnabled;
-	portInterruptsEnabled = FALSE;
+	imask_t mask = portOsRte.imask;
+	portOsRte.imask = False;
 	return mask;
 }
 EXPORT void knl_enable_int( imask_t mask )
 {
-	portInterruptsEnabled = mask;
+	portOsRte.imask = mask;
 }
 EXPORT void knl_force_dispatch(void)
 {
-	static int isDispatcherStarted = FALSE;
+	portOsRte.imask = True;  // Enable ISR firstly and then dispatch
+	portGenerateSimulatedInterrupt(eIRQnForceDispatch);
+	Sleep(10);
 
-	if(FALSE == isDispatcherStarted)
+	if(False == portOsRte.isRunning)
 	{
-		portStartDispatcher();
-		isDispatcherStarted = TRUE;
-		if(knl_schedtsk == INVALID_TASK)
-		{
-			knl_dispatch_disabled=0;    /* Dispatch enable */
-			knl_curtsk = INVALID_TASK;
-			goto first_start_without_task_ready;
-		}
-	}
-	portGenerateSimulatedInterrupt(portIsrForceDispatch);
-	Sleep(0);
-first_start_without_task_ready:
-	if(FALSE == portProcessSimulatedInterruptsCalled)
-	{
-		portProcessSimulatedInterruptsCalled = TRUE;
-		portInterruptsEnabled = TRUE; // Enable Interrupt.
+		portOsRte.isRunning = True;
+		knl_dispatch_disabled = 0; /* Dispatch enable */
 		portProcessSimulatedInterrupts();
 	}
 }
@@ -93,19 +148,21 @@ LOCAL void knl_force_dispatch_impl(void)
 	{
 		if( READY == knl_tcb_state[knl_curtsk])
 		{
-			if(-1 == TerminateThread(knl_tcb_old_sp[knl_curtsk],0))
+			if( (portOsRte.thread2[knl_curtsk] == NULL) ||
+				(-1 == TerminateThread(portOsRte.thread2[knl_curtsk],0)))
 			{
-				printf("Terminate Task %d failed.\n",knl_curtsk);
+				assert(False);
 			}
-			knl_tcb_old_sp[knl_curtsk] = NULL;
+			portOsRte.thread2[knl_curtsk] = NULL;
 		}
 		else if(SUSPENDED== knl_tcb_state[knl_curtsk])
 		{
-			if(-1 == TerminateThread(knl_tcb_sp[knl_curtsk],0))
+			if( (portOsRte.thread[knl_curtsk] == NULL) ||
+				(-1 == TerminateThread(portOsRte.thread[knl_curtsk],0)))
 			{
-				printf("Terminate Task %d failed.\n",knl_curtsk);
+				assert(False);
 			}
-			knl_tcb_sp[knl_curtsk] = NULL;
+			portOsRte.thread[knl_curtsk] = NULL;
 		}
 	}
 
@@ -115,45 +172,46 @@ LOCAL void knl_force_dispatch_impl(void)
 
 EXPORT void knl_setup_context(TaskType taskid)
 {
-	LPTHREAD_START_ROUTINE pc = (LPTHREAD_START_ROUTINE)portWaitForStart;
-	knl_tcb_old_sp[taskid] = knl_tcb_sp[taskid];
-	knl_tcb_sp[taskid]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) pc, (LPVOID)taskid, CREATE_SUSPENDED, NULL );
-	devAssert(knl_tcb_sp[taskid]!=NULL,"OS:Create Task <%d> Context Failed!",(int)taskid);
-	SetThreadAffinityMask( knl_tcb_sp[taskid], 0x01 );
-	SetThreadPriorityBoost( knl_tcb_sp[taskid], TRUE );
-	SetThreadPriority( knl_tcb_sp[taskid], THREAD_PRIORITY_IDLE );
+	LPTHREAD_START_ROUTINE pc = (LPTHREAD_START_ROUTINE)portStartTaskEntry;
+	if(portOsRte.thread[taskid] != NULL)
+	{
+		portOsRte.thread2[taskid] = portOsRte.thread[taskid]; // back up as multiply activation
+	}
+	portOsRte.thread[taskid]=CreateThread( NULL, 0, ( LPTHREAD_START_ROUTINE ) pc, (LPVOID)taskid, CREATE_SUSPENDED, NULL );
+	assert(portOsRte.thread[taskid] != NULL);
+	SetThreadAffinityMask( portOsRte.thread[taskid], 0x01 );
+	SetThreadPriorityBoost( portOsRte.thread[taskid], TRUE );
+	SetThreadPriority( portOsRte.thread[taskid], THREAD_PRIORITY_IDLE );
 }
 LOCAL void l_dispatch0(void)
 {
 	DWORD ercd = 0;
-	portInterruptsEnabled = TRUE; //enable interrupt
-	while((INVALID_TASK == knl_schedtsk) || (knl_taskindp > 0))
+	portOsRte.imask = True; //enable interrupt
+	while(INVALID_TASK == knl_schedtsk)
 	{ // Note, for Win implementation, an Idle task must be created.
-		Sleep(0); // release CPU give the right to other thread
+		assert(False);
 	}
 	knl_curtsk = knl_schedtsk;
 	knl_dispatch_disabled=0;    /* Dispatch enable */
 
+	assert(INVALID_TASK != knl_curtsk);
 	/* resume task */
-	ercd = ResumeThread(knl_tcb_sp[knl_curtsk]);
-	devTrace(tlPort,"Resume Task %d, Previous Suspend Count is %d.\n",(int)knl_curtsk,(int)ercd);
-	devAssert(-1 != ercd,"Resume Task <%d> failed.\n",(int)knl_curtsk);
+	ercd = ResumeThread(portOsRte.thread[knl_curtsk]);
+	if(-1 == ercd)
+	{
+		assert(False);
+	}
 }
 EXPORT void knl_dispatch(void)									
 {														
-	portGenerateSimulatedInterrupt(portIsrDispatch);	
+	portGenerateSimulatedInterrupt(eIRQnDispatch);
 	Sleep(0);											
 }
 LOCAL void knl_dispatch_entry(void)
 {
-	DWORD ercd;
 	knl_dispatch_disabled=1;    /* Dispatch disable */
-	if(knl_curtsk != INVALID_TASK)
-	{
-		ercd = SuspendThread( knl_tcb_sp[knl_curtsk]);
-		devTrace(tlPort,"Suspend Task %d, Previous Suspend Count is %d.\n",(int)knl_curtsk,(int)ercd);
-		devAssert(-1 != ercd,"Suspend Task <%d> failed,ercd=%d.\n",(int)knl_curtsk,ercd);
-	}
+	assert(portOsRte.thread[knl_curtsk] != NULL);
+	assert(-1 != SuspendThread( portOsRte.thread[knl_curtsk]));
 	knl_curtsk = INVALID_TASK;
 
 	l_dispatch0();
@@ -167,75 +225,13 @@ LOCAL void knl_system_timer(void)
 #endif
 	LeaveISR();
 }
-IMPORT void Can0TxIsr(void);
-IMPORT void Can0RxIsr(void);
-IMPORT void Can0WakeupIsr(void);
-LOCAL void portStartDispatcher(void)
-{
-	int lSuccess = TRUE;
-	// install interrupt handler
-	portIsrHandler[portIsrTick] = knl_system_timer;
-	portIsrHandler[portIsrForceDispatch] = knl_force_dispatch_impl;
-	portIsrHandler[portIsrDispatch] = knl_dispatch_entry;
-	portIsrHandler[portIsrCan0Rx] = Can0RxIsr;
-	portIsrHandler[portIsrCan0Tx] = Can0TxIsr;
-	portIsrHandler[portIsrCan0Wakeup] = Can0WakeupIsr;
-	/* Create the events and mutexes that are used to synchronise all the
-	threads. */
-	portInterruptEventMutex = CreateMutex( NULL, FALSE, NULL );
-	portInterruptEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
-
-	if( ( portInterruptEventMutex == NULL ) || ( portInterruptEvent == NULL ) )
-	{
-		lSuccess = FALSE;
-	}
-
-	/* Set the priority of this thread such that it is above the priority of
-	the threads that run tasks.  This higher priority is required to ensure
-	simulated interrupts take priority over tasks. */
-	portMainThread = GetCurrentThread();
-	if( portMainThread == NULL )
-	{
-		lSuccess = FALSE;
-	}
-
-	if( lSuccess == TRUE )
-	{
-		if( SetThreadPriority( portMainThread, THREAD_PRIORITY_NORMAL ) == 0 )
-		{
-			lSuccess = FALSE;
-		}
-		SetThreadPriorityBoost( portMainThread, TRUE );
-		SetThreadAffinityMask( portMainThread, 0x01 );
-	}
-
-	if( lSuccess == TRUE )
-	{
-		/* Start the thread that simulates the timer peripheral to generate
-		tick interrupts.  The priority is set below that of the simulated
-		interrupt handler so the interrupt event mutex is used for the
-		handshake / overrun protection. */
-		portIsrTickThread = CreateThread( NULL, 0, portSimulatedPeripheralTimer, NULL, 0, NULL );
-		if( portIsrTickThread != NULL )
-		{
-			SetThreadPriority( portIsrTickThread, THREAD_PRIORITY_BELOW_NORMAL );
-			SetThreadPriorityBoost( portIsrTickThread, TRUE );
-			SetThreadAffinityMask( portIsrTickThread, 0x01 );
-		}
-	}
-	else
-	{
-		devAssert(False,"Serious Error!\n");
-		for(;;);
-	}
-}
 
 LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter )
 {
 
 	/* Just to prevent compiler warnings. */
 	( void ) lpParameter;
-
+	Sleep(100);
 	for(;;)
 	{
 		/* Wait until the timer expires and we can access the simulated interrupt
@@ -247,7 +243,7 @@ LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter )
 
 		Sleep( 1 ); //sleep 1ms
 
-		portGenerateSimulatedInterrupt(portIsrTick);
+		portGenerateSimulatedInterrupt(eIRQnSystemTick);
 	}
 
 	#ifdef __GNUC__
@@ -265,81 +261,71 @@ LOCAL void portProcessSimulatedInterrupts( void )
 	/* Going to block on the mutex that ensured exclusive access to the simulated
 	interrupt objects, and the event that signals that a simulated interrupt
 	should be processed. */
-	pvObjectList[ 0 ] = portInterruptEventMutex;
-	pvObjectList[ 1 ] = portInterruptEvent;
+	pvObjectList[ 0 ] = portOsRte.criticalMutex;
+	pvObjectList[ 1 ] = portOsRte.irqEvent;
 
 	for(;;)
 	{
-		if(TRUE == portInterruptsEnabled)
+		if(True == portOsRte.imask)
 		{
-			WaitForMultipleObjects( sizeof( pvObjectList ) / sizeof( void * ), pvObjectList, TRUE, INFINITE );
+			WaitForMultipleObjects( sizeof( pvObjectList ) / sizeof( void * ), pvObjectList, True, INFINITE );
 
 			/* For each interrupt we are interested in processing, each of which is
 			represented by a bit in the 32bit ulPendingInterrupts variable. */
-			for( i = 0; i < portIsrNbr; i++ )
+			for( i = 0; i < eIRQnNumber; i++ )
 			{
 				/* Is the simulated interrupt pending? */
-				if( portPendingInterrupts & ( 1UL << i ) )
+				if( portOsRte.pendingIRQn & ( 1UL << i ) )
 				{
 					/* Is a handler installed? */
-					if( portIsrHandler[ i ] != NULL )
+					if( portOsRte.IRQnHandle[ i ] != NULL )
 					{
 						/* Run the actual handler. */
-						portIsrHandler[ i ]();
+						knl_taskindp ++;
+						portOsRte.IRQnHandle[ i ]();
+						knl_taskindp --;
 					}
 					/* Clear the interrupt pending bit. */
-					portPendingInterrupts &= ~( 1UL << i );
+					portOsRte.pendingIRQn &= ~( 1UL << i );
 				}
 			}
-			ReleaseMutex( portInterruptEventMutex );
-			if((portDispatchInIsrRequested == TRUE) &&(knl_dispatch_disabled == 0))
+			if((knl_curtsk != knl_schedtsk) && (!knl_dispatch_disabled) &&(!knl_taskindp))
 			{
-				devTrace(tlPort,"OS:Service the request of Dispatch in ISR!\n");
-				portDispatchInIsrRequested = FALSE;
 				knl_dispatch_entry();
 			}
+			ReleaseMutex( portOsRte.criticalMutex );
 		}
 	}
 }
 
 /*-----------------------------------------------------------*/
 
-EXPORT void portGenerateSimulatedInterrupt( unsigned long ulInterruptNumber )
+EXPORT void portGenerateSimulatedInterrupt( IRQn_Type ulInterruptNumber )
 {
 
-	if( ( ulInterruptNumber < portIsrNbr ) && ( portInterruptEventMutex != NULL ) )
+	if( ( ulInterruptNumber < eIRQnNumber ) && ( portOsRte.criticalMutex != NULL ) )
 	{
 		/* Yield interrupts are processed even when critical nesting is non-zero. */
-		WaitForSingleObject( portInterruptEventMutex, INFINITE );
-		portPendingInterrupts |= ( 1 << ulInterruptNumber );
+		WaitForSingleObject( portOsRte.criticalMutex, INFINITE );
+		portOsRte.pendingIRQn |= ( 1 << ulInterruptNumber );
 
 		/* The simulated interrupt is now held pending, but don't actually process it
 		yet if this call is within a critical section.  It is possible for this to
 		be in a critical section as calls to wait for mutexes are accumulative. */
 
-		SetEvent( portInterruptEvent );
+		SetEvent( portOsRte.irqEvent );
 
-		ReleaseMutex( portInterruptEventMutex );
+		ReleaseMutex( portOsRte.criticalMutex );
 	}
 }
-LOCAL void portWaitForStart(DWORD taskid)
+LOCAL void portStartTaskEntry(DWORD taskid)
 {
-	StatusType ercd;
 	while(knl_taskindp > 0)
 	{
 		Sleep(0);
 	}
-	devAssert(taskid==knl_curtsk,"OS:Serious Error as DATA inConsistant.\n");
+	assert(taskid == knl_curtsk);
 	GetInternalResource();
 	knl_tcb_pc[knl_curtsk]();
-
-	// OK, this port is not successful, some bug in it but Now I cann't solve it
-	// SO I try to recover from the bug
-	while(knl_taskindp > 0)
-	{
-		Sleep(0);
-	}
-	ercd = TerminateTask();
-	devAssert(E_OK==ercd,"TerminateTask Failed, ercd = %d.\n",(int)ercd);
-	devTrace(tlPort,"os: the last action of thread, returned.\n");
+	assert(False);
 }

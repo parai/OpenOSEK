@@ -149,15 +149,15 @@ typedef uint16 StackSizeType;
 #if((cfgOS_MULTIPLY_ACTIVATION == 1) || (cfgOS_MULTIPLY_PRIORITY == 1))
 typedef struct
 {
-	uint8 head;
-	uint8 tail;
+	volatile uint8 head;
+	volatile uint8 tail;
 	const uint8 length;
 	const TaskRefType queue; /* size at least should be 2 */
 }TaskReadyQueueType;   /* per priority, FIFO queue */
 
 typedef struct
 {
-	PriorityType top_pri;
+	volatile PriorityType top_pri;
 	TaskReadyQueueType tskque[NUM_PRI];
 	const TaskReadyQueueType null;
 	uint8	bitmap[NUM_BITMAP];	/* Bitmap area per priority */

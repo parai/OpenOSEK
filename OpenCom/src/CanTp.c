@@ -85,6 +85,19 @@ typedef struct
 	uint8 counter; // must < N_BS
 }CanTp_QueueType;
 
+typedef enum
+{
+	CanTp_stIdle = 0,
+	/* ========== Receive ========== */
+	CanTp_stWaitCF,
+	CanTp_stWaitFC,
+	/* ========== BUSY ============= */
+	CanTp_stBusy,          // To say the rx buffer of handle is in used by UDS,locked
+	/* ========== Send ============= */
+	CanTp_stStartToSend,
+	CanTp_stWaitToSendCF,
+	CanTp_stWaitToSendFC,
+}CanTp_StateType;
 typedef struct
 {
 	CanTp_QueueType Q; 		// For Rx only
@@ -94,19 +107,7 @@ typedef struct
 	uint8 BS;				//Block Size
 	uint8 SN;				//Sequence Number
 	uint8 STmin;
-	volatile enum
-	{
-		CanTp_stIdle = 0,
-		/* ========== Receive ========== */
-		CanTp_stWaitCF,
-		CanTp_stWaitFC,
-		/* ========== BUSY ============= */
-		CanTp_stBusy,          // To say the rx buffer of handle is in used by UDS,locked
-		/* ========== Send ============= */
-		CanTp_stStartToSend,
-		CanTp_stWaitToSendCF,
-		CanTp_stWaitToSendFC,
-	}state;
+	volatile CanTp_StateType state;
 }cantpRteType; // RTE
 
 /* ================================ DATAs     =============================== */

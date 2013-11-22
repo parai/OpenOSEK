@@ -535,6 +535,19 @@ EXPORT void NM_RxIndication(NetIdType NetId,NMPduType* NMPDU)
 						nmInitReset5(NetId);
 					}
 				}
+				else
+				{
+					if(NMPDU->OpCode.B.SleepAck)
+					{
+						D_Offline(NetId);
+						nmSetAlarm(TWbs);
+						NM_ControlBlock[NetId].nmState = NM_stTwbsLimphome;
+					}
+					else
+					{
+						nmInitReset5(NetId);
+					}
+				}
 			}
 			else
 			{

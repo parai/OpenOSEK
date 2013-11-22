@@ -32,19 +32,19 @@
 /* ================================ TYPEs     =============================== */
 
 /* ================================ DATAs     =============================== */
-#ifdef __GNUC__
+#if defined(__GNUCC__) || defined(WIN32)
 IMPORT uint32 argNMNodeId;
 #endif
 
 /* ================================ FUNCTIONs =============================== */
 /* This is a stardard procedure which will start the os by the default app mode */
-#ifdef __GNUC__
+#if defined(__GNUCC__) || defined(WIN32)
 int main(int argc,char* argv[])
 #else
 void main(void)
 #endif
 {
-#ifdef __GNUC__
+#if defined(__GNUCC__) || defined(WIN32) 
 	if(argc == 2)  // For NM
 	{
 		argNMNodeId = atoi(argv[1]);
