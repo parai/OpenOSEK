@@ -281,9 +281,7 @@ LOCAL void portProcessSimulatedInterrupts( void )
 					if( portOsRte.IRQnHandle[ i ] != NULL )
 					{
 						/* Run the actual handler. */
-						knl_taskindp ++;
 						portOsRte.IRQnHandle[ i ]();
-						knl_taskindp --;
 					}
 					/* Clear the interrupt pending bit. */
 					portOsRte.pendingIRQn &= ~( 1UL << i );

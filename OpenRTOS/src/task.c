@@ -508,10 +508,11 @@ EXPORT void knl_search_schedtsk(void)
 		{
 			knl_bitmap_clear(top_pri);
 			knl_rdyque.top_pri = knl_bitmap_search(top_pri);
+			assert(top_pri != knl_rdyque.top_pri);
 		}
 		else
 		{
-			printf("Task Queue is not empty on Priority = %d.\n",top_pri);
+			assert(False);
 		}
 	}
 	else
@@ -520,9 +521,10 @@ EXPORT void knl_search_schedtsk(void)
 	}
 #else
 	knl_schedtsk = knl_rdyque.tskque[top_pri];
-	// knl_rdyque.tskque[top_pri] = INVALID_TASK;
+	knl_rdyque.tskque[top_pri] = INVALID_TASK;
 	knl_bitmap_clear(top_pri);
 	knl_rdyque.top_pri = knl_bitmap_search(top_pri);
+	assert(top_pri != knl_rdyque.top_pri);
 #endif
 }
 //no matter what,will put current ready task to the ready queue
