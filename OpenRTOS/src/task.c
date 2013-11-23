@@ -97,10 +97,15 @@ EXPORT StatusType TerminateTask(void)
     	devTrace(tlOs,"TerminateTask Task %d, Goto SUSPENDED state.\n",(int)knl_curtsk);
     }
     knl_search_schedtsk();
+	assert(INVALID_TASK != knl_schedtsk);
     knl_force_dispatch();
 
 OS_VALIDATE_ERROR_EXIT()
     OsErrorProcess0(TerminateTask);
+	if(E_OK != ercd)
+	{
+		assert(False); 
+	}
     return ercd;
 }
 
@@ -450,8 +455,7 @@ EXPORT void knl_make_ready(TaskType taskid)
 	knl_tcb_curpri[taskid] = knl_tcb_ipriority[taskid];
 	#if(cfgOS_FLAG_NUM > 0)
 	{
-		uint8 flgid;
-		flgid = knl_tcb_flgid[taskid];
+		uint8 flgid = knl_tcb_flgid[taskid];
 		if(flgid != INVALID_FLAG)
 		{
 			knl_fcb_wait[flgid]=NO_EVENT;
@@ -468,6 +472,7 @@ EXPORT void knl_make_ready(TaskType taskid)
 // put into ready-queue
 EXPORT void knl_make_runnable(TaskType taskid)
 {
+	assert(INVALID_TASK != taskid);
 	if(INVALID_TASK != knl_schedtsk)
 	{
 		if(knl_tcb_curpri[taskid] > knl_tcb_curpri[knl_schedtsk])
@@ -508,7 +513,7 @@ EXPORT void knl_search_schedtsk(void)
 		{
 			knl_bitmap_clear(top_pri);
 			knl_rdyque.top_pri = knl_bitmap_search(top_pri);
-			assert(top_pri != knl_rdyque.top_pri);
+			assert(top_pri > knl_rdyque.top_pri);
 		}
 		else
 		{
@@ -524,7 +529,9 @@ EXPORT void knl_search_schedtsk(void)
 	knl_rdyque.tskque[top_pri] = INVALID_TASK;
 	knl_bitmap_clear(top_pri);
 	knl_rdyque.top_pri = knl_bitmap_search(top_pri);
-	assert(top_pri != knl_rdyque.top_pri);
+	assert(top_pri > knl_rdyque.top_pri);
+	assert(NUM_PRI != top_pri);
+	assert(INVALID_TASK != knl_schedtsk);
 #endif
 }
 //no matter what,will put current ready task to the ready queue

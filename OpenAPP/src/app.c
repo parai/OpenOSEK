@@ -6,6 +6,20 @@ void StartupHook(void)
 	StartNM(0);
 	CanTp_Init();
 }
+EXPORT void ErrorHook(StatusType Error)
+{
+	if(OSServiceId_ActivateTask == OSErrorGetServiceId())
+	{
+		//printf("Error: ActiveteTask(%d) = %d;\n",OSError_ActivateTask_TaskID(),Error);
+	}
+	else if(OSServiceId_TerminateTask == OSErrorGetServiceId())
+	{
+		//TaskType TaskID;
+		//GetTaskID(&TaskID);
+		//printf("Error: TerminateTask(%d) = %d;\n",TaskID,Error);
+	}
+
+}
 extern void CanTp_Print(void);
 TASK(TaskKeyMonitor)
 {

@@ -53,7 +53,7 @@
 #endif
 
 
-#define knl_isr_dispatch()
+#define knl_isr_dispatch() {portDispatchInISRReq = True;}
 
 /* ================================ TYPEs     =============================== */
 /* interrupr mask type.determined by CPU */
@@ -70,7 +70,7 @@ typedef enum
 }IRQn_Type;
 
 /* ================================ DATAs     =============================== */
-
+EXPORT volatile unsigned long portDispatchInISRReq;
 /* ================================ FUNCTIONs =============================== */
 IMPORT imask_t knl_disable_int( void );
 IMPORT void knl_enable_int( imask_t mask );

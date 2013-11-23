@@ -31,7 +31,8 @@ typedef struct
 	HANDLE thread2[cfgOS_TASK_NUM]; // the backup context of the Task
 	HANDLE irqEvent;	// notify the portable the generation of IRQn
 	volatile imask_t imask;
-	HANDLE criticalMutex; // ensure system critical protect
+	HANDLE criticalMutex;  // ensure system critical protect
+	HANDLE oneTaskMutex;   // ensure only one Task is running.
 	volatile unsigned long pendingIRQn; // Each bit means a ISR pending
 	volatile unsigned long dispatchInIRQnRequested;
 	FP IRQnHandle[32];
@@ -39,6 +40,7 @@ typedef struct
 }portOsRTE_Type;
 /* ================================ DATAs     =============================== */
 LOCAL portOsRTE_Type portOsRte;
+EXPORT volatile unsigned long portDispatchInISRReq = False;
 /* ================================ FUNCTIONs =============================== */
 LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter );
 LOCAL void portProcessSimulatedInterrupts( void );
@@ -97,6 +99,7 @@ EXPORT void portOsStartupHook(void)
 	knl_install_isr(eIRQnDispatch,knl_dispatch_entry);
 	knl_install_isr(eIRQnSystemTick,knl_system_timer);
 	// ============= Create Event and Mutex
+	portOsRte.oneTaskMutex = CreateMutex( NULL, FALSE, NULL );
 	portOsRte.criticalMutex = CreateMutex( NULL, FALSE, NULL );
 	portOsRte.irqEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
 	if( (NULL == portOsRte.criticalMutex) || (NULL == portOsRte.irqEvent))
@@ -130,6 +133,9 @@ EXPORT void knl_enable_int( imask_t mask )
 }
 EXPORT void knl_force_dispatch(void)
 {
+	assert( 0u == (portOsRte.pendingIRQn&(1u<<eIRQnForceDispatch)) );
+	assert(NULL != portOsRte.thread[knl_schedtsk]);
+	printf("{");
 	portOsRte.imask = True;  // Enable ISR firstly and then dispatch
 	portGenerateSimulatedInterrupt(eIRQnForceDispatch);
 	Sleep(10);
@@ -140,9 +146,19 @@ EXPORT void knl_force_dispatch(void)
 		knl_dispatch_disabled = 0; /* Dispatch enable */
 		portProcessSimulatedInterrupts();
 	}
+	else
+	{
+		for(;;)
+		{   // retry if Error
+			portGenerateSimulatedInterrupt(eIRQnForceDispatch);
+			Sleep(10);
+		}
+	}
 }
 LOCAL void knl_force_dispatch_impl(void)
 {
+	printf("}");
+	assert( 0u != (portOsRte.pendingIRQn&(1u<<eIRQnForceDispatch)) );
 	knl_dispatch_disabled=1;    /* Dispatch disable */
 	if(knl_curtsk != INVALID_TASK)
 	{
@@ -163,6 +179,7 @@ LOCAL void knl_force_dispatch_impl(void)
 				assert(False);
 			}
 			portOsRte.thread[knl_curtsk] = NULL;
+			portOsRte.thread2[knl_curtsk] = NULL;
 		}
 	}
 
@@ -203,12 +220,15 @@ LOCAL void l_dispatch0(void)
 	}
 }
 EXPORT void knl_dispatch(void)									
-{														
+{	
+	printf("<");
 	portGenerateSimulatedInterrupt(eIRQnDispatch);
-	Sleep(0);											
+	Sleep(1);											
 }
 LOCAL void knl_dispatch_entry(void)
 {
+	// assert( 0u != (portOsRte.pendingIRQn&(1u<<eIRQnDispatch)) );
+	printf(">");
 	knl_dispatch_disabled=1;    /* Dispatch disable */
 	assert(portOsRte.thread[knl_curtsk] != NULL);
 	assert(-1 != SuspendThread( portOsRte.thread[knl_curtsk]));
@@ -287,9 +307,18 @@ LOCAL void portProcessSimulatedInterrupts( void )
 					portOsRte.pendingIRQn &= ~( 1UL << i );
 				}
 			}
-			if((knl_curtsk != knl_schedtsk) && (!knl_dispatch_disabled) &&(!knl_taskindp))
+			if((portDispatchInISRReq)
+				&& (knl_curtsk != knl_schedtsk) 
+				&& (!knl_dispatch_disabled) 
+				&&(!knl_taskindp) )
 			{
+				if(INVALID_TASK == knl_schedtsk)
+				{
+					assert(False);
+				}
+				printf("<");
 				knl_dispatch_entry();
+				portDispatchInISRReq = False;
 			}
 			ReleaseMutex( portOsRte.criticalMutex );
 		}
@@ -318,12 +347,11 @@ EXPORT void portGenerateSimulatedInterrupt( IRQn_Type ulInterruptNumber )
 }
 LOCAL void portStartTaskEntry(DWORD taskid)
 {
-	while(knl_taskindp > 0)
-	{
-		Sleep(0);
-	}
 	assert(taskid == knl_curtsk);
+	WaitForSingleObject( portOsRte.oneTaskMutex, INFINITE );
+	ReleaseMutex( portOsRte.oneTaskMutex );
 	GetInternalResource();
 	knl_tcb_pc[knl_curtsk]();
+
 	assert(False);
 }

@@ -36,7 +36,7 @@
 #define tlCan        20
 #define tlCanTp      30
 #define tlUds        40
-#define tlOs         50
+#define tlOs         0
 #define tlPort       0
 #if	(defined( __GNUC__ )||defined( WIN32 )) && (cfgDEV_TRACE_ON == 1)
 #define devTrace(__level,...) 	\

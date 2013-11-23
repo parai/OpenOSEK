@@ -26,11 +26,11 @@
 
 /* ================================ MACROs    =============================== */
 #if((cfgOS_SCHEDULE == osNonPreemptive) && (cfgOS_FLAG_NUM == 0))
-#define ReleaseInternalResource()
-#define GetInternalResource()
+#  define ReleaseInternalResource()
+#  define GetInternalResource()
 #else
-#define ReleaseInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_ipriority[knl_curtsk]; }
-#define GetInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_rpriority[knl_curtsk]; }
+#  define ReleaseInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_ipriority[knl_curtsk]; }
+#  define GetInternalResource() { knl_tcb_curpri[knl_curtsk] = knl_tcb_rpriority[knl_curtsk]; }
 #endif
 
 #define INVALID_TASK      ((TaskType)0xFF)
@@ -174,18 +174,18 @@ typedef struct
 
 /* ================================ DATAs     =============================== */
 // task control block
-IMPORT const FP            knl_tcb_pc[];
-IMPORT const PriorityType  knl_tcb_ipriority[];
-IMPORT const PriorityType  knl_tcb_rpriority[];
-IMPORT const uint8         knl_tcb_max_activation[];
-IMPORT const StackSizeType knl_tcb_stksz[];
-IMPORT uint8* const        knl_tcb_stack[];
-IMPORT const AppModeType   knl_tcb_mode[];
-IMPORT const uint8         knl_tcb_flgid[];
-IMPORT TaskStateType       knl_tcb_state[];
-IMPORT PriorityType        knl_tcb_curpri[];
-IMPORT uint8               knl_tcb_activation[];
-IMPORT ResourceType        knl_tcb_resque[];
+IMPORT const FP            knl_tcb_pc[cfgOS_TASK_NUM];
+IMPORT const PriorityType  knl_tcb_ipriority[cfgOS_TASK_NUM];
+IMPORT const PriorityType  knl_tcb_rpriority[cfgOS_TASK_NUM];
+IMPORT const uint8         knl_tcb_max_activation[cfgOS_TASK_NUM];
+IMPORT const StackSizeType knl_tcb_stksz[cfgOS_TASK_NUM];
+IMPORT uint8* const        knl_tcb_stack[cfgOS_TASK_NUM];
+IMPORT const AppModeType   knl_tcb_mode[cfgOS_TASK_NUM];
+IMPORT const uint8         knl_tcb_flgid[cfgOS_TASK_NUM];
+IMPORT TaskStateType       knl_tcb_state[cfgOS_TASK_NUM];
+IMPORT PriorityType        knl_tcb_curpri[cfgOS_TASK_NUM];
+IMPORT uint8               knl_tcb_activation[cfgOS_TASK_NUM];
+IMPORT ResourceType        knl_tcb_resque[cfgOS_TASK_NUM];
 
 IMPORT AppModeType knl_appmode;
 IMPORT uint8    knl_taskindp;   /* task in independent part nested level */
