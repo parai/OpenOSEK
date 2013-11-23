@@ -21,7 +21,6 @@
 /* ================================ INCLUDEs  =============================== */
 #include "osek_os.h"
 
-
 /* ================================ MACROs    =============================== */
 
 /* ================================ TYPEs     =============================== */
@@ -42,7 +41,7 @@ typedef struct
 LOCAL portOsRTE_Type portOsRte;
 EXPORT volatile unsigned long portDispatchInISRReq = False;
 /* ================================ FUNCTIONs =============================== */
-LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter );
+LOCAL DWORD portSimulatedPeripheralTimer( LPVOID lpParameter );
 LOCAL void portProcessSimulatedInterrupts( void );
 LOCAL void l_dispatch0(void);
 LOCAL void portStartTaskEntry(DWORD taskid);
@@ -246,7 +245,7 @@ LOCAL void knl_system_timer(void)
 	LeaveISR();
 }
 
-LOCAL DWORD WINAPI portSimulatedPeripheralTimer( LPVOID lpParameter )
+LOCAL DWORD portSimulatedPeripheralTimer( LPVOID lpParameter )
 {
 
 	/* Just to prevent compiler warnings. */

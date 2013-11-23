@@ -10,13 +10,13 @@ EXPORT void ErrorHook(StatusType Error)
 {
 	if(OSServiceId_ActivateTask == OSErrorGetServiceId())
 	{
-		//printf("Error: ActiveteTask(%d) = %d;\n",OSError_ActivateTask_TaskID(),Error);
+		// printf("Error: ActiveteTask(%d) = %d;\n",OSError_ActivateTask_TaskID(),Error);
 	}
 	else if(OSServiceId_TerminateTask == OSErrorGetServiceId())
 	{
-		//TaskType TaskID;
-		//GetTaskID(&TaskID);
-		//printf("Error: TerminateTask(%d) = %d;\n",TaskID,Error);
+		TaskType TaskID;
+		GetTaskID(&TaskID);
+		printf("Error: TerminateTask(%d) = %d;\n",TaskID,Error);
 	}
 
 }

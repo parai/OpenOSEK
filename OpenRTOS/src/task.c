@@ -102,10 +102,6 @@ EXPORT StatusType TerminateTask(void)
 
 OS_VALIDATE_ERROR_EXIT()
     OsErrorProcess0(TerminateTask);
-	if(E_OK != ercd)
-	{
-		assert(False); 
-	}
     return ercd;
 }
 
@@ -529,8 +525,6 @@ EXPORT void knl_search_schedtsk(void)
 	knl_rdyque.tskque[top_pri] = INVALID_TASK;
 	knl_bitmap_clear(top_pri);
 	knl_rdyque.top_pri = knl_bitmap_search(top_pri);
-	assert(top_pri > knl_rdyque.top_pri);
-	assert(NUM_PRI != top_pri);
 	assert(INVALID_TASK != knl_schedtsk);
 #endif
 }
