@@ -94,7 +94,7 @@ EXPORT void portOsStartupHook(void)
 {
 	memset(&portOsRte,0u,sizeof(portOsRte));
 	// ============= Install IRQn handle
-	knl_install_isr(eIRQnForceDispatch,knl_force_dispatch_impl);
+	knl_install_isr(eIRQnForceDispatch,knl_dispatch_entry);
 	knl_install_isr(eIRQnDispatch,knl_dispatch_entry);
 	knl_install_isr(eIRQnSystemTick,knl_system_timer);
 	// ============= Create Event and Mutex
@@ -156,7 +156,6 @@ EXPORT void knl_force_dispatch(void)
 }
 LOCAL void knl_force_dispatch_impl(void)
 {
-	printf("}");
 	assert( 0u != (portOsRte.pendingIRQn&(1u<<eIRQnForceDispatch)) );
 	knl_dispatch_disabled=1;    /* Dispatch disable */
 	if(knl_curtsk != INVALID_TASK)
@@ -220,17 +219,49 @@ LOCAL void l_dispatch0(void)
 }
 EXPORT void knl_dispatch(void)									
 {	
-	printf("<");
 	portGenerateSimulatedInterrupt(eIRQnDispatch);
 	Sleep(1);											
 }
 LOCAL void knl_dispatch_entry(void)
 {
-	// assert( 0u != (portOsRte.pendingIRQn&(1u<<eIRQnDispatch)) );
-	printf(">");
+	DWORD ercd;
 	knl_dispatch_disabled=1;    /* Dispatch disable */
-	assert(portOsRte.thread[knl_curtsk] != NULL);
-	assert(-1 != SuspendThread( portOsRte.thread[knl_curtsk]));
+	if( READY == knl_tcb_state[knl_curtsk])
+	{
+		if(NULL != portOsRte.thread2[knl_curtsk])
+		{
+			printf("}");
+			ercd = TerminateThread(portOsRte.thread2[knl_curtsk],0);
+			assert(-1 != ercd);
+			portOsRte.thread2[knl_curtsk] = NULL;
+		}
+		else
+		{
+			printf(">");
+			assert(portOsRte.thread[knl_curtsk] != NULL);
+			ercd = SuspendThread( portOsRte.thread[knl_curtsk]);
+			assert(-1 != ercd);
+		}
+	}
+	else if( WAITING == knl_tcb_state[knl_curtsk])
+	{
+		printf(">");
+		assert(portOsRte.thread[knl_curtsk] != NULL);
+		ercd = SuspendThread( portOsRte.thread[knl_curtsk]);
+		assert(-1 != ercd);
+	}
+	else if( SUSPENDED == knl_tcb_state[knl_curtsk])
+	{
+		printf("}");
+		ercd = TerminateThread(portOsRte.thread[knl_curtsk],0);
+		assert(-1 != ercd);
+		portOsRte.thread[knl_curtsk] = NULL;
+		portOsRte.thread2[knl_curtsk] = NULL;
+	}
+	else
+	{
+
+	}
 	knl_curtsk = INVALID_TASK;
 
 	l_dispatch0();
